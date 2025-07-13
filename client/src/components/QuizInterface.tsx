@@ -36,9 +36,9 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
 
   const submitQuizMutation = useMutation({
     mutationFn: async (quizAnswers: any[]) => {
-      const response = await apiRequest("POST", `/api/quiz/${quizId}/submit`, { 
+      const response = await apiRequest({ method: "POST", endpoint: `/api/quiz/${quizId}/submit`, data: { 
         answers: quizAnswers 
-      });
+      } });
       return response.json();
     },
     onSuccess: () => {

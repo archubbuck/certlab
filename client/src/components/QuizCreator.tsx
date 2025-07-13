@@ -32,7 +32,7 @@ export default function QuizCreator() {
 
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: any) => {
-      const response = await apiRequest("POST", "/api/quiz", quizData);
+      const response = await apiRequest({ method: "POST", endpoint: "/api/quiz", data: quizData });
       return response.json();
     },
     onSuccess: (quiz) => {

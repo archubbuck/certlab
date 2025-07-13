@@ -49,7 +49,7 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginForm) => {
-      const response = await apiRequest("POST", "/api/login", data);
+      const response = await apiRequest({ method: "POST", endpoint: "/api/login", data });
       return response.json();
     },
     onSuccess: (user) => {
@@ -67,7 +67,7 @@ export default function Login() {
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterForm) => {
-      const response = await apiRequest("POST", "/api/register", data);
+      const response = await apiRequest({ method: "POST", endpoint: "/api/register", data });
       return response.json();
     },
     onSuccess: (user) => {
