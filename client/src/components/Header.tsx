@@ -1,15 +1,39 @@
 import { localStorage } from "@/lib/localStorage";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Header() {
   const [, setLocation] = useLocation();
   const currentUser = localStorage.getCurrentUser();
+  const { toast } = useToast();
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest({
+        method: "POST",
+        endpoint: "/api/logout",
+      });
+    },
+    onSuccess: () => {
+      localStorage.clearCurrentUser();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account.",
+      });
+      setLocation("/");
+    },
+    onError: () => {
+      // Even if the API call fails, we should still log out locally
+      localStorage.clearCurrentUser();
+      setLocation("/");
+    }
+  });
 
   const handleLogout = () => {
-    localStorage.clearCurrentUser();
-    setLocation("/");
-    window.location.reload();
+    logoutMutation.mutate();
   };
 
   const getInitials = (name: string) => {
@@ -48,8 +72,15 @@ export default function Header() {
                 <span className="text-gray-700 text-sm">{currentUser.username}</span>
               </div>
             )}
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <i className="fas fa-sign-out-alt"></i>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLogout}
+              disabled={logoutMutation.isPending}
+              className="text-gray-600 hover:text-red-600 hover:bg-red-50"
+            >
+              <i className="fas fa-sign-out-alt mr-2"></i>
+              Sign Out
             </Button>
           </div>
         </div>
