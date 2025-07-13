@@ -1,0 +1,197 @@
+import { useRoute, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import Header from "@/components/Header";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { getScoreColor, getScoreBgColor } from "@/lib/questions";
+import type { Quiz, Category } from "@shared/schema";
+
+export default function Results() {
+  const [, params] = useRoute("/results/:id");
+  const [, setLocation] = useLocation();
+  const quizId = parseInt(params?.id || "0");
+
+  const { data: quiz, isLoading } = useQuery<Quiz>({
+    queryKey: ['/api/quiz', quizId],
+    enabled: !!quizId,
+  });
+
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center min-h-96">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!quiz || !quiz.completedAt) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Results Not Found</h1>
+            <p className="text-gray-600">The quiz results you're looking for don't exist or the quiz hasn't been completed.</p>
+            <Button 
+              onClick={() => setLocation("/")}
+              className="mt-4 bg-primary hover:bg-blue-700"
+            >
+              Return to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const score = quiz.score || 0;
+  const correctAnswers = quiz.correctAnswers || 0;
+  const totalQuestions = quiz.totalQuestions || 0;
+  
+  const formatDuration = (startTime: string, endTime: string) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const diffMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+    return `${Math.floor(diffMinutes / 60)}:${(diffMinutes % 60).toString().padStart(2, '0')}`;
+  };
+
+  const getCategoryName = (categoryIds: number[]) => {
+    const names = categoryIds
+      .map(id => categories.find(cat => cat.id === id)?.name)
+      .filter(Boolean);
+    return names.length > 0 ? names.join(", ") : "Mixed Quiz";
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Card className="material-shadow border border-gray-100 overflow-hidden">
+          {/* Results Header */}
+          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-secondary to-primary text-white">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <i className="fas fa-trophy text-2xl"></i>
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Quiz Completed!</h2>
+              <p className="text-blue-100">
+                {getCategoryName(quiz.categoryIds as number[])} Practice Quiz
+              </p>
+            </div>
+          </div>
+
+          {/* Score Summary */}
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="text-center">
+                <div className={`text-4xl font-bold mb-2 ${getScoreColor(score)}`}>
+                  {score}%
+                </div>
+                <div className="text-gray-600">Overall Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-primary mb-2">
+                  {correctAnswers}/{totalQuestions}
+                </div>
+                <div className="text-gray-600">Correct Answers</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-accent mb-2">
+                  {formatDuration(quiz.startedAt!, quiz.completedAt)}
+                </div>
+                <div className="text-gray-600">Time Taken</div>
+              </div>
+            </div>
+
+            {/* Performance Feedback */}
+            <div className="mb-8">
+              <div className={`rounded-lg p-4 ${getScoreBgColor(score)}`}>
+                <div className="flex items-center space-x-2">
+                  <i className={`fas ${
+                    score >= 90 ? 'fa-star' :
+                    score >= 80 ? 'fa-thumbs-up' :
+                    score >= 70 ? 'fa-check-circle' : 'fa-exclamation-triangle'
+                  } ${getScoreColor(score)}`}></i>
+                  <h3 className={`font-semibold ${getScoreColor(score)}`}>
+                    {score >= 90 ? 'Excellent Work!' :
+                     score >= 80 ? 'Great Job!' :
+                     score >= 70 ? 'Good Effort!' : 'Keep Practicing!'}
+                  </h3>
+                </div>
+                <p className="text-gray-700 mt-2">
+                  {score >= 90 ? 'Outstanding performance! You have mastered this material.' :
+                   score >= 80 ? 'Well done! You have a strong understanding of the concepts.' :
+                   score >= 70 ? 'Good work! Review the areas you missed to improve further.' :
+                   'More practice needed. Focus on understanding the fundamental concepts.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Category Performance */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Performance by Category</h3>
+              <div className="space-y-4">
+                {(quiz.categoryIds as number[]).map(categoryId => {
+                  const category = categories.find(c => c.id === categoryId);
+                  if (!category) return null;
+                  
+                  // For demo purposes, using overall score
+                  const categoryScore = score;
+                  
+                  return (
+                    <div key={categoryId} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-gray-900">{category.name}</span>
+                        <span className="text-sm text-gray-600">{categoryScore}%</span>
+                      </div>
+                      <Progress value={categoryScore} className="h-2" />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button
+                onClick={() => setLocation("/")}
+                className="flex-1 bg-primary text-white hover:bg-blue-700"
+              >
+                <i className="fas fa-home mr-2"></i>
+                Return to Dashboard
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.location.reload()}
+                className="flex-1"
+                disabled
+              >
+                <i className="fas fa-eye mr-2"></i>
+                Review Answers
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/")}
+                className="flex-1"
+              >
+                <i className="fas fa-redo mr-2"></i>
+                Take Another Quiz
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+}
