@@ -38,7 +38,7 @@ Preferred communication style: Simple, everyday language.
 - **API Structure**: RESTful endpoints under `/api` prefix
 - **Database**: PostgreSQL with Drizzle ORM for type-safe queries
 - **Authentication**: bcrypt for password hashing (session-based auth)
-- **Storage Layer**: Abstracted storage interface with in-memory implementation
+- **Storage Layer**: Abstracted storage interface with PostgreSQL database implementation
 - **Development**: Vite integration for hot module replacement
 
 ### Database Schema
@@ -97,9 +97,17 @@ Core entities include:
 - **Database**: Drizzle migrations in `migrations/` folder
 
 ### Environment Setup
-- **Database**: Requires `DATABASE_URL` environment variable
+- **Database**: PostgreSQL database with `DATABASE_URL` environment variable
 - **Development**: Uses Vite dev server with Express API proxy
 - **Production**: Serves static files from Express with API routes
+
+### Recent Changes (July 13, 2025)
+- **Database Integration**: Migrated from in-memory storage to PostgreSQL database
+  - Added `server/db.ts` with Drizzle database configuration
+  - Updated `DatabaseStorage` class to use actual database queries
+  - Implemented proper data seeding for categories, subcategories, and questions
+  - Fixed quiz results page cache invalidation issues
+  - All user data, quiz progress, and results now persist in database
 
 ### Scripts
 - `npm run dev` - Development with hot reload

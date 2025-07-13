@@ -4,6 +4,8 @@ import {
   type Subcategory, type InsertSubcategory, type Question, type InsertQuestion,
   type Quiz, type InsertQuiz, type UserProgress, type InsertUserProgress
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, inArray, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User management
@@ -36,26 +38,16 @@ export interface IStorage {
   }>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User> = new Map();
-  private categories: Map<number, Category> = new Map();
-  private subcategories: Map<number, Subcategory> = new Map();
-  private questions: Map<number, Question> = new Map();
-  private quizzes: Map<number, Quiz> = new Map();
-  private userProgress: Map<string, UserProgress> = new Map(); // key: `${userId}-${categoryId}`
-  
-  private currentUserId = 1;
-  private currentCategoryId = 1;
-  private currentSubcategoryId = 1;
-  private currentQuestionId = 1;
-  private currentQuizId = 1;
-  private currentProgressId = 1;
-
+export class DatabaseStorage implements IStorage {
   constructor() {
     this.seedData();
   }
 
-  private seedData() {
+  private async seedData() {
+    // Check if data already exists
+    const existingCategories = await db.select().from(categories);
+    if (existingCategories.length > 0) return;
+
     // Seed categories
     const cats = [
       { name: "CISSP", description: "Certified Information Systems Security Professional", icon: "fas fa-shield-alt" },
@@ -64,30 +56,24 @@ export class MemStorage implements IStorage {
       { name: "CISM", description: "Certified Information Security Manager", icon: "fas fa-cogs" },
     ];
     
-    cats.forEach(cat => {
-      const category: Category = { id: this.currentCategoryId++, ...cat };
-      this.categories.set(category.id, category);
-    });
+    const insertedCategories = await db.insert(categories).values(cats).returning();
 
     // Seed subcategories for CISSP
     const cisspsubs = [
-      { categoryId: 1, name: "Asset Security", description: "Information and asset classification" },
-      { categoryId: 1, name: "Security Architecture", description: "Security models and architecture" },
-      { categoryId: 1, name: "Communication Security", description: "Network and communication security" },
-      { categoryId: 1, name: "Identity & Access Management", description: "IAM principles and practices" },
-      { categoryId: 1, name: "Security Testing", description: "Assessment and testing" },
+      { categoryId: insertedCategories[0].id, name: "Asset Security", description: "Information and asset classification" },
+      { categoryId: insertedCategories[0].id, name: "Security Architecture", description: "Security models and architecture" },
+      { categoryId: insertedCategories[0].id, name: "Communication Security", description: "Network and communication security" },
+      { categoryId: insertedCategories[0].id, name: "Identity & Access Management", description: "IAM principles and practices" },
+      { categoryId: insertedCategories[0].id, name: "Security Testing", description: "Assessment and testing" },
     ];
 
-    cisspsubs.forEach(sub => {
-      const subcategory: Subcategory = { id: this.currentSubcategoryId++, ...sub };
-      this.subcategories.set(subcategory.id, subcategory);
-    });
+    const insertedSubcategories = await db.insert(subcategories).values(cisspsubs).returning();
 
     // Seed some questions for CISSP Asset Security
     const assetSecurityQuestions = [
       {
-        categoryId: 1,
-        subcategoryId: 1,
+        categoryId: insertedCategories[0].id,
+        subcategoryId: insertedSubcategories[0].id,
         text: "Which of the following is the PRIMARY purpose of implementing data classification in an organization?",
         options: [
           { text: "To ensure compliance with legal and regulatory requirements", id: 0 },
@@ -99,8 +85,8 @@ export class MemStorage implements IStorage {
         explanation: "The primary purpose of data classification is to determine appropriate security controls and handling procedures based on the sensitivity and value of the data."
       },
       {
-        categoryId: 1,
-        subcategoryId: 1,
+        categoryId: insertedCategories[0].id,
+        subcategoryId: insertedSubcategories[0].id,
         text: "What is the MOST important consideration when establishing data retention policies?",
         options: [
           { text: "Storage capacity limitations", id: 0 },
@@ -113,104 +99,93 @@ export class MemStorage implements IStorage {
       }
     ];
 
-    assetSecurityQuestions.forEach(q => {
-      const question: Question = { id: this.currentQuestionId++, ...q };
-      this.questions.set(question.id, question);
-    });
+    await db.insert(questions).values(assetSecurityQuestions);
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { 
-      ...insertUser, 
-      id,
-      createdAt: new Date()
-    };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async getCategories(): Promise<Category[]> {
-    return Array.from(this.categories.values());
+    return await db.select().from(categories);
   }
 
   async getSubcategories(categoryId?: number): Promise<Subcategory[]> {
-    const subs = Array.from(this.subcategories.values());
-    return categoryId ? subs.filter(sub => sub.categoryId === categoryId) : subs;
+    if (categoryId) {
+      return await db.select().from(subcategories).where(eq(subcategories.categoryId, categoryId));
+    }
+    return await db.select().from(subcategories);
   }
 
   async getQuestionsByCategories(categoryIds: number[], subcategoryIds?: number[]): Promise<Question[]> {
-    const allQuestions = Array.from(this.questions.values());
-    let filtered = allQuestions.filter(q => categoryIds.includes(q.categoryId));
-    
     if (subcategoryIds && subcategoryIds.length > 0) {
-      filtered = filtered.filter(q => subcategoryIds.includes(q.subcategoryId));
+      return await db.select().from(questions).where(
+        and(
+          inArray(questions.categoryId, categoryIds),
+          inArray(questions.subcategoryId, subcategoryIds)
+        )
+      );
     }
     
-    return filtered;
+    return await db.select().from(questions).where(inArray(questions.categoryId, categoryIds));
   }
 
   async getQuestion(id: number): Promise<Question | undefined> {
-    return this.questions.get(id);
+    const [question] = await db.select().from(questions).where(eq(questions.id, id));
+    return question || undefined;
   }
 
   async createQuiz(insertQuiz: InsertQuiz): Promise<Quiz> {
-    const id = this.currentQuizId++;
-    const quiz: Quiz = {
+    const [quiz] = await db.insert(quizzes).values({
       ...insertQuiz,
-      id,
-      startedAt: new Date(),
-      completedAt: null,
-      score: null,
-      correctAnswers: null,
-      totalQuestions: insertQuiz.questionCount,
-      answers: null,
       timeLimit: insertQuiz.timeLimit || null
-    };
-    this.quizzes.set(id, quiz);
+    }).returning();
     return quiz;
   }
 
   async getQuiz(id: number): Promise<Quiz | undefined> {
-    return this.quizzes.get(id);
+    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, id));
+    return quiz || undefined;
   }
 
   async getUserQuizzes(userId: number): Promise<Quiz[]> {
-    return Array.from(this.quizzes.values()).filter(quiz => quiz.userId === userId);
+    return await db.select().from(quizzes).where(eq(quizzes.userId, userId)).orderBy(desc(quizzes.startedAt));
   }
 
   async updateQuiz(id: number, updates: Partial<Quiz>): Promise<Quiz> {
-    const quiz = this.quizzes.get(id);
+    const [quiz] = await db.update(quizzes).set(updates).where(eq(quizzes.id, id)).returning();
     if (!quiz) throw new Error("Quiz not found");
-    
-    const updatedQuiz = { ...quiz, ...updates };
-    this.quizzes.set(id, updatedQuiz);
-    return updatedQuiz;
+    return quiz;
   }
 
   async getUserProgress(userId: number): Promise<UserProgress[]> {
-    return Array.from(this.userProgress.values()).filter(progress => progress.userId === userId);
+    return await db.select().from(userProgress).where(eq(userProgress.userId, userId));
   }
 
   async updateUserProgress(userId: number, categoryId: number, progressData: Partial<InsertUserProgress>): Promise<UserProgress> {
-    const key = `${userId}-${categoryId}`;
-    const existing = this.userProgress.get(key);
+    const [existing] = await db.select().from(userProgress).where(
+      and(eq(userProgress.userId, userId), eq(userProgress.categoryId, categoryId))
+    );
     
     if (existing) {
-      const updated = { ...existing, ...progressData };
-      this.userProgress.set(key, updated);
+      const [updated] = await db.update(userProgress)
+        .set(progressData)
+        .where(and(eq(userProgress.userId, userId), eq(userProgress.categoryId, categoryId)))
+        .returning();
       return updated;
     } else {
-      const newProgress: UserProgress = {
-        id: this.currentProgressId++,
+      const [newProgress] = await db.insert(userProgress).values({
         userId,
         categoryId,
         questionsCompleted: 0,
@@ -218,8 +193,7 @@ export class MemStorage implements IStorage {
         averageScore: 0,
         lastQuizDate: null,
         ...progressData
-      };
-      this.userProgress.set(key, newProgress);
+      }).returning();
       return newProgress;
     }
   }
@@ -291,4 +265,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
