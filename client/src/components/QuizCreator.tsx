@@ -21,6 +21,7 @@ export default function QuizCreator() {
   const [questionCount, setQuestionCount] = useState("20");
   const [timeLimit, setTimeLimit] = useState("30");
   const [isAdaptive, setIsAdaptive] = useState(false);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<number[]>([]);
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -33,7 +34,12 @@ export default function QuizCreator() {
 
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: any) => {
-      const endpoint = isAdaptive ? "/api/quiz/adaptive" : "/api/quiz";
+      let endpoint = "/api/quiz";
+      if (isAdaptive) {
+        endpoint = "/api/quiz/adaptive";
+      } else if (selectedDifficulties.length > 0) {
+        endpoint = "/api/quiz/filtered";
+      }
       const response = await apiRequest({ method: "POST", endpoint, data: quizData });
       return response.json();
     },
@@ -83,6 +89,14 @@ export default function QuizCreator() {
     }
   };
 
+  const handleDifficultyToggle = (level: number, checked: boolean) => {
+    if (checked) {
+      setSelectedDifficulties([...selectedDifficulties, level]);
+    } else {
+      setSelectedDifficulties(selectedDifficulties.filter(l => l !== level));
+    }
+  };
+
   const handleStartQuiz = () => {
     if (selectedCategories.length === 0) {
       toast({
@@ -110,6 +124,7 @@ export default function QuizCreator() {
       timeLimit: timeLimit === "0" ? undefined : parseInt(timeLimit),
       userId: currentUser.id,
       isAdaptive: isAdaptive,
+      difficultyLevels: selectedDifficulties.length > 0 ? selectedDifficulties : undefined,
     };
 
     createQuizMutation.mutate(quizData);
@@ -221,6 +236,41 @@ export default function QuizCreator() {
           </div>
         </div>
 
+        {/* Difficulty Filter */}
+        <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200">
+          <div className="flex items-center space-x-3 mb-3">
+            <i className="fas fa-layer-group text-orange-600"></i>
+            <div>
+              <h4 className="font-medium text-gray-900">Difficulty Filter (HELEN System)</h4>
+              <p className="text-sm text-gray-600">
+                Select specific difficulty levels to focus your practice
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-5 gap-2 mt-3">
+            {[1, 2, 3, 4, 5].map((level) => (
+              <label
+                key={level}
+                className={`flex flex-col items-center p-2 rounded cursor-pointer transition-all ${
+                  selectedDifficulties.includes(level)
+                    ? 'bg-orange-100 border-orange-300 border-2'
+                    : 'bg-white border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <Checkbox
+                  checked={selectedDifficulties.includes(level)}
+                  onCheckedChange={(checked) => handleDifficultyToggle(level, checked as boolean)}
+                  className="mb-1"
+                />
+                <span className="text-xs font-medium">Level {level}</span>
+                <span className="text-xs text-gray-500">
+                  {level === 1 ? 'Basic' : level === 2 ? 'Easy' : level === 3 ? 'Medium' : level === 4 ? 'Hard' : 'Expert'}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         {/* Adaptive Learning Toggle */}
         <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
           <div className="flex items-center justify-between">
@@ -243,6 +293,14 @@ export default function QuizCreator() {
               <p className="text-xs text-gray-700">
                 <i className="fas fa-info-circle text-blue-500 mr-2"></i>
                 When enabled, the system analyzes your performance and may add up to 100% more questions to areas where you're struggling.
+              </p>
+            </div>
+          )}
+          {selectedDifficulties.length > 0 && isAdaptive && (
+            <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
+              <p className="text-xs text-yellow-800">
+                <i className="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
+                Note: Adaptive learning overrides difficulty filters
               </p>
             </div>
           )}

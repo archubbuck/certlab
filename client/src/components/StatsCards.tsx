@@ -47,11 +47,11 @@ export default function StatsCards() {
       iconColor: "text-accent"
     },
     {
-      title: "Certifications",
-      value: stats?.certifications || 0,
-      icon: "fas fa-award",
-      bgColor: "bg-yellow-100",
-      iconColor: "text-yellow-600"
+      title: "Pass Rate",
+      value: `${stats?.passingRate || 0}%`,
+      icon: "fas fa-trophy",
+      bgColor: stats?.passingRate >= 85 ? "bg-green-100" : "bg-red-100",
+      iconColor: stats?.passingRate >= 85 ? "text-green-600" : "text-red-600"
     }
   ];
 

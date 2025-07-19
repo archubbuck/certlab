@@ -230,6 +230,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completedAt: new Date()
       });
       
+      // Determine pass/fail status (85% threshold)
+      const isPassing = score >= 85;
+      
+      // Update quiz with pass/fail status
+      await storage.updateQuiz(quizId, { 
+        isPassing,
+        missedTopics: isPassing ? [] : results
+          .filter((r: any) => !r.correct)
+          .map((r: any) => {
+            const question = questions.find(q => q.id === r.questionId);
+            return question?.tags || ['General'];
+          })
+          .flat()
+      });
+
       // Update user progress for each category and adaptive learning metrics
       for (const categoryId of quiz.categoryIds as number[]) {
         const categoryQuestions = questions.filter(q => q.categoryId === categoryId);
@@ -252,6 +267,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update adaptive learning metrics
         if (quiz.isAdaptive) {
           await storage.updateAdaptiveProgress(quiz.userId, categoryId, categoryResults);
+        }
+      }
+
+      // Generate lecture for failed quiz (below 85%)
+      if (!isPassing) {
+        const missedTopics = results
+          .filter((r: any) => !r.correct)
+          .map((r: any) => {
+            const question = questions.find(q => q.id === r.questionId);
+            return question?.explanation?.split('.')[0] || 'Review Required';
+          })
+          .filter((topic, index, array) => array.indexOf(topic) === index); // Remove duplicates
+
+        if (missedTopics.length > 0) {
+          await storage.createLecture(quiz.userId, quizId, missedTopics);
         }
       }
       
@@ -322,6 +352,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(400).json({ message: "Failed to create adaptive quiz" });
+    }
+  });
+
+  // Get user lectures
+  app.get("/api/user/:id/lectures", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const lectures = await storage.getUserLectures(userId);
+      res.json(lectures);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get user lectures" });
+    }
+  });
+
+  // Get specific lecture (shareable link)
+  app.get("/api/lecture/:id", async (req, res) => {
+    try {
+      const lectureId = parseInt(req.params.id);
+      const lectures = await storage.getUserLectures(1); // Get all lectures for now
+      const lecture = lectures.find(l => l.id === lectureId);
+      
+      if (!lecture) {
+        return res.status(404).json({ message: "Lecture not found" });
+      }
+      
+      res.json(lecture);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get lecture" });
+    }
+  });
+
+  // Create quiz with difficulty filtering
+  app.post("/api/quiz/filtered", async (req, res) => {
+    try {
+      const { title, categoryIds, subcategoryIds, questionCount, timeLimit, userId, difficultyLevels } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID required" });
+      }
+
+      // Get questions with difficulty filter
+      const filteredQuestions = await storage.getQuestionsByCategories(
+        categoryIds, 
+        subcategoryIds, 
+        difficultyLevels
+      );
+
+      if (filteredQuestions.length < questionCount) {
+        return res.status(400).json({ 
+          message: `Only ${filteredQuestions.length} questions available for selected difficulty levels` 
+        });
+      }
+
+      const quiz = await storage.createQuiz({
+        title: title || "Filtered Difficulty Quiz",
+        categoryIds,
+        subcategoryIds: subcategoryIds || [],
+        questionCount,
+        timeLimit,
+        userId,
+        isAdaptive: false,
+        difficultyFilter: difficultyLevels,
+        difficultyLevel: Math.max(...(difficultyLevels || [1]))
+      });
+      
+      res.json(quiz);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create filtered quiz" });
     }
   });
 

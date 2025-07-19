@@ -32,6 +32,8 @@ export const questions = pgTable("questions", {
   options: jsonb("options").notNull(), // Array of option objects
   correctAnswer: integer("correct_answer").notNull(),
   explanation: text("explanation"),
+  difficultyLevel: integer("difficulty_level").default(1), // 1-5 scale (1=Easy, 5=Expert)
+  tags: jsonb("tags"), // Array of topic tags for lecture generation
 });
 
 export const quizzes = pgTable("quizzes", {
@@ -51,6 +53,9 @@ export const quizzes = pgTable("quizzes", {
   isAdaptive: boolean("is_adaptive").default(false),
   adaptiveMetrics: jsonb("adaptive_metrics"), // Tracks wrong answer patterns
   difficultyLevel: integer("difficulty_level").default(1), // 1-5 scale
+  difficultyFilter: jsonb("difficulty_filter"), // Array of difficulty levels to include
+  isPassing: boolean("is_passing").default(false), // 85%+ threshold
+  missedTopics: jsonb("missed_topics"), // Topics that need lecture generation
 });
 
 export const userProgress = pgTable("user_progress", {
@@ -67,6 +72,20 @@ export const userProgress = pgTable("user_progress", {
   weakSubcategories: jsonb("weak_subcategories"), // Array of struggling subcategory IDs
 });
 
+// Lectures table for AI-generated content based on missed topics
+export const lectures = pgTable("lectures", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  quizId: integer("quiz_id"),
+  title: text("title").notNull(),
+  content: text("content").notNull(), // Generated lecture content
+  topics: jsonb("topics").notNull(), // Array of missed topic tags
+  categoryId: integer("category_id").notNull(),
+  subcategoryId: integer("subcategory_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  isRead: boolean("is_read").default(false),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -79,6 +98,11 @@ export const insertCategorySchema = createInsertSchema(categories).omit({
 
 export const insertSubcategorySchema = createInsertSchema(subcategories).omit({
   id: true,
+});
+
+export const insertLectureSchema = createInsertSchema(lectures).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertQuestionSchema = createInsertSchema(questions).omit({

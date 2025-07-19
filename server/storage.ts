@@ -1,11 +1,11 @@
 import { 
-  users, categories, subcategories, questions, quizzes, userProgress,
+  users, categories, subcategories, questions, quizzes, userProgress, lectures,
   type User, type InsertUser, type Category, type InsertCategory,
   type Subcategory, type InsertSubcategory, type Question, type InsertQuestion,
   type Quiz, type InsertQuiz, type UserProgress, type InsertUserProgress
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, inArray, desc } from "drizzle-orm";
+import { eq, and, inArray, desc, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
   // User management
@@ -18,7 +18,7 @@ export interface IStorage {
   getSubcategories(categoryId?: number): Promise<Subcategory[]>;
   
   // Questions
-  getQuestionsByCategories(categoryIds: number[], subcategoryIds?: number[]): Promise<Question[]>;
+  getQuestionsByCategories(categoryIds: number[], subcategoryIds?: number[], difficultyLevels?: number[]): Promise<Question[]>;
   getQuestion(id: number): Promise<Question | undefined>;
   
   // Quizzes
@@ -35,7 +35,12 @@ export interface IStorage {
     averageScore: number;
     studyStreak: number;
     certifications: number;
+    passingRate: number; // Percentage of quizzes with 85%+ scores
   }>;
+  
+  // Lectures
+  createLecture(userId: number, quizId: number, missedTopics: string[]): Promise<any>;
+  getUserLectures(userId: number): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1638,17 +1643,18 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(subcategories);
   }
 
-  async getQuestionsByCategories(categoryIds: number[], subcategoryIds?: number[]): Promise<Question[]> {
+  async getQuestionsByCategories(categoryIds: number[], subcategoryIds?: number[], difficultyLevels?: number[]): Promise<Question[]> {
+    let conditions = [inArray(questions.categoryId, categoryIds)];
+    
     if (subcategoryIds && subcategoryIds.length > 0) {
-      return await db.select().from(questions).where(
-        and(
-          inArray(questions.categoryId, categoryIds),
-          inArray(questions.subcategoryId, subcategoryIds)
-        )
-      );
+      conditions.push(inArray(questions.subcategoryId, subcategoryIds));
     }
     
-    return await db.select().from(questions).where(inArray(questions.categoryId, categoryIds));
+    if (difficultyLevels && difficultyLevels.length > 0) {
+      conditions.push(inArray(questions.difficultyLevel, difficultyLevels));
+    }
+    
+    return await db.select().from(questions).where(and(...conditions));
   }
 
   async getQuestion(id: number): Promise<Question | undefined> {
@@ -1713,6 +1719,7 @@ export class DatabaseStorage implements IStorage {
     averageScore: number;
     studyStreak: number;
     certifications: number;
+    passingRate: number;
   }> {
     const userQuizzes = await this.getUserQuizzes(userId);
     const completedQuizzes = userQuizzes.filter(quiz => quiz.completedAt);
@@ -1720,6 +1727,12 @@ export class DatabaseStorage implements IStorage {
     const totalQuizzes = completedQuizzes.length;
     const averageScore = totalQuizzes > 0 
       ? Math.round(completedQuizzes.reduce((sum, quiz) => sum + (quiz.score || 0), 0) / totalQuizzes)
+      : 0;
+    
+    // Calculate passing rate (85% threshold)
+    const passingQuizzes = completedQuizzes.filter(quiz => (quiz.score || 0) >= 85);
+    const passingRate = totalQuizzes > 0 
+      ? Math.round((passingQuizzes.length / totalQuizzes) * 100)
       : 0;
     
     // Simple streak calculation - consecutive days with quizzes
@@ -1733,7 +1746,8 @@ export class DatabaseStorage implements IStorage {
       totalQuizzes,
       averageScore,
       studyStreak,
-      certifications
+      certifications,
+      passingRate
     };
   }
 
@@ -1874,6 +1888,88 @@ export class DatabaseStorage implements IStorage {
 
     // Cap the increase at 2x the original count
     return Math.min(Math.ceil(baseCount * multiplier), baseCount * 2);
+  }
+
+  // Lecture generation methods
+  async createLecture(userId: number, quizId: number, missedTopics: string[]): Promise<any> {
+    // Get quiz details for context
+    const quiz = await this.getQuiz(quizId);
+    if (!quiz) return null;
+
+    // Get category information
+    const [category] = await db.select().from(categories).where(eq(categories.id, (quiz.categoryIds as number[])[0]));
+    if (!category) return null;
+
+    // Generate lecture content based on missed topics
+    const lectureContent = this.generateLectureContent(category.name, missedTopics);
+
+    const [lecture] = await db.insert(lectures).values({
+      userId,
+      quizId,
+      title: `Study Guide: ${category.name} - Missed Topics`,
+      content: lectureContent,
+      topics: missedTopics,
+      categoryId: category.id,
+      subcategoryId: null
+    }).returning();
+
+    return lecture;
+  }
+
+  async getUserLectures(userId: number): Promise<any[]> {
+    return await db.select().from(lectures)
+      .where(eq(lectures.userId, userId))
+      .orderBy(desc(lectures.createdAt));
+  }
+
+  private generateLectureContent(categoryName: string, missedTopics: string[]): string {
+    // AI-generated lecture content template
+    const content = `
+# ${categoryName} Study Guide - Focus Areas
+
+## Overview
+Based on your recent quiz performance, this personalized study guide focuses on the topics where you need additional practice.
+
+## Key Topics to Review
+
+${missedTopics.map((topic, index) => `
+### ${index + 1}. ${topic}
+
+**Core Concepts:**
+- Understand the fundamental principles of ${topic.toLowerCase()}
+- Review best practices and industry standards
+- Practice identifying common scenarios and applications
+
+**Study Tips:**
+- Review official certification guides for detailed explanations
+- Practice with additional questions in this topic area
+- Consider hands-on labs or practical exercises
+
+**Key Points to Remember:**
+- ${topic} is a critical component of cybersecurity
+- Focus on real-world application scenarios
+- Understand both theoretical concepts and practical implementation
+
+---
+`).join('')}
+
+## Recommended Actions
+1. **Review Materials**: Study official certification guides for these specific topics
+2. **Practice Questions**: Take additional quizzes focusing on these areas
+3. **Hands-on Practice**: Apply concepts in practical scenarios when possible
+4. **Schedule Review**: Plan regular review sessions to reinforce learning
+
+## Additional Resources
+- Official certification study guides
+- Industry best practice documents
+- Practical labs and simulations
+- Peer study groups and forums
+
+---
+*This study guide was generated based on your quiz performance on ${new Date().toLocaleDateString()}*
+`;
+
+    return content.trim();
   }
 }
 
