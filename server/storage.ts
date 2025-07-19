@@ -1,8 +1,9 @@
 import { 
-  users, categories, subcategories, questions, quizzes, userProgress, lectures,
+  users, categories, subcategories, questions, quizzes, userProgress, lectures, masteryScores,
   type User, type InsertUser, type Category, type InsertCategory,
   type Subcategory, type InsertSubcategory, type Question, type InsertQuestion,
-  type Quiz, type InsertQuiz, type UserProgress, type InsertUserProgress
+  type Quiz, type InsertQuiz, type UserProgress, type InsertUserProgress,
+  type MasteryScore, type InsertMasteryScore
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, gte, lte } from "drizzle-orm";
@@ -36,11 +37,17 @@ export interface IStorage {
     studyStreak: number;
     certifications: number;
     passingRate: number; // Percentage of quizzes with 85%+ scores
+    masteryScore: number; // 0-100 percentage based on rolling average across all areas
   }>;
   
   // Lectures
   createLecture(userId: number, quizId: number, missedTopics: string[]): Promise<any>;
   getUserLectures(userId: number): Promise<any[]>;
+  
+  // Mastery scores
+  updateMasteryScore(userId: number, categoryId: number, subcategoryId: number, isCorrect: boolean): Promise<void>;
+  getUserMasteryScores(userId: number): Promise<MasteryScore[]>;
+  calculateOverallMasteryScore(userId: number): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1720,6 +1727,7 @@ export class DatabaseStorage implements IStorage {
     studyStreak: number;
     certifications: number;
     passingRate: number;
+    masteryScore: number;
   }> {
     const userQuizzes = await this.getUserQuizzes(userId);
     const completedQuizzes = userQuizzes.filter(quiz => quiz.completedAt);
@@ -1742,12 +1750,16 @@ export class DatabaseStorage implements IStorage {
     const progress = await this.getUserProgress(userId);
     const certifications = progress.filter(p => p.averageScore > 80).length;
     
+    // Calculate overall mastery score (0-100%)
+    const masteryScore = await this.calculateOverallMasteryScore(userId);
+    
     return {
       totalQuizzes,
       averageScore,
       studyStreak,
       certifications,
-      passingRate
+      passingRate,
+      masteryScore
     };
   }
 
@@ -1970,6 +1982,106 @@ ${missedTopics.map((topic, index) => `
 `;
 
     return content.trim();
+  }
+
+  // Mastery Score Methods - Rolling average across all certification areas
+  async updateMasteryScore(userId: number, categoryId: number, subcategoryId: number, isCorrect: boolean): Promise<void> {
+    // Find existing mastery score record
+    const [existing] = await db.select().from(masteryScores).where(
+      and(
+        eq(masteryScores.userId, userId), 
+        eq(masteryScores.categoryId, categoryId),
+        eq(masteryScores.subcategoryId, subcategoryId)
+      )
+    );
+
+    if (existing) {
+      // Update existing record
+      const newTotalAnswers = existing.totalAnswers + 1;
+      const newCorrectAnswers = existing.correctAnswers + (isCorrect ? 1 : 0);
+      const newRollingAverage = Math.round((newCorrectAnswers / newTotalAnswers) * 100);
+
+      await db.update(masteryScores)
+        .set({
+          totalAnswers: newTotalAnswers,
+          correctAnswers: newCorrectAnswers,
+          rollingAverage: newRollingAverage,
+          lastUpdated: new Date()
+        })
+        .where(
+          and(
+            eq(masteryScores.userId, userId),
+            eq(masteryScores.categoryId, categoryId),
+            eq(masteryScores.subcategoryId, subcategoryId)
+          )
+        );
+    } else {
+      // Create new record
+      const rollingAverage = isCorrect ? 100 : 0;
+      await db.insert(masteryScores).values({
+        userId,
+        categoryId,
+        subcategoryId,
+        totalAnswers: 1,
+        correctAnswers: isCorrect ? 1 : 0,
+        rollingAverage
+      });
+    }
+  }
+
+  async getUserMasteryScores(userId: number): Promise<MasteryScore[]> {
+    return await db.select().from(masteryScores).where(eq(masteryScores.userId, userId));
+  }
+
+  async calculateOverallMasteryScore(userId: number): Promise<number> {
+    const masteryScoreRecords = await this.getUserMasteryScores(userId);
+    
+    if (masteryScoreRecords.length === 0) {
+      return 0;
+    }
+
+    // Calculate weighted average based on total answers per area
+    let totalWeightedScore = 0;
+    let totalWeight = 0;
+
+    for (const record of masteryScoreRecords) {
+      const weight = record.totalAnswers;
+      totalWeightedScore += record.rollingAverage * weight;
+      totalWeight += weight;
+    }
+
+    return totalWeight > 0 ? Math.round(totalWeightedScore / totalWeight) : 0;
+  }
+
+  // Override updateQuiz to update mastery scores when quiz is completed
+  async updateQuiz(id: number, updates: Partial<Quiz>): Promise<Quiz> {
+    const [updatedQuiz] = await db.update(quizzes)
+      .set(updates)
+      .where(eq(quizzes.id, id))
+      .returning();
+
+    // If quiz is being completed with answers, update mastery scores
+    if (updates.completedAt && updates.answers && Array.isArray(updates.answers)) {
+      const quiz = await this.getQuiz(id);
+      if (quiz) {
+        const quizQuestions = await this.getQuizQuestions(id);
+        
+        for (let i = 0; i < quizQuestions.length && i < updates.answers.length; i++) {
+          const question = quizQuestions[i];
+          const answer = updates.answers[i] as any;
+          const isCorrect = answer.correct === true;
+          
+          await this.updateMasteryScore(
+            quiz.userId, 
+            question.categoryId, 
+            question.subcategoryId, 
+            isCorrect
+          );
+        }
+      }
+    }
+
+    return updatedQuiz;
   }
 }
 

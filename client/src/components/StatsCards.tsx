@@ -26,11 +26,11 @@ export default function StatsCards() {
 
   const statsData = [
     {
-      title: "Total Quizzes",
-      value: stats?.totalQuizzes || 0,
-      icon: "fas fa-clipboard-list",
-      bgColor: "bg-primary bg-opacity-10",
-      iconColor: "text-primary"
+      title: "Mastery Score",
+      value: `${stats?.masteryScore || 0}%`,
+      icon: "fas fa-brain",
+      bgColor: stats?.masteryScore >= 80 ? "bg-purple-100" : stats?.masteryScore >= 60 ? "bg-orange-100" : "bg-red-100",
+      iconColor: stats?.masteryScore >= 80 ? "text-purple-600" : stats?.masteryScore >= 60 ? "text-orange-600" : "text-red-600"
     },
     {
       title: "Average Score",

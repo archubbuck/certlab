@@ -72,6 +72,18 @@ export const userProgress = pgTable("user_progress", {
   weakSubcategories: jsonb("weak_subcategories"), // Array of struggling subcategory IDs
 });
 
+// Mastery tracking for rolling average across all certification areas
+export const masteryScores = pgTable("mastery_scores", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  categoryId: integer("category_id").notNull(),
+  subcategoryId: integer("subcategory_id").notNull(),
+  correctAnswers: integer("correct_answers").notNull().default(0),
+  totalAnswers: integer("total_answers").notNull().default(0),
+  rollingAverage: integer("rolling_average").notNull().default(0), // 0-100 percentage
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
 // Lectures table for AI-generated content based on missed topics
 export const lectures = pgTable("lectures", {
   id: serial("id").primaryKey(),
@@ -118,6 +130,11 @@ export const insertUserProgressSchema = createInsertSchema(userProgress).omit({
   id: true,
 });
 
+export const insertMasteryScoreSchema = createInsertSchema(masteryScores).omit({
+  id: true,
+  lastUpdated: true,
+});
+
 // Login schema
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -156,3 +173,5 @@ export type UserProgress = typeof userProgress.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type CreateQuizData = z.infer<typeof createQuizSchema>;
 export type SubmitAnswerData = z.infer<typeof submitAnswerSchema>;
+export type InsertMasteryScore = z.infer<typeof insertMasteryScoreSchema>;
+export type MasteryScore = typeof masteryScores.$inferSelect;

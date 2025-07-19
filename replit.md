@@ -167,6 +167,13 @@ Core entities include:
   - **Shareable Links**: Lectures accessible via `/api/lecture/:id` for collaborative learning
   - **Comprehensive Study Guides**: Includes core concepts, study tips, and recommended actions
   - **Database Integration**: Lectures stored with user tracking and read status
+- **Mastery Score System**: Rolling average percentage (0-100%) based on correct/incorrect answers across all certification areas
+  - **Cross-Area Tracking**: User progress contributes to overall mastery score regardless of selected certifications
+  - **Rolling Average Calculation**: Weighted average based on total answers per area for balanced scoring
+  - **Real-time Updates**: Mastery score automatically updates when quizzes are completed
+  - **Color-coded Dashboard Display**: Purple (≥80%), Orange (≥60%), Red (<60%) visual feedback
+  - **Database Schema**: New `masteryScores` table tracks performance by category and subcategory
+  - **Comprehensive Learning Journey**: User selects areas → takes quizzes → answers contribute to mastery score
 - **Database Integration**: Migrated from in-memory storage to PostgreSQL database
   - Added `server/db.ts` with Drizzle database configuration
   - Updated `DatabaseStorage` class to use actual database queries
