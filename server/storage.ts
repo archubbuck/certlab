@@ -339,6 +339,102 @@ export class DatabaseStorage implements IStorage {
       }
     ]);
 
+    // Add more questions to categories with fewer questions
+    addQuestionsForSubcategory("CC", "Network Security", [
+      {
+        text: "What is the PRIMARY purpose of a firewall in network security?",
+        options: [
+          { text: "To encrypt network traffic", id: 0 },
+          { text: "To control network traffic based on predetermined security rules", id: 1 },
+          { text: "To provide user authentication", id: 2 },
+          { text: "To backup network configurations", id: 3 }
+        ],
+        correctAnswer: 1,
+        explanation: "A firewall's primary purpose is to control network traffic by allowing or blocking data packets based on predetermined security rules."
+      },
+      {
+        text: "Which protocol is commonly used to secure web traffic?",
+        options: [
+          { text: "HTTP", id: 0 },
+          { text: "FTP", id: 1 },
+          { text: "HTTPS", id: 2 },
+          { text: "SMTP", id: 3 }
+        ],
+        correctAnswer: 2,
+        explanation: "HTTPS (HTTP Secure) uses SSL/TLS encryption to secure web traffic between browsers and servers."
+      }
+    ]);
+
+    addQuestionsForSubcategory("CC", "Security Operations", [
+      {
+        text: "What is the purpose of logging in security operations?",
+        options: [
+          { text: "To reduce system performance", id: 0 },
+          { text: "To provide an audit trail for security events and incidents", id: 1 },
+          { text: "To increase network bandwidth usage", id: 2 },
+          { text: "To complicate system administration", id: 3 }
+        ],
+        correctAnswer: 1,
+        explanation: "Security logging provides an audit trail that helps detect, investigate, and respond to security events and incidents."
+      }
+    ]);
+
+    addQuestionsForSubcategory("CISSP", "Communication & Network Security", [
+      {
+        text: "What is the difference between a hub and a switch in networking?",
+        options: [
+          { text: "There is no difference", id: 0 },
+          { text: "A hub operates at the physical layer while a switch operates at the data link layer", id: 1 },
+          { text: "A switch is slower than a hub", id: 2 },
+          { text: "A hub is more secure than a switch", id: 3 }
+        ],
+        correctAnswer: 1,
+        explanation: "A hub operates at Layer 1 (physical) and broadcasts to all ports, while a switch operates at Layer 2 (data link) and sends traffic only to the intended recipient."
+      }
+    ]);
+
+    addQuestionsForSubcategory("CISSP", "Identity & Access Management", [
+      {
+        text: "What does SSO (Single Sign-On) provide?",
+        options: [
+          { text: "Enhanced password complexity", id: 0 },
+          { text: "Authentication to multiple systems with one set of credentials", id: 1 },
+          { text: "Automatic password generation", id: 2 },
+          { text: "Biometric authentication only", id: 3 }
+        ],
+        correctAnswer: 1,
+        explanation: "SSO allows users to authenticate once and gain access to multiple systems without re-entering credentials."
+      }
+    ]);
+
+    addQuestionsForSubcategory("Cloud+", "Cloud Deployment", [
+      {
+        text: "What is the main advantage of Infrastructure as Code (IaC)?",
+        options: [
+          { text: "It reduces security risks", id: 0 },
+          { text: "It enables consistent, repeatable deployments through code", id: 1 },
+          { text: "It eliminates the need for monitoring", id: 2 },
+          { text: "It automatically fixes configuration errors", id: 3 }
+        ],
+        correctAnswer: 1,
+        explanation: "IaC allows infrastructure to be provisioned and managed through code, enabling consistent and repeatable deployments."
+      }
+    ]);
+
+    addQuestionsForSubcategory("Cloud+", "Operations & Support", [
+      {
+        text: "What is cloud monitoring primarily used for?",
+        options: [
+          { text: "Reducing cloud costs only", id: 0 },
+          { text: "Tracking performance, availability, and resource utilization", id: 1 },
+          { text: "Encrypting data in transit", id: 2 },
+          { text: "Managing user permissions", id: 3 }
+        ],
+        correctAnswer: 1,
+        explanation: "Cloud monitoring tracks various metrics including performance, availability, and resource utilization to ensure optimal operations."
+      }
+    ]);
+
     // CISA Certification Questions (1,540 total)
     addQuestionsForSubcategory("CISA", "Information Systems Auditing Process", [
       {
@@ -362,6 +458,46 @@ export class DatabaseStorage implements IStorage {
         ],
         correctAnswer: 1,
         explanation: "The planning phase is when auditors establish the scope, objectives, and approach for the audit."
+      },
+      {
+        text: "What is the most important factor when prioritizing audit findings?",
+        options: [
+          { text: "The complexity of the issue", id: 0 },
+          { text: "The risk and impact to the organization", id: 1 },
+          { text: "The cost to remediate", id: 2 },
+          { text: "The time required to fix", id: 3 }
+        ],
+        correctAnswer: 1,
+        explanation: "Audit findings should be prioritized based on their risk and potential impact to the organization."
+      }
+    ]);
+
+    // Add more CISM questions
+    addQuestionsForSubcategory("CISM", "Information Security Program", [
+      {
+        text: "What is the PRIMARY benefit of having an information security program?",
+        options: [
+          { text: "To comply with regulatory requirements", id: 0 },
+          { text: "To provide a structured approach to managing information security risks", id: 1 },
+          { text: "To reduce IT operational costs", id: 2 },
+          { text: "To eliminate all security threats", id: 3 }
+        ],
+        correctAnswer: 1,
+        explanation: "An information security program provides a structured, systematic approach to managing information security risks across the organization."
+      }
+    ]);
+
+    addQuestionsForSubcategory("CISM", "Incident Management & Response", [
+      {
+        text: "What is the FIRST step in incident response?",
+        options: [
+          { text: "Containment", id: 0 },
+          { text: "Detection and analysis", id: 1 },
+          { text: "Eradication", id: 2 },
+          { text: "Recovery", id: 3 }
+        ],
+        correctAnswer: 1,
+        explanation: "Detection and analysis is the first step in incident response, where the incident is identified and assessed."
       }
     ]);
 
