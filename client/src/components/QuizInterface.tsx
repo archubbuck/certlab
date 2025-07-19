@@ -24,6 +24,8 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | undefined>();
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
 
   const { data: quiz } = useQuery<Quiz>({
     queryKey: ['/api/quiz', quizId],
@@ -81,11 +83,13 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
     return () => clearInterval(timer);
   }, [timeRemaining]);
 
-  // Load saved answer when question changes
+  // Load saved answer when question changes and reset feedback
   useEffect(() => {
     const currentQuestion = questions[currentQuestionIndex];
     if (currentQuestion) {
       setSelectedAnswer(answers[currentQuestion.id]);
+      setShowFeedback(false);
+      setIsCorrect(false);
     }
   }, [currentQuestionIndex, questions, answers]);
 
@@ -101,6 +105,11 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
         ...prev,
         [currentQuestion.id]: answerValue
       }));
+
+      // Show immediate feedback
+      const correct = answerValue === currentQuestion.correctAnswer;
+      setIsCorrect(correct);
+      setShowFeedback(true);
     }
   };
 
@@ -207,24 +216,93 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
               onValueChange={handleAnswerChange}
               className="space-y-3"
             >
-              {(currentQuestion.options as any[]).map((option, index) => (
-                <div
-                  key={`${currentQuestion.id}-option-${index}`}
-                  className="flex items-start space-x-3 p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary hover:bg-opacity-5 transition-all"
-                >
-                  <RadioGroupItem 
-                    value={index.toString()} 
-                    id={`question-${currentQuestion.id}-option-${index}`}
-                  />
-                  <Label 
-                    htmlFor={`question-${currentQuestion.id}-option-${index}`} 
-                    className="text-gray-700 cursor-pointer flex-1"
-                  >
-                    {option.text}
-                  </Label>
-                </div>
-              ))}
+              {(currentQuestion.options as any[]).map((option, index) => {
+                const isSelectedAnswer = selectedAnswer === index;
+                const isCorrectAnswer = index === currentQuestion.correctAnswer;
+                
+                let optionClassName = "flex items-start space-x-3 p-4 border rounded-lg transition-all";
+                
+                if (showFeedback && isSelectedAnswer) {
+                  if (isCorrect) {
+                    optionClassName += " border-green-500 bg-green-50";
+                  } else {
+                    optionClassName += " border-red-500 bg-red-50";
+                  }
+                } else if (showFeedback && isCorrectAnswer && !isCorrect) {
+                  optionClassName += " border-green-400 bg-green-25";
+                } else if (isSelectedAnswer && !showFeedback) {
+                  optionClassName += " border-primary bg-primary bg-opacity-5";
+                } else {
+                  optionClassName += " border-gray-200 hover:border-primary hover:bg-primary hover:bg-opacity-5";
+                }
+
+                return (
+                  <div key={`${currentQuestion.id}-option-${index}`} className={optionClassName}>
+                    <RadioGroupItem 
+                      value={index.toString()} 
+                      id={`question-${currentQuestion.id}-option-${index}`}
+                    />
+                    <Label 
+                      htmlFor={`question-${currentQuestion.id}-option-${index}`} 
+                      className="text-gray-700 cursor-pointer flex-1"
+                    >
+                      {option.text}
+                      {showFeedback && isSelectedAnswer && (
+                        <div className="mt-2 flex items-center space-x-2">
+                          {isCorrect ? (
+                            <i className="fas fa-check-circle text-green-600"></i>
+                          ) : (
+                            <i className="fas fa-times-circle text-red-600"></i>
+                          )}
+                          <span className={`text-sm font-medium ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                            {isCorrect ? 'Correct!' : 'Incorrect'}
+                          </span>
+                        </div>
+                      )}
+                      {showFeedback && isCorrectAnswer && !isCorrect && (
+                        <div className="mt-2 flex items-center space-x-2">
+                          <i className="fas fa-check-circle text-green-600"></i>
+                          <span className="text-sm font-medium text-green-700">Correct Answer</span>
+                        </div>
+                      )}
+                    </Label>
+                  </div>
+                );
+              })}
             </RadioGroup>
+
+            {/* Immediate Feedback Explanation */}
+            {showFeedback && currentQuestion.explanation && (
+              <div className={`mt-6 p-4 rounded-lg border ${
+                isCorrect 
+                  ? 'border-green-200 bg-green-50' 
+                  : 'border-red-200 bg-red-50'
+              }`}>
+                <div className="flex items-start space-x-3">
+                  <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                    isCorrect ? 'bg-green-100' : 'bg-red-100'
+                  }`}>
+                    <i className={`fas text-sm ${
+                      isCorrect 
+                        ? 'fa-lightbulb text-green-600' 
+                        : 'fa-info-circle text-red-600'
+                    }`}></i>
+                  </div>
+                  <div className="flex-1">
+                    <h5 className={`font-medium mb-2 ${
+                      isCorrect ? 'text-green-800' : 'text-red-800'
+                    }`}>
+                      {isCorrect ? 'Why this is correct:' : 'Why this is incorrect:'}
+                    </h5>
+                    <p className={`text-sm leading-relaxed ${
+                      isCorrect ? 'text-green-700' : 'text-red-700'
+                    }`}>
+                      {currentQuestion.explanation}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Question Navigation */}

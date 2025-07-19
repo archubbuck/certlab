@@ -18,10 +18,7 @@ export default function QuizCreator() {
   
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
-  const [questionCount, setQuestionCount] = useState("20");
   const [timeLimit, setTimeLimit] = useState("30");
-  const [isAdaptive, setIsAdaptive] = useState(false);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null);
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -34,13 +31,7 @@ export default function QuizCreator() {
 
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: any) => {
-      let endpoint = "/api/quiz";
-      if (isAdaptive) {
-        endpoint = "/api/quiz/adaptive";
-      } else if (selectedDifficulty !== null) {
-        endpoint = "/api/quiz/filtered";
-      }
-      const response = await apiRequest({ method: "POST", endpoint, data: quizData });
+      const response = await apiRequest({ method: "POST", endpoint: "/api/quiz", data: quizData });
       return response.json();
     },
     onSuccess: (quiz) => {
@@ -89,9 +80,7 @@ export default function QuizCreator() {
     }
   };
 
-  const handleDifficultySelect = (level: number) => {
-    setSelectedDifficulty(selectedDifficulty === level ? null : level);
-  };
+
 
   const handleStartQuiz = () => {
     if (selectedCategories.length === 0) {
@@ -113,14 +102,12 @@ export default function QuizCreator() {
     }
 
     const quizData = {
-      title: `${categories.filter(c => selectedCategories.includes(c.id)).map(c => c.name).join(", ")} Quiz`,
+      title: `${categories.filter(c => selectedCategories.includes(c.id)).map(c => c.name).join(", ")} Learning Session`,
       categoryIds: selectedCategories,
       subcategoryIds: selectedSubcategories.length > 0 ? selectedSubcategories : undefined,
-      questionCount: parseInt(questionCount),
+      questionCount: 10, // Default continuous learning session size
       timeLimit: timeLimit === "0" ? undefined : parseInt(timeLimit),
       userId: currentUser.id,
-      isAdaptive: isAdaptive,
-      difficultyLevels: selectedDifficulty !== null ? [selectedDifficulty] : undefined,
     };
 
     createQuizMutation.mutate(quizData);
@@ -195,121 +182,30 @@ export default function QuizCreator() {
           </div>
         )}
 
-        {/* Quiz Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">
-              Number of Questions
-            </Label>
-            <Select value={questionCount} onValueChange={setQuestionCount}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10 Questions</SelectItem>
-                <SelectItem value="20">20 Questions</SelectItem>
-                <SelectItem value="30">30 Questions</SelectItem>
-                <SelectItem value="50">50 Questions</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">
-              Time Limit
-            </Label>
-            <Select value={timeLimit} onValueChange={setTimeLimit}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="15">15 minutes</SelectItem>
-                <SelectItem value="30">30 minutes</SelectItem>
-                <SelectItem value="45">45 minutes</SelectItem>
-                <SelectItem value="60">60 minutes</SelectItem>
-                <SelectItem value="0">No time limit</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* HELEN Difficulty Filter */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200">
+        {/* Learning Session Information */}
+        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
           <div className="flex items-center space-x-3 mb-3">
-            <i className="fas fa-layer-group text-orange-600"></i>
+            <i className="fas fa-brain text-blue-600"></i>
             <div>
-              <h4 className="font-medium text-gray-900">Difficulty Filter</h4>
+              <h4 className="font-medium text-gray-900">Continuous Learning Session</h4>
               <p className="text-sm text-gray-600">
-                Select a difficulty level to focus your practice (optional)
+                Start learning with immediate feedback on your selected areas
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-5 gap-2 mt-3">
-            {[1, 2, 3, 4, 5].map((level) => (
-              <button
-                key={level}
-                type="button"
-                onClick={() => handleDifficultySelect(level)}
-                className={`flex flex-col items-center p-2 rounded transition-all ${
-                  selectedDifficulty === level
-                    ? 'bg-orange-100 border-orange-300 border-2'
-                    : 'bg-white border border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                <div className={`w-4 h-4 rounded-full mb-1 ${
-                  selectedDifficulty === level ? 'bg-orange-600' : 'bg-gray-300'
-                }`}></div>
-                <span className="text-xs font-medium">Level {level}</span>
-                <span className="text-xs text-gray-500">
-                  {level === 1 ? 'Basic' : level === 2 ? 'Easy' : level === 3 ? 'Medium' : level === 4 ? 'Hard' : 'Expert'}
-                </span>
-              </button>
-            ))}
+          <div className="bg-white p-3 rounded border border-blue-100">
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li><i className="fas fa-check text-green-500 mr-2"></i>Questions from your selected certifications</li>
+              <li><i className="fas fa-check text-green-500 mr-2"></i>Immediate feedback with explanations</li>
+              <li><i className="fas fa-check text-green-500 mr-2"></i>Progress tracking across all areas</li>
+              <li><i className="fas fa-check text-green-500 mr-2"></i>Mastery score updates in real-time</li>
+            </ul>
           </div>
-          {selectedDifficulty && (
-            <div className="mt-3 p-2 bg-orange-100 rounded text-center">
-              <span className="text-sm text-orange-800">
-                Selected: Level {selectedDifficulty} ({selectedDifficulty === 1 ? 'Basic' : selectedDifficulty === 2 ? 'Easy' : selectedDifficulty === 3 ? 'Medium' : selectedDifficulty === 4 ? 'Hard' : 'Expert'})
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Adaptive Learning Toggle */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <i className="fas fa-brain text-blue-600"></i>
-              <div>
-                <h4 className="font-medium text-gray-900">Adaptive Learning</h4>
-                <p className="text-sm text-gray-600">
-                  Automatically increases question count when you get answers wrong
-                </p>
-              </div>
-            </div>
-            <Checkbox
-              checked={isAdaptive}
-              onCheckedChange={setIsAdaptive}
-            />
-          </div>
-          {isAdaptive && (
-            <div className="mt-3 p-3 bg-white rounded border border-blue-100">
-              <p className="text-xs text-gray-700">
-                <i className="fas fa-info-circle text-blue-500 mr-2"></i>
-                When enabled, the system analyzes your performance and may add up to 100% more questions to areas where you're struggling.
-              </p>
-            </div>
-          )}
-          {selectedDifficulty !== null && isAdaptive && (
-            <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
-              <p className="text-xs text-yellow-800">
-                <i className="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
-                Note: Adaptive learning overrides difficulty filters
-              </p>
-            </div>
-          )}
-        </div>
 
-        {/* Start Quiz Button */}
+
+        {/* Start Learning Button */}
         <Button
           onClick={handleStartQuiz}
           disabled={createQuizMutation.isPending || selectedCategories.length === 0}
@@ -318,12 +214,12 @@ export default function QuizCreator() {
           {createQuizMutation.isPending ? (
             <div className="flex items-center space-x-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              <span>Creating Quiz...</span>
+              <span>Starting Learning Session...</span>
             </div>
           ) : (
             <div className="flex items-center justify-center space-x-2">
-              <i className="fas fa-play"></i>
-              <span>Start Quiz</span>
+              <i className="fas fa-brain"></i>
+              <span>Start Learning Session</span>
             </div>
           )}
         </Button>

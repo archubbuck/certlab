@@ -110,6 +110,15 @@ Core entities include:
 - **Production**: Serves static files from Express with API routes
 
 ### Recent Changes (July 19, 2025)
+- **Continuous Learning Architecture**: Removed difficulty selection and question count features for streamlined continuous learning
+  - **Simplified Quiz Creation**: Users select only certifications and focus areas, no complexity barriers
+  - **Learning Sessions**: Renamed from "quiz" to emphasize continuous educational approach (10 questions default)
+  - **Immediate Feedback System**: Real-time answer feedback with visual indicators and detailed explanations
+    - Green highlighting and checkmarks for correct answers with positive explanations
+    - Red highlighting and X marks for incorrect answers with educational corrections
+    - Correct answer shown when user selects wrong option for complete learning
+    - Color-coded explanation boxes with contextual messaging for optimal learning experience
+  - **Educational Focus**: Emphasis on learning through immediate feedback rather than testing/scoring pressure
 - **HELEN System Implementation**: Highly Efficient Learning Engine for Next-Gen Certification
   - **Optimized Study Time**: AI-driven analytics identify weak areas and focus study efforts efficiently
   - **Adaptive Learning Paths**: Personalized study plans with dynamic question count adjustment
