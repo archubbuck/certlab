@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack web application for cybersecurity certification training called "SecuraCert". It's built with a React frontend and Express.js backend, featuring a quiz-based learning platform where users can take practice exams for various cybersecurity certifications.
+This is HELEN (Highly Efficient Learning Engine for Next-Gen Certification) - a comprehensive full-stack web application for cybersecurity certification training. Built with a React frontend and Express.js backend, HELEN features an intelligent quiz-based learning platform with adaptive learning, difficulty filtering, pass/fail tracking, and AI-generated study materials for various cybersecurity certifications.
 
 ## User Preferences
 

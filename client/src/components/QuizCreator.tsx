@@ -21,7 +21,7 @@ export default function QuizCreator() {
   const [questionCount, setQuestionCount] = useState("20");
   const [timeLimit, setTimeLimit] = useState("30");
   const [isAdaptive, setIsAdaptive] = useState(false);
-  const [selectedDifficulties, setSelectedDifficulties] = useState<number[]>([]);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null);
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -37,7 +37,7 @@ export default function QuizCreator() {
       let endpoint = "/api/quiz";
       if (isAdaptive) {
         endpoint = "/api/quiz/adaptive";
-      } else if (selectedDifficulties.length > 0) {
+      } else if (selectedDifficulty !== null) {
         endpoint = "/api/quiz/filtered";
       }
       const response = await apiRequest({ method: "POST", endpoint, data: quizData });
@@ -89,12 +89,8 @@ export default function QuizCreator() {
     }
   };
 
-  const handleDifficultyToggle = (level: number, checked: boolean) => {
-    if (checked) {
-      setSelectedDifficulties([...selectedDifficulties, level]);
-    } else {
-      setSelectedDifficulties(selectedDifficulties.filter(l => l !== level));
-    }
+  const handleDifficultySelect = (level: number) => {
+    setSelectedDifficulty(selectedDifficulty === level ? null : level);
   };
 
   const handleStartQuiz = () => {
@@ -124,7 +120,7 @@ export default function QuizCreator() {
       timeLimit: timeLimit === "0" ? undefined : parseInt(timeLimit),
       userId: currentUser.id,
       isAdaptive: isAdaptive,
-      difficultyLevels: selectedDifficulties.length > 0 ? selectedDifficulties : undefined,
+      difficultyLevels: selectedDifficulty !== null ? [selectedDifficulty] : undefined,
     };
 
     createQuizMutation.mutate(quizData);
@@ -141,7 +137,7 @@ export default function QuizCreator() {
           Create New Quiz
         </CardTitle>
         <p className="text-gray-600 text-sm">
-          Select categories and start practicing for your security certifications
+          HELEN - Highly Efficient Learning Engine for Next-Gen Certification
         </p>
       </CardHeader>
 
@@ -236,39 +232,46 @@ export default function QuizCreator() {
           </div>
         </div>
 
-        {/* Difficulty Filter */}
+        {/* HELEN Difficulty Filter */}
         <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200">
           <div className="flex items-center space-x-3 mb-3">
             <i className="fas fa-layer-group text-orange-600"></i>
             <div>
-              <h4 className="font-medium text-gray-900">Difficulty Filter (HELEN System)</h4>
+              <h4 className="font-medium text-gray-900">Difficulty Filter</h4>
               <p className="text-sm text-gray-600">
-                Select specific difficulty levels to focus your practice
+                Select a difficulty level to focus your practice (optional)
               </p>
             </div>
           </div>
           <div className="grid grid-cols-5 gap-2 mt-3">
             {[1, 2, 3, 4, 5].map((level) => (
-              <label
+              <button
                 key={level}
-                className={`flex flex-col items-center p-2 rounded cursor-pointer transition-all ${
-                  selectedDifficulties.includes(level)
+                type="button"
+                onClick={() => handleDifficultySelect(level)}
+                className={`flex flex-col items-center p-2 rounded transition-all ${
+                  selectedDifficulty === level
                     ? 'bg-orange-100 border-orange-300 border-2'
                     : 'bg-white border border-gray-200 hover:bg-gray-50'
                 }`}
               >
-                <Checkbox
-                  checked={selectedDifficulties.includes(level)}
-                  onCheckedChange={(checked) => handleDifficultyToggle(level, checked as boolean)}
-                  className="mb-1"
-                />
+                <div className={`w-4 h-4 rounded-full mb-1 ${
+                  selectedDifficulty === level ? 'bg-orange-600' : 'bg-gray-300'
+                }`}></div>
                 <span className="text-xs font-medium">Level {level}</span>
                 <span className="text-xs text-gray-500">
                   {level === 1 ? 'Basic' : level === 2 ? 'Easy' : level === 3 ? 'Medium' : level === 4 ? 'Hard' : 'Expert'}
                 </span>
-              </label>
+              </button>
             ))}
           </div>
+          {selectedDifficulty && (
+            <div className="mt-3 p-2 bg-orange-100 rounded text-center">
+              <span className="text-sm text-orange-800">
+                Selected: Level {selectedDifficulty} ({selectedDifficulty === 1 ? 'Basic' : selectedDifficulty === 2 ? 'Easy' : selectedDifficulty === 3 ? 'Medium' : selectedDifficulty === 4 ? 'Hard' : 'Expert'})
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Adaptive Learning Toggle */}
@@ -296,7 +299,7 @@ export default function QuizCreator() {
               </p>
             </div>
           )}
-          {selectedDifficulties.length > 0 && isAdaptive && (
+          {selectedDifficulty !== null && isAdaptive && (
             <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
               <p className="text-xs text-yellow-800">
                 <i className="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
