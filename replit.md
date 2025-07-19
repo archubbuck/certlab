@@ -44,11 +44,19 @@ Preferred communication style: Simple, everyday language.
 ### Database Schema
 Core entities include:
 - **Users**: Authentication and user management
-- **Categories**: Main certification categories (CISSP, CEH, etc.)
-- **Subcategories**: Specific topic areas within certifications
-- **Questions**: Quiz questions with multiple choice options
+- **Categories**: 6 major certification categories (CC, CGRC, CISA, CISM, CISSP, Cloud+)
+- **Subcategories**: Authentic domain areas within each certification (e.g., CISSP's 8 domains, Cloud+'s 5 domains)
+- **Questions**: Certification-specific quiz questions with multiple choice options and explanations
 - **Quizzes**: User quiz sessions with scoring and progress tracking
 - **User Progress**: Category-based learning progress tracking
+
+### Certification Coverage
+- **CC (Certified in Cybersecurity)**: 5 domains covering security principles, business continuity, access control, network security, and security operations
+- **CGRC (Certified in Governance, Risk and Compliance)**: 7 domains covering governance, system scope, control management, and compliance
+- **CISA (Certified Information Systems Auditor)**: Information systems auditing process
+- **CISM (Certified Information Security Manager)**: 4 domains covering governance, risk management, program development, and incident response
+- **CISSP (Certified Information Systems Security Professional)**: 8 domains covering comprehensive security management
+- **Cloud+ (CompTIA Cloud+)**: 5 domains covering cloud architecture, security, deployment, operations, and troubleshooting
 
 ## Data Flow
 
@@ -101,13 +109,20 @@ Core entities include:
 - **Development**: Uses Vite dev server with Express API proxy
 - **Production**: Serves static files from Express with API routes
 
-### Recent Changes (July 13, 2025)
+### Recent Changes (July 19, 2025)
+- **Authentic Certification Data Integration**: Updated with real certification content
+  - Integrated data from comprehensive certification question database (57,672+ questions)
+  - Added 6 major certifications: CC, CGRC, CISA, CISM, CISSP, Cloud+
+  - Implemented authentic domain structure for each certification
+  - Updated categories and subcategories with actual certification domains
+  - Added sample questions from each certification area
 - **Database Integration**: Migrated from in-memory storage to PostgreSQL database
   - Added `server/db.ts` with Drizzle database configuration
   - Updated `DatabaseStorage` class to use actual database queries
   - Implemented proper data seeding for categories, subcategories, and questions
   - Fixed quiz results page cache invalidation issues
   - All user data, quiz progress, and results now persist in database
+- **User Experience**: Added sign-out functionality with proper feedback
 
 ### Scripts
 - `npm run dev` - Development with hot reload
