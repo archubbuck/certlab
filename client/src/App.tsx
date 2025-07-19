@@ -9,6 +9,7 @@ import Login from "@/pages/login";
 import Quiz from "@/pages/quiz";
 import Results from "@/pages/results";
 import Review from "@/pages/review";
+import Lecture from "@/pages/lecture";
 import { localStorage } from "@/lib/localStorage";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/quiz/:id" component={Quiz} />
       <Route path="/results/:id" component={Results} />
       <Route path="/review/:id" component={Review} />
+      <Route path="/lecture/:id" component={Lecture} />
       <Route component={NotFound} />
     </Switch>
   );

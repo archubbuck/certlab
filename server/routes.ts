@@ -370,8 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/lecture/:id", async (req, res) => {
     try {
       const lectureId = parseInt(req.params.id);
-      const lectures = await storage.getUserLectures(1); // Get all lectures for now
-      const lecture = lectures.find(l => l.id === lectureId);
+      const lecture = await storage.getLecture(lectureId);
       
       if (!lecture) {
         return res.status(404).json({ message: "Lecture not found" });

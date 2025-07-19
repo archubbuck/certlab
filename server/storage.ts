@@ -1934,6 +1934,12 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(lectures.createdAt));
   }
 
+  async getLecture(lectureId: number): Promise<any> {
+    const [lecture] = await db.select().from(lectures)
+      .where(eq(lectures.id, lectureId));
+    return lecture;
+  }
+
   private generateLectureContent(categoryName: string, missedTopics: string[]): string {
     // AI-generated lecture content template
     const content = `
