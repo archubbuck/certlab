@@ -60,22 +60,44 @@ export default function ActivitySidebar() {
         <CardContent className="p-4 space-y-3">
           {completedQuizzes.length > 0 ? (
             completedQuizzes.map((quiz) => (
-              <div key={quiz.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <h4 className="text-sm font-medium text-gray-900">
-                    {getCategoryName(quiz.categoryIds as number[])}
-                  </h4>
-                  <p className="text-xs text-gray-500">
-                    {formatDate(quiz.completedAt!)}
-                  </p>
+              <div key={quiz.id} className="p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-gray-900">
+                      {getCategoryName(quiz.categoryIds as number[])}
+                    </h4>
+                    <p className="text-xs text-gray-500">
+                      {formatDate(quiz.completedAt!)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-lg font-bold ${getScoreColor(quiz.score || 0)}`}>
+                      {quiz.score}%
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {quiz.correctAnswers}/{quiz.totalQuestions || quiz.questionCount}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className={`text-lg font-bold ${getScoreColor(quiz.score || 0)}`}>
-                    {quiz.score}%
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {quiz.correctAnswers}/{quiz.totalQuestions}
-                  </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = `/review/${quiz.id}`}
+                    className="flex-1 text-xs"
+                  >
+                    <i className="fas fa-eye mr-1"></i>
+                    Review
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = `/results/${quiz.id}`}
+                    className="flex-1 text-xs"
+                  >
+                    <i className="fas fa-chart-bar mr-1"></i>
+                    Results
+                  </Button>
                 </div>
               </div>
             ))

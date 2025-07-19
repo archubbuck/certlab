@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import Quiz from "@/pages/quiz";
 import Results from "@/pages/results";
+import Review from "@/pages/review";
 import { localStorage } from "@/lib/localStorage";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/quiz/:id" component={Quiz} />
       <Route path="/results/:id" component={Results} />
+      <Route path="/review/:id" component={Review} />
       <Route component={NotFound} />
     </Switch>
   );

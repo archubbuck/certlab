@@ -207,9 +207,8 @@ export default function Results() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => window.location.reload()}
+                onClick={() => setLocation(`/review/${quizId}`)}
                 className="flex-1"
-                disabled
               >
                 <i className="fas fa-eye mr-2"></i>
                 Review Answers
