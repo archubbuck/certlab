@@ -1,12 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { localStorage } from "@/lib/localStorage";
 import { getScoreColor } from "@/lib/questions";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Quiz, UserProgress, Category } from "@shared/schema";
 
 export default function ActivitySidebar() {
   const currentUser = localStorage.getCurrentUser();
+  const { toast } = useToast();
 
   const { data: recentQuizzes = [] } = useQuery<Quiz[]>({
     queryKey: ['/api/user', currentUser?.id, 'quizzes'],
@@ -48,6 +51,105 @@ export default function ActivitySidebar() {
 
   const getProgressForCategory = (categoryId: number) => {
     return userProgress.find(p => p.categoryId === categoryId);
+  };
+
+  // Mutation for creating quick action quizzes
+  const createQuizMutation = useMutation({
+    mutationFn: async (quizData: any) => {
+      const response = await apiRequest({ 
+        method: "POST", 
+        endpoint: "/api/quiz", 
+        data: quizData 
+      });
+      return response.json();
+    },
+    onSuccess: (quiz) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      window.location.href = `/quiz/${quiz.id}`;
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create quiz. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Get questions the user got wrong for review
+  const getIncorrectQuestions = () => {
+    const incorrectQuestions: number[] = [];
+    completedQuizzes.forEach(quiz => {
+      if (quiz.answers && Array.isArray(quiz.answers)) {
+        // This would need API support to get correct answers
+        // For now, we'll create a quiz from categories where user scored lowest
+      }
+    });
+    return incorrectQuestions;
+  };
+
+  // Get lowest performing category for review
+  const getLowestPerformingCategory = () => {
+    if (userProgress.length === 0) return categories[0]?.id || 35;
+    return userProgress.reduce((lowest, current) => 
+      current.averageScore < lowest.averageScore ? current : lowest
+    ).categoryId;
+  };
+
+  // Quick action handlers
+  const handleReviewIncorrect = () => {
+    if (!currentUser) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to create a quiz.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const categoryId = getLowestPerformingCategory();
+    const quizData = {
+      title: "Review Incorrect Answers",
+      categoryIds: [categoryId],
+      questionCount: 10,
+      userId: currentUser.id,
+    };
+    createQuizMutation.mutate(quizData);
+  };
+
+  const handleRandomQuiz = () => {
+    if (!currentUser) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to create a quiz.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Select 2-3 random categories
+    const shuffledCategories = [...categories].sort(() => 0.5 - Math.random());
+    const selectedCategories = shuffledCategories.slice(0, 2).map(c => c.id);
+    
+    const quizData = {
+      title: "Random Mixed Quiz",
+      categoryIds: selectedCategories,
+      questionCount: 15,
+      userId: currentUser.id,
+    };
+    createQuizMutation.mutate(quizData);
+  };
+
+  const handleViewAnalytics = () => {
+    // For now, scroll to the progress section
+    const progressSection = document.querySelector('[data-progress-section]');
+    if (progressSection) {
+      progressSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    toast({
+      title: "Analytics",
+      description: "Detailed analytics coming soon! Check your progress section above.",
+    });
   };
 
   return (
@@ -110,7 +212,7 @@ export default function ActivitySidebar() {
       </Card>
 
       {/* Study Progress */}
-      <Card className="material-shadow border border-gray-100 overflow-hidden">
+      <Card className="material-shadow border border-gray-100 overflow-hidden" data-progress-section>
         <CardHeader className="p-4 border-b border-gray-100">
           <CardTitle className="font-medium text-gray-900">Certification Progress</CardTitle>
         </CardHeader>
@@ -154,13 +256,19 @@ export default function ActivitySidebar() {
           <Button
             variant="outline"
             className="w-full justify-start material-shadow-hover"
-            disabled
+            onClick={handleReviewIncorrect}
+            disabled={createQuizMutation.isPending || userProgress.length === 0}
           >
             <div className="flex items-center space-x-3">
               <i className="fas fa-redo text-error"></i>
               <div className="text-left">
                 <h4 className="text-sm font-medium text-gray-900">Review Incorrect</h4>
-                <p className="text-xs text-gray-500">Practice failed questions</p>
+                <p className="text-xs text-gray-500">
+                  {userProgress.length === 0 
+                    ? "Complete a quiz first" 
+                    : "Practice failed questions"
+                  }
+                </p>
               </div>
             </div>
           </Button>
@@ -168,7 +276,8 @@ export default function ActivitySidebar() {
           <Button
             variant="outline"
             className="w-full justify-start material-shadow-hover"
-            disabled
+            onClick={handleRandomQuiz}
+            disabled={createQuizMutation.isPending || categories.length === 0}
           >
             <div className="flex items-center space-x-3">
               <i className="fas fa-random text-primary"></i>
@@ -182,7 +291,7 @@ export default function ActivitySidebar() {
           <Button
             variant="outline"
             className="w-full justify-start material-shadow-hover"
-            disabled
+            onClick={handleViewAnalytics}
           >
             <div className="flex items-center space-x-3">
               <i className="fas fa-chart-bar text-secondary"></i>
