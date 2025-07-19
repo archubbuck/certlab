@@ -211,11 +211,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const score = Math.round((correctAnswers / quiz.questionCount) * 100);
       
-      // Update quiz
+      // Update quiz with total questions count
       const updatedQuiz = await storage.updateQuiz(quizId, {
         answers: answers,
         score,
         correctAnswers,
+        totalQuestions: quiz.questionCount,
         completedAt: new Date()
       });
       

@@ -89,7 +89,8 @@ export default function Results() {
 
   const score = quiz.score || 0;
   const correctAnswers = quiz.correctAnswers || 0;
-  const totalQuestions = quiz.totalQuestions || 0;
+  // Use totalQuestions from quiz, fallback to questionCount if totalQuestions is null
+  const totalQuestions = quiz.totalQuestions || quiz.questionCount || 0;
   
   const formatDuration = (startTime: string, endTime: string) => {
     const start = new Date(startTime);
