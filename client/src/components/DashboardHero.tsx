@@ -152,45 +152,96 @@ export default function DashboardHero() {
         {/* HELEN AI Insights Header */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 p-6">
           <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
               <svg 
-                width="24" 
-                height="24" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                className="text-white animate-bounce"
+                width="32" 
+                height="32" 
+                viewBox="0 0 100 100" 
+                fill="none"
+                className="friendly-human-avatar"
                 style={{
-                  animation: 'gentle-float 3s ease-in-out infinite'
+                  animation: 'gentle-float 4s ease-in-out infinite'
                 }}
               >
-                {/* Friendly AI Avatar */}
-                <circle cx="12" cy="8" r="3" fill="currentColor" opacity="0.9">
-                  <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
-                </circle>
+                {/* Human Head */}
+                <ellipse cx="50" cy="45" rx="22" ry="25" fill="#fdbcb4" opacity="0.95">
+                  <animate attributeName="opacity" values="0.9;1;0.9" dur="3s" repeatCount="indefinite" />
+                </ellipse>
+                
+                {/* Hair */}
                 <path 
-                  d="M12 12c-2.5 0-4.5 1.5-4.5 3.5v2c0 0.5 0.5 1 1 1h7c0.5 0 1-0.5 1-1v-2c0-2-2-3.5-4.5-3.5z" 
-                  fill="currentColor" 
-                  opacity="0.8"
+                  d="M28 30 Q35 15 50 20 Q65 15 72 30 Q70 25 65 25 Q50 18 35 25 Q30 25 28 30" 
+                  fill="#8B4513" opacity="0.9"
                 >
-                  <animate attributeName="opacity" values="0.6;0.9;0.6" dur="2.5s" repeatCount="indefinite" />
+                  <animateTransform 
+                    attributeName="transform" 
+                    type="rotate" 
+                    values="0 50 30;1 50 30;-1 50 30;0 50 30" 
+                    dur="4s" 
+                    repeatCount="indefinite" 
+                  />
                 </path>
-                {/* Friendly eyes */}
-                <circle cx="10.5" cy="7.5" r="0.5" fill="white">
-                  <animate attributeName="r" values="0.5;0.3;0.5" dur="3s" repeatCount="indefinite" />
+                
+                {/* Left Eye */}
+                <ellipse cx="42" cy="40" rx="3" ry="4" fill="white">
+                  <animate attributeName="ry" values="4;0.5;4" dur="3s" repeatCount="indefinite" />
+                </ellipse>
+                <circle cx="43" cy="40" r="2" fill="#333">
+                  <animate attributeName="r" values="2;1.5;2" dur="3s" repeatCount="indefinite" />
                 </circle>
-                <circle cx="13.5" cy="7.5" r="0.5" fill="white">
-                  <animate attributeName="r" values="0.5;0.3;0.5" dur="3s" repeatCount="indefinite" />
+                
+                {/* Right Eye */}
+                <ellipse cx="58" cy="40" rx="3" ry="4" fill="white">
+                  <animate attributeName="ry" values="4;0.5;4" dur="3s" repeatCount="indefinite" />
+                </ellipse>
+                <circle cx="57" cy="40" r="2" fill="#333">
+                  <animate attributeName="r" values="2;1.5;2" dur="3s" repeatCount="indefinite" />
                 </circle>
-                {/* Thinking dots */}
-                <g opacity="0.6">
-                  <circle cx="8" cy="4" r="1" fill="currentColor">
-                    <animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite" begin="0s" />
+                
+                {/* Eyebrows */}
+                <path d="M38 35 Q42 33 46 35" stroke="#8B4513" strokeWidth="1.5" fill="none">
+                  <animate attributeName="d" values="M38 35 Q42 33 46 35;M38 34 Q42 32 46 34;M38 35 Q42 33 46 35" dur="2s" repeatCount="indefinite" />
+                </path>
+                <path d="M54 35 Q58 33 62 35" stroke="#8B4513" strokeWidth="1.5" fill="none">
+                  <animate attributeName="d" values="M54 35 Q58 33 62 35;M54 34 Q58 32 62 34;M54 35 Q58 33 62 35" dur="2s" repeatCount="indefinite" />
+                </path>
+                
+                {/* Nose */}
+                <ellipse cx="50" cy="47" rx="1.5" ry="2" fill="#f4a49a" opacity="0.8" />
+                
+                {/* Mouth - Friendly Smile */}
+                <path 
+                  d="M43 55 Q50 62 57 55" 
+                  stroke="#d63384" 
+                  strokeWidth="2" 
+                  fill="none" 
+                  strokeLinecap="round"
+                  opacity="0.9"
+                >
+                  <animate attributeName="d" values="M43 55 Q50 62 57 55;M43 56 Q50 61 57 56;M43 55 Q50 62 57 55" dur="4s" repeatCount="indefinite" />
+                </path>
+                
+                {/* Neck */}
+                <rect x="46" y="68" width="8" height="8" fill="#fdbcb4" opacity="0.9" />
+                
+                {/* Shirt/Collar */}
+                <path d="M42 76 L46 76 L50 80 L54 76 L58 76 L58 85 L42 85 Z" fill="#4a90e2" opacity="0.8">
+                  <animate attributeName="opacity" values="0.7;0.9;0.7" dur="3s" repeatCount="indefinite" />
+                </path>
+                
+                {/* Thinking bubbles */}
+                <g opacity="0.4">
+                  <circle cx="75" cy="25" r="2" fill="white">
+                    <animate attributeName="opacity" values="0;0.6;0" dur="2s" repeatCount="indefinite" begin="0s" />
+                    <animate attributeName="cy" values="25;20;25" dur="2s" repeatCount="indefinite" begin="0s" />
                   </circle>
-                  <circle cx="16" cy="4" r="1" fill="currentColor">
-                    <animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite" begin="0.5s" />
+                  <circle cx="80" cy="20" r="3" fill="white">
+                    <animate attributeName="opacity" values="0;0.8;0" dur="2s" repeatCount="indefinite" begin="0.7s" />
+                    <animate attributeName="cy" values="20;15;20" dur="2s" repeatCount="indefinite" begin="0.7s" />
                   </circle>
-                  <circle cx="12" cy="2" r="1" fill="currentColor">
-                    <animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite" begin="1s" />
+                  <circle cx="85" cy="15" r="4" fill="white">
+                    <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" begin="1.4s" />
+                    <animate attributeName="cy" values="15;10;15" dur="2s" repeatCount="indefinite" begin="1.4s" />
                   </circle>
                 </g>
               </svg>
