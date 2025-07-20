@@ -87,7 +87,7 @@ const UIStructurePage = () => {
     };
     routeHierarchy.forEach(addNode);
     return nodes;
-  }, []);
+  }, [routeHierarchy]);
 
   const selectedNode = allNodes[selectedNodeId];
 
@@ -171,7 +171,7 @@ const UIStructurePage = () => {
       
       return matchesRoute || matchesChildren;
     });
-  }, [searchTerm]);
+  }, [searchTerm, routeHierarchy]);
 
   // Tree navigation component
   const TreeNode = ({ node, level = 0 }: { node: RouteHierarchy; level?: number }) => {
@@ -333,9 +333,21 @@ const UIStructurePage = () => {
                 <CardContent className="p-0">
                   <ScrollArea className="h-[600px] px-4 pb-4">
                     <div className="space-y-1">
-                      {filteredRoutes.map(route => (
-                        <TreeNode key={route.id} node={route} />
-                      ))}
+                      {filteredRoutes.length > 0 ? (
+                        filteredRoutes.map(route => (
+                          <TreeNode key={route.id} node={route} />
+                        ))
+                      ) : routeHierarchy.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <div className="text-sm">No routes loaded yet...</div>
+                          <div className="text-xs mt-1">Data syncing: {structureData ? 'Complete' : 'In progress'}</div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <div className="text-sm">No routes match your search</div>
+                          <div className="text-xs mt-1">Try a different search term</div>
+                        </div>
+                      )}
                     </div>
                   </ScrollArea>
                 </CardContent>
