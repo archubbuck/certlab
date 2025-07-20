@@ -57,12 +57,22 @@ export default function DashboardHero() {
   });
 
   const handleQuickQuiz = (categoryId: number, mode: "study" | "quiz") => {
+    if (!currentUser) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to create a quiz.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCreatingQuiz(true);
     createQuickQuizMutation.mutate({
       title: `Quick ${mode === "quiz" ? "Assessment" : "Study"} - ${categories.find(c => c.id === categoryId)?.name}`,
       categoryIds: [categoryId],
       questionCount: mode === "quiz" ? 20 : 10,
       timeLimit: mode === "quiz" ? 30 : null,
+      userId: currentUser.id,
       mode: mode
     });
   };
