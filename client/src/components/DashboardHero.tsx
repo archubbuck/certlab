@@ -152,10 +152,10 @@ export default function DashboardHero() {
         {/* HELEN AI Insights Header */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 p-6">
           <div className="flex items-start space-x-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
               <svg 
-                width="48" 
-                height="48" 
+                width="80" 
+                height="80" 
                 viewBox="0 0 100 100" 
                 fill="none"
                 className="friendly-human-avatar"
