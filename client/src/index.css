@@ -109,3 +109,26 @@
     transform: translateY(-2px) rotate(-1deg); 
   }
 }
+
+@keyframes avatar-engage {
+  0%, 100% { 
+    transform: scale(1) translateY(0px); 
+  }
+  50% { 
+    transform: scale(1.02) translateY(-1px); 
+  }
+}
+
+@keyframes subtle-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+  }
+}
+
+/* Avatar container hover effects */
+.avatar-container:hover {
+  animation: avatar-engage 2s ease-in-out infinite, subtle-glow 3s ease-in-out infinite;
+}

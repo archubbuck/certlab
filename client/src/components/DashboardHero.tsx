@@ -152,13 +152,13 @@ export default function DashboardHero() {
         {/* HELEN AI Insights Header */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 p-6">
           <div className="flex items-start space-x-4">
-            <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden avatar-container group cursor-pointer transition-all duration-500 hover:shadow-lg hover:scale-105">
               <svg 
                 width="80" 
                 height="80" 
                 viewBox="0 0 120 120" 
                 fill="none"
-                className="instructor-avatar"
+                className="instructor-avatar transition-all duration-300 group-hover:scale-110"
                 style={{
                   animation: 'gentle-float 4s ease-in-out infinite'
                 }}
@@ -175,25 +175,54 @@ export default function DashboardHero() {
                 {/* Side part */}
                 <path d="M58 25 Q62 28 65 32" stroke="#A0522D" strokeWidth="1.5" fill="none" />
                 
-                {/* Eyes - realistic proportions */}
-                <ellipse cx="53" cy="45" rx="3" ry="2" fill="white" />
-                <ellipse cx="67" cy="45" rx="3" ry="2" fill="white" />
-                <circle cx="53" cy="45" r="1.8" fill="#4a4a4a" />
-                <circle cx="67" cy="45" r="1.8" fill="#4a4a4a" />
+                {/* Eyes - realistic proportions with micro-interactions */}
+                <ellipse cx="53" cy="45" rx="3" ry="2" fill="white" className="group-hover:animate-pulse" />
+                <ellipse cx="67" cy="45" rx="3" ry="2" fill="white" className="group-hover:animate-pulse" />
                 
-                {/* Eye highlights */}
-                <circle cx="53.5" cy="44.5" r="0.5" fill="white" />
-                <circle cx="67.5" cy="44.5" r="0.5" fill="white" />
+                {/* Interactive pupils */}
+                <circle cx="53" cy="45" r="1.8" fill="#4a4a4a" className="transition-all duration-300 group-hover:r-2">
+                  <animateTransform 
+                    attributeName="transform" 
+                    type="translate" 
+                    values="0,0; 0.5,-0.3; -0.3,0.4; 0,0" 
+                    dur="6s" 
+                    repeatCount="indefinite" 
+                  />
+                </circle>
+                <circle cx="67" cy="45" r="1.8" fill="#4a4a4a" className="transition-all duration-300 group-hover:r-2">
+                  <animateTransform 
+                    attributeName="transform" 
+                    type="translate" 
+                    values="0,0; 0.5,-0.3; -0.3,0.4; 0,0" 
+                    dur="6s" 
+                    repeatCount="indefinite" 
+                  />
+                </circle>
                 
-                {/* Natural eyebrows */}
-                <path d="M48 41 Q53 39 58 41" stroke="#654321" strokeWidth="1.5" strokeLinecap="round" />
-                <path d="M62 41 Q67 39 72 41" stroke="#654321" strokeWidth="1.5" strokeLinecap="round" />
+                {/* Eye highlights with shimmer effect */}
+                <circle cx="53.5" cy="44.5" r="0.5" fill="white">
+                  <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="67.5" cy="44.5" r="0.5" fill="white">
+                  <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
+                </circle>
+                
+                {/* Interactive eyebrows */}
+                <path d="M48 41 Q53 39 58 41" stroke="#654321" strokeWidth="1.5" strokeLinecap="round" className="transition-all duration-200">
+                  <animate attributeName="d" values="M48 41 Q53 39 58 41;M48 40 Q53 38 58 40;M48 41 Q53 39 58 41" dur="3s" repeatCount="indefinite" />
+                </path>
+                <path d="M62 41 Q67 39 72 41" stroke="#654321" strokeWidth="1.5" strokeLinecap="round" className="transition-all duration-200">
+                  <animate attributeName="d" values="M62 41 Q67 39 72 41;M62 40 Q67 38 72 40;M62 41 Q67 39 72 41" dur="3s" repeatCount="indefinite" />
+                </path>
                 
                 {/* Nose - subtle and natural */}
                 <path d="M60 48 L59 52 L61 52 Z" fill="#e6a584" />
                 
-                {/* Friendly smile */}
-                <path d="M55 58 Q60 62 65 58" stroke="#c85a5a" strokeWidth="2" strokeLinecap="round" fill="none" />
+                {/* Interactive friendly smile */}
+                <path d="M55 58 Q60 62 65 58" stroke="#c85a5a" strokeWidth="2" strokeLinecap="round" fill="none" className="transition-all duration-300">
+                  <animate attributeName="d" values="M55 58 Q60 62 65 58;M55 59 Q60 63 65 59;M55 58 Q60 62 65 58" dur="4s" repeatCount="indefinite" />
+                  <animate attributeName="stroke" values="#c85a5a;#d66b6b;#c85a5a" dur="2s" repeatCount="indefinite" />
+                </path>
                 
                 {/* Professional attire */}
                 <rect x="45" y="75" width="30" height="25" fill="#2c5aa0" rx="2" />
@@ -204,12 +233,36 @@ export default function DashboardHero() {
                 {/* Simple necklace */}
                 <circle cx="60" cy="70" r="2" fill="none" stroke="#cccccc" strokeWidth="0.8" />
                 
-                {/* Gentle blinking animation */}
-                <g>
+                {/* Enhanced blinking with micro-interactions */}
+                <g className="transition-opacity duration-300 group-hover:opacity-90">
                   <animate attributeName="opacity" values="1;1;0.3;1;1" dur="4s" repeatCount="indefinite" />
                   <rect x="50" y="44" width="6" height="2" fill="#f5c2a6" />
                   <rect x="64" y="44" width="6" height="2" fill="#f5c2a6" />
                 </g>
+                
+                {/* Interactive thinking particles */}
+                <g className="opacity-60 group-hover:opacity-90 transition-opacity duration-500">
+                  <circle cx="85" cy="25" r="1.5" fill="rgba(255,255,255,0.9)">
+                    <animate attributeName="opacity" values="0;0.8;0" dur="3s" repeatCount="indefinite" begin="0s" />
+                    <animate attributeName="cy" values="30;20;15" dur="3s" repeatCount="indefinite" begin="0s" />
+                    <animate attributeName="r" values="1;2;0.5" dur="3s" repeatCount="indefinite" begin="0s" />
+                  </circle>
+                  <circle cx="90" cy="20" r="2" fill="rgba(255,255,255,0.8)">
+                    <animate attributeName="opacity" values="0;1;0" dur="3s" repeatCount="indefinite" begin="1s" />
+                    <animate attributeName="cy" values="25;15;10" dur="3s" repeatCount="indefinite" begin="1s" />
+                    <animate attributeName="r" values="1.5;2.5;1" dur="3s" repeatCount="indefinite" begin="1s" />
+                  </circle>
+                  <circle cx="95" cy="15" r="2.5" fill="rgba(255,255,255,0.7)">
+                    <animate attributeName="opacity" values="0;1;0" dur="3s" repeatCount="indefinite" begin="2s" />
+                    <animate attributeName="cy" values="20;10;5" dur="3s" repeatCount="indefinite" begin="2s" />
+                    <animate attributeName="r" values="2;3;1.5" dur="3s" repeatCount="indefinite" begin="2s" />
+                  </circle>
+                </g>
+                
+                {/* Hover interaction feedback */}
+                <circle cx="60" cy="50" r="35" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" opacity="0" className="group-hover:opacity-100 transition-opacity duration-500">
+                  <animate attributeName="r" values="35;37;35" dur="2s" repeatCount="indefinite" />
+                </circle>
               </svg>
             </div>
             <div className="flex-1">
