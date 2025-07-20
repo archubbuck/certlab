@@ -256,12 +256,61 @@ class UIStructureSync {
   }
 
   getComponentsForRoute(routePrefix, components) {
-    const routeComponents = [];
+    const routeChildren = [];
+    
+    // First add the page component
+    const pageComponent = this.findPageComponent(routePrefix, components);
+    if (pageComponent) {
+      routeChildren.push(pageComponent);
+    }
+    
+    // Then add related components nested under the page
+    const relatedComponents = this.findRelatedComponents(routePrefix, components);
+    if (pageComponent && relatedComponents.length > 0) {
+      pageComponent.children = relatedComponents;
+    } else if (!pageComponent) {
+      // If no page component found, add components directly
+      routeChildren.push(...relatedComponents);
+    }
+
+    return routeChildren;
+  }
+
+  findPageComponent(routePrefix, components) {
+    // Look for the main page component (usually in pages/ directory)
+    const pageFile = `pages/${routePrefix}.tsx`;
+    
+    for (const [name, data] of components) {
+      if (data.file === pageFile || data.file.includes(`pages/${routePrefix}`)) {
+        return {
+          id: `${routePrefix}-page`,
+          label: routePrefix,
+          route: `/${routePrefix}`,
+          type: 'page',
+          description: `${routePrefix} component with ${data.apiCalls.length} API integrations`,
+          icon: 'FileText',
+          dependencies: ['React Components', 'UI Libraries'],
+          file: data.file,
+          hooks: data.hooks,
+          apiCalls: data.apiCalls,
+          children: [] // Will be populated with components
+        };
+      }
+    }
+    return null;
+  }
+
+  findRelatedComponents(routePrefix, components) {
+    const relatedComponents = [];
     
     components.forEach((data, name) => {
       const lowerName = name.toLowerCase();
       const lowerPrefix = routePrefix.toLowerCase();
       
+      // Skip if this is the page component itself
+      if (data.file.includes(`pages/${routePrefix}`)) return;
+      
+      // Check if component is related to this route
       if (lowerName.includes(lowerPrefix) || 
           data.file.toLowerCase().includes(lowerPrefix) ||
           (routePrefix === 'dashboard' && ['DashboardHero', 'ActivitySidebar', 'LearningModeSelector'].includes(name)) ||
@@ -269,13 +318,13 @@ class UIStructureSync {
           (routePrefix === 'admin' && name.toLowerCase().includes('admin')) ||
           (routePrefix === 'achievement' && ['AchievementBadges', 'AchievementProgress', 'LevelProgress'].includes(name))) {
         
-        routeComponents.push({
+        relatedComponents.push({
           id: name.toLowerCase().replace(/([A-Z])/g, '-$1').slice(1),
           label: name,
           route: this.inferRouteFromComponent(name, routePrefix),
-          type: data.type,
+          type: 'component',
           description: this.generateDescription(name, data),
-          icon: this.inferIcon(name, data.type || 'component'),
+          icon: 'Puzzle',
           dependencies: this.generateDependencies(data),
           file: data.file,
           hooks: data.hooks,
@@ -284,7 +333,7 @@ class UIStructureSync {
       }
     });
 
-    return routeComponents;
+    return relatedComponents;
   }
 
   inferRouteFromComponent(componentName, routePrefix) {

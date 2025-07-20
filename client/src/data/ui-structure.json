@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-07-20T17:58:23.789Z",
+  "lastUpdated": "2025-07-20T18:01:11.915Z",
   "generatedBy": "UIStructureSync",
   "routes": [
     {
@@ -11,7 +11,7 @@
       "icon": "Folder",
       "children": [
         {
-          "id": "ashboard",
+          "id": "dashboard-page",
           "label": "dashboard",
           "route": "/dashboard",
           "type": "page",
@@ -23,65 +23,67 @@
           ],
           "file": "pages/dashboard.tsx",
           "hooks": [],
-          "apiCalls": []
-        },
-        {
-          "id": "ctivitysidebar",
-          "label": "ActivitySidebar",
-          "route": "/dashboard",
-          "type": "component",
-          "description": "Recent quizzes, mastery scores, and quick actions",
-          "icon": "Puzzle",
-          "dependencies": [
-            "useToast",
-            "useMutation"
-          ],
-          "file": "components/ActivitySidebar.tsx",
-          "hooks": [
-            "useToast",
-            "useMutation"
-          ],
-          "apiCalls": []
-        },
-        {
-          "id": "ashboardhero",
-          "label": "DashboardHero",
-          "route": "/dashboard",
-          "type": "component",
-          "description": "Progress cards, AI assistant, and performance metrics",
-          "icon": "Puzzle",
-          "dependencies": [
-            "useToast",
-            "useMutation"
-          ],
-          "file": "components/DashboardHero.tsx",
-          "hooks": [
-            "useLocation",
-            "useToast",
-            "useState",
-            "useMutation"
-          ],
-          "apiCalls": []
-        },
-        {
-          "id": "earningmodeselector",
-          "label": "LearningModeSelector",
-          "route": "/dashboard",
-          "type": "component",
-          "description": "Certification selection and quiz configuration",
-          "icon": "Puzzle",
-          "dependencies": [
-            "useToast",
-            "useMutation"
-          ],
-          "file": "components/LearningModeSelector.tsx",
-          "hooks": [
-            "useLocation",
-            "useToast",
-            "useState",
-            "useMutation"
-          ],
-          "apiCalls": []
+          "apiCalls": [],
+          "children": [
+            {
+              "id": "ctivitysidebar",
+              "label": "ActivitySidebar",
+              "route": "/dashboard",
+              "type": "component",
+              "description": "Recent quizzes, mastery scores, and quick actions",
+              "icon": "Puzzle",
+              "dependencies": [
+                "useToast",
+                "useMutation"
+              ],
+              "file": "components/ActivitySidebar.tsx",
+              "hooks": [
+                "useToast",
+                "useMutation"
+              ],
+              "apiCalls": []
+            },
+            {
+              "id": "ashboardhero",
+              "label": "DashboardHero",
+              "route": "/dashboard",
+              "type": "component",
+              "description": "Progress cards, AI assistant, and performance metrics",
+              "icon": "Puzzle",
+              "dependencies": [
+                "useToast",
+                "useMutation"
+              ],
+              "file": "components/DashboardHero.tsx",
+              "hooks": [
+                "useLocation",
+                "useToast",
+                "useState",
+                "useMutation"
+              ],
+              "apiCalls": []
+            },
+            {
+              "id": "earningmodeselector",
+              "label": "LearningModeSelector",
+              "route": "/dashboard",
+              "type": "component",
+              "description": "Certification selection and quiz configuration",
+              "icon": "Puzzle",
+              "dependencies": [
+                "useToast",
+                "useMutation"
+              ],
+              "file": "components/LearningModeSelector.tsx",
+              "hooks": [
+                "useLocation",
+                "useToast",
+                "useState",
+                "useMutation"
+              ],
+              "apiCalls": []
+            }
+          ]
         }
       ],
       "serverEndpoints": [
@@ -104,9 +106,9 @@
       "icon": "Folder",
       "children": [
         {
-          "id": "uiz",
+          "id": "quiz-page",
           "label": "quiz",
-          "route": "/quiz/:id",
+          "route": "/quiz",
           "type": "page",
           "description": "quiz component with 0 API integrations",
           "icon": "FileText",
@@ -118,48 +120,50 @@
           "hooks": [
             "useRoute"
           ],
-          "apiCalls": []
-        },
-        {
-          "id": "uizcreator",
-          "label": "QuizCreator",
-          "route": "/quiz/:id",
-          "type": "component",
-          "description": "QuizCreator component with 0 API integrations",
-          "icon": "Puzzle",
-          "dependencies": [
-            "useToast",
-            "useMutation"
-          ],
-          "file": "components/QuizCreator.tsx",
-          "hooks": [
-            "useLocation",
-            "useToast",
-            "useState",
-            "useMutation"
-          ],
-          "apiCalls": []
-        },
-        {
-          "id": "uizinterface",
-          "label": "QuizInterface",
-          "route": "/quiz/:id",
-          "type": "component",
-          "description": "Question display, answer selection, and real-time feedback",
-          "icon": "Puzzle",
-          "dependencies": [
-            "useToast",
-            "useMutation"
-          ],
-          "file": "components/QuizInterface.tsx",
-          "hooks": [
-            "useLocation",
-            "useToast",
-            "useState",
-            "useMutation",
-            "useEffect"
-          ],
-          "apiCalls": []
+          "apiCalls": [],
+          "children": [
+            {
+              "id": "uizcreator",
+              "label": "QuizCreator",
+              "route": "/quiz/:id",
+              "type": "component",
+              "description": "QuizCreator component with 0 API integrations",
+              "icon": "Puzzle",
+              "dependencies": [
+                "useToast",
+                "useMutation"
+              ],
+              "file": "components/QuizCreator.tsx",
+              "hooks": [
+                "useLocation",
+                "useToast",
+                "useState",
+                "useMutation"
+              ],
+              "apiCalls": []
+            },
+            {
+              "id": "uizinterface",
+              "label": "QuizInterface",
+              "route": "/quiz/:id",
+              "type": "component",
+              "description": "Question display, answer selection, and real-time feedback",
+              "icon": "Puzzle",
+              "dependencies": [
+                "useToast",
+                "useMutation"
+              ],
+              "file": "components/QuizInterface.tsx",
+              "hooks": [
+                "useLocation",
+                "useToast",
+                "useState",
+                "useMutation",
+                "useEffect"
+              ],
+              "apiCalls": []
+            }
+          ]
         }
       ],
       "serverEndpoints": [
@@ -190,15 +194,15 @@
       "icon": "Folder",
       "children": [
         {
-          "id": "dmin",
+          "id": "admin-page",
           "label": "admin",
           "route": "/admin",
           "type": "page",
           "description": "admin component with 0 API integrations",
           "icon": "FileText",
           "dependencies": [
-            "useMutation",
-            "useToast"
+            "React Components",
+            "UI Libraries"
           ],
           "file": "pages/admin.tsx",
           "hooks": [
@@ -208,7 +212,8 @@
             "useToast",
             "useQueryClient"
           ],
-          "apiCalls": []
+          "apiCalls": [],
+          "children": []
         }
       ],
       "serverEndpoints": []
@@ -222,11 +227,11 @@
       "icon": "Folder",
       "children": [
         {
-          "id": "chievements",
-          "label": "achievements",
+          "id": "achievement-page",
+          "label": "achievement",
           "route": "/achievement",
           "type": "page",
-          "description": "achievements component with 0 API integrations",
+          "description": "achievement component with 0 API integrations",
           "icon": "FileText",
           "dependencies": [
             "React Components",
@@ -234,70 +239,72 @@
           ],
           "file": "pages/achievements.tsx",
           "hooks": [],
-          "apiCalls": []
-        },
-        {
-          "id": "chievementbadges",
-          "label": "AchievementBadges",
-          "route": "/achievement",
-          "type": "component",
-          "description": "Badge display with progress indicators and categories",
-          "icon": "Puzzle",
-          "dependencies": [
-            "React Components",
-            "UI Libraries"
-          ],
-          "file": "components/AchievementBadges.tsx",
-          "hooks": [],
-          "apiCalls": []
-        },
-        {
-          "id": "chievementnotification",
-          "label": "AchievementNotification",
-          "route": "/achievement",
-          "type": "component",
-          "description": "AchievementNotification component with 0 API integrations",
-          "icon": "Puzzle",
-          "dependencies": [
-            "React Components",
-            "UI Libraries"
-          ],
-          "file": "components/AchievementNotification.tsx",
-          "hooks": [
-            "useState",
-            "useEffect"
-          ],
-          "apiCalls": []
-        },
-        {
-          "id": "chievementprogress",
-          "label": "AchievementProgress",
-          "route": "/achievement",
-          "type": "component",
-          "description": "AchievementProgress component with 0 API integrations",
-          "icon": "Puzzle",
-          "dependencies": [
-            "React Components",
-            "UI Libraries"
-          ],
-          "file": "components/AchievementProgress.tsx",
-          "hooks": [],
-          "apiCalls": []
-        },
-        {
-          "id": "evelprogress",
-          "label": "LevelProgress",
-          "route": "/achievement",
-          "type": "component",
-          "description": "XP tracking, level progression, and motivational display",
-          "icon": "Puzzle",
-          "dependencies": [
-            "React Components",
-            "UI Libraries"
-          ],
-          "file": "components/LevelProgress.tsx",
-          "hooks": [],
-          "apiCalls": []
+          "apiCalls": [],
+          "children": [
+            {
+              "id": "chievementbadges",
+              "label": "AchievementBadges",
+              "route": "/achievement",
+              "type": "component",
+              "description": "Badge display with progress indicators and categories",
+              "icon": "Puzzle",
+              "dependencies": [
+                "React Components",
+                "UI Libraries"
+              ],
+              "file": "components/AchievementBadges.tsx",
+              "hooks": [],
+              "apiCalls": []
+            },
+            {
+              "id": "chievementnotification",
+              "label": "AchievementNotification",
+              "route": "/achievement",
+              "type": "component",
+              "description": "AchievementNotification component with 0 API integrations",
+              "icon": "Puzzle",
+              "dependencies": [
+                "React Components",
+                "UI Libraries"
+              ],
+              "file": "components/AchievementNotification.tsx",
+              "hooks": [
+                "useState",
+                "useEffect"
+              ],
+              "apiCalls": []
+            },
+            {
+              "id": "chievementprogress",
+              "label": "AchievementProgress",
+              "route": "/achievement",
+              "type": "component",
+              "description": "AchievementProgress component with 0 API integrations",
+              "icon": "Puzzle",
+              "dependencies": [
+                "React Components",
+                "UI Libraries"
+              ],
+              "file": "components/AchievementProgress.tsx",
+              "hooks": [],
+              "apiCalls": []
+            },
+            {
+              "id": "evelprogress",
+              "label": "LevelProgress",
+              "route": "/achievement",
+              "type": "component",
+              "description": "XP tracking, level progression, and motivational display",
+              "icon": "Puzzle",
+              "dependencies": [
+                "React Components",
+                "UI Libraries"
+              ],
+              "file": "components/LevelProgress.tsx",
+              "hooks": [],
+              "apiCalls": []
+            }
+          ]
         }
       ],
       "serverEndpoints": []
@@ -311,7 +318,7 @@
       "icon": "Folder",
       "children": [
         {
-          "id": "ccessibility",
+          "id": "accessibility-page",
           "label": "accessibility",
           "route": "/accessibility",
           "type": "page",
@@ -323,7 +330,8 @@
           ],
           "file": "pages/accessibility.tsx",
           "hooks": [],
-          "apiCalls": []
+          "apiCalls": [],
+          "children": []
         }
       ],
       "serverEndpoints": []
@@ -337,15 +345,15 @@
       "icon": "Folder",
       "children": [
         {
-          "id": "ogin",
+          "id": "login-page",
           "label": "login",
           "route": "/login",
           "type": "page",
           "description": "login component with 0 API integrations",
           "icon": "FileText",
           "dependencies": [
-            "useToast",
-            "useMutation"
+            "React Components",
+            "UI Libraries"
           ],
           "file": "pages/login.tsx",
           "hooks": [
@@ -353,7 +361,8 @@
             "useToast",
             "useMutation"
           ],
-          "apiCalls": []
+          "apiCalls": [],
+          "children": []
         }
       ],
       "serverEndpoints": []
