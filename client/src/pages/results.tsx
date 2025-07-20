@@ -98,8 +98,10 @@ export default function Results() {
   const formatDuration = (startTime: string | Date, endTime: string | Date) => {
     const start = startTime instanceof Date ? startTime : new Date(startTime);
     const end = endTime instanceof Date ? endTime : new Date(endTime);
-    const diffMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
-    return `${Math.floor(diffMinutes / 60)}:${(diffMinutes % 60).toString().padStart(2, '0')}`;
+    const diffSeconds = Math.round((end.getTime() - start.getTime()) / 1000);
+    const minutes = Math.floor(diffSeconds / 60);
+    const seconds = diffSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const getCategoryName = (categoryIds: number[]) => {

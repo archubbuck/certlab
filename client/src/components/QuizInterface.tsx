@@ -147,10 +147,14 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
   };
 
   const handleSubmitQuiz = () => {
-    const quizAnswers = questions.map(question => ({
-      questionId: question.id,
-      answer: answers[question.id] || 0,
-    }));
+    const quizAnswers = questions.map(question => {
+      const answer = answers[question.id];
+      console.log(`Question ${question.id}: answer in state = ${answer}, using = ${answer !== undefined ? answer : 0}`);
+      return {
+        questionId: question.id,
+        answer: answer !== undefined ? answer : 0,
+      };
+    });
 
     console.log('Submitting quiz answers:', quizAnswers);
     console.log('Current answers state:', answers);
@@ -246,13 +250,15 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
             {/* Answer Options */}
             <RadioGroup
               key={currentQuestion.id} // Force re-render when question changes
-              value={selectedAnswer?.toString() || ""}
+              value={selectedAnswer !== undefined ? selectedAnswer.toString() : ""}
               onValueChange={handleAnswerChange}
               className="space-y-3"
             >
               {(currentQuestion.options as any[]).map((option, index) => {
-                const isSelectedAnswer = selectedAnswer === index;
-                const isCorrectAnswer = index === currentQuestion.correctAnswer;
+                // Use option.id if available, otherwise use index
+                const optionId = option.id !== undefined ? option.id : index;
+                const isSelectedAnswer = selectedAnswer === optionId;
+                const isCorrectAnswer = optionId === currentQuestion.correctAnswer;
                 
                 let optionClassName = "flex items-start space-x-3 p-3 sm:p-4 border-2 rounded-lg transition-all";
                 
@@ -272,16 +278,16 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
 
                 return (
                   <div 
-                    key={`${currentQuestion.id}-option-${index}`} 
+                    key={`${currentQuestion.id}-option-${optionId}`} 
                     className={`${optionClassName} cursor-pointer`}
-                    onClick={() => !showFeedback && handleAnswerChange(index.toString())}
+                    onClick={() => !showFeedback && handleAnswerChange(optionId.toString())}
                   >
                     <RadioGroupItem 
-                      value={index.toString()} 
-                      id={`question-${currentQuestion.id}-option-${index}`}
+                      value={optionId.toString()} 
+                      id={`question-${currentQuestion.id}-option-${optionId}`}
                     />
                     <Label 
-                      htmlFor={`question-${currentQuestion.id}-option-${index}`} 
+                      htmlFor={`question-${currentQuestion.id}-option-${optionId}`} 
                       className="text-foreground cursor-pointer flex-1 text-sm sm:text-base"
                     >
                       {option.text}

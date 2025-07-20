@@ -460,6 +460,13 @@ Core entities include:
 - **User Experience**: Added sign-out functionality with proper feedback
 - **Quality Assurance**: All questions are authentic, professional-grade certification practice questions with detailed explanations
 
+### Recent Bug Fix (July 20, 2025)
+- **Quiz Scoring Issue Resolution**: Fixed critical bug where all quiz submissions were showing 0% scores
+  - Problem: Quiz options were using database IDs (0,1,2,3) but the UI was incorrectly mapping them using array indices
+  - Solution: Updated QuizInterface component to properly use option.id instead of array index when handling RadioGroup selections
+  - Fixed time display showing "0:01" by correcting formatDuration function to calculate seconds instead of minutes
+  - All quiz scoring now works correctly with proper answer mapping
+
 ### Scripts
 - `npm run dev` - Development with hot reload
 - `npm run build` - Production build
