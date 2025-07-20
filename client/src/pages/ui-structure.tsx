@@ -62,24 +62,24 @@ const CustomNode = ({ data }: { data: UINodeData }) => {
   };
 
   return (
-    <div className={`px-4 py-3 shadow-lg rounded-lg border-2 border-white bg-white min-w-[120px] ${getNodeColor(data.type)} bg-opacity-10`}>
+    <div className={`px-4 py-3 shadow-lg rounded-lg border-2 border-white bg-white w-[140px] ${getNodeColor(data.type)} bg-opacity-10`}>
       <Handle type="target" position={Position.Top} className="w-2 h-2" />
       
-      <div className="flex items-center space-x-2 mb-1">
-        <div className={`w-6 h-6 rounded-full ${getNodeColor(data.type)} flex items-center justify-center text-white`}>
+      <div className="flex items-center space-x-2 mb-2">
+        <div className={`w-6 h-6 rounded-full ${getNodeColor(data.type)} flex items-center justify-center text-white flex-shrink-0`}>
           {getNodeIcon(data.type)}
         </div>
-        <div className="text-sm font-semibold text-gray-800">{data.label}</div>
+        <div className="text-sm font-semibold text-gray-800 truncate">{data.label}</div>
       </div>
       
-      <div className="text-xs text-gray-600">
+      <div className="text-xs text-gray-600 mb-2">
         <Badge variant="secondary" className="text-xs">
           {data.type}
         </Badge>
       </div>
       
       {data.description && (
-        <div className="text-xs text-gray-500 mt-2 line-clamp-2">
+        <div className="text-xs text-gray-500 line-clamp-3 h-12 overflow-hidden">
           {data.description}
         </div>
       )}
@@ -98,28 +98,67 @@ export default function UIStructurePage() {
 
   // Generate initial nodes and edges
   const { initialNodes, initialEdges } = useMemo(() => {
+    const nodeSpacing = 180; // Minimum spacing between nodes
+    const levelSpacing = 160; // Vertical spacing between levels
+    const nodeWidth = 140; // Approximate node width
+    const startY = 80; // Starting Y position
+
+    const calculateNodePositions = (nodeData: any[]) => {
+      // Group nodes by level
+      const nodesByLevel: { [level: number]: any[] } = {};
+      nodeData.forEach(node => {
+        if (!nodesByLevel[node.level]) {
+          nodesByLevel[node.level] = [];
+        }
+        nodesByLevel[node.level].push(node);
+      });
+
+      // Calculate positions with proper spacing
+      const positionedNodes: any[] = [];
+      
+      Object.keys(nodesByLevel).forEach(levelStr => {
+        const level = parseInt(levelStr);
+        const levelNodes = nodesByLevel[level];
+        const totalWidth = (levelNodes.length - 1) * nodeSpacing;
+        const startX = Math.max(100, (800 - totalWidth) / 2); // Center horizontally with minimum margin
+        const y = startY + (level * levelSpacing);
+        
+        levelNodes.forEach((node, index) => {
+          const x = startX + (index * nodeSpacing);
+          positionedNodes.push({
+            ...node,
+            x,
+            y
+          });
+        });
+      });
+
+      return positionedNodes;
+    };
+
     const nodeData = [
       // Level 0
-      { id: 'app', label: 'SecuraCert App', type: 'app', level: 0, description: 'Root application container', x: 400, y: 50 },
+      { id: 'app', label: 'SecuraCert App', type: 'app', level: 0, description: 'Root application container' },
       
       // Level 1
-      { id: 'providers', label: 'Providers', type: 'provider', level: 1, description: 'Application providers', x: 200, y: 200 },
-      { id: 'router', label: 'Router', type: 'router', level: 1, description: 'Wouter routing system', x: 600, y: 200 },
+      { id: 'providers', label: 'Providers', type: 'provider', level: 1, description: 'Application providers' },
+      { id: 'router', label: 'Router', type: 'router', level: 1, description: 'Wouter routing system' },
       
       // Level 2
-      { id: 'query-client', label: 'Query Client', type: 'provider', level: 2, description: 'TanStack Query for data fetching', x: 100, y: 350 },
-      { id: 'theme-provider', label: 'Theme Provider', type: 'provider', level: 2, description: '7 theme system with localStorage', x: 250, y: 350 },
-      { id: 'tooltip-provider', label: 'Tooltip Provider', type: 'provider', level: 2, description: 'Radix UI tooltips', x: 400, y: 350 },
-      
-      { id: 'auth-check', label: 'Auth Check', type: 'router', level: 2, description: 'Authentication guard', x: 550, y: 350 },
-      { id: 'routes', label: 'Protected Routes', type: 'router', level: 2, description: 'Authenticated user routes', x: 700, y: 350 },
+      { id: 'query-client', label: 'Query Client', type: 'provider', level: 2, description: 'TanStack Query for data fetching' },
+      { id: 'theme-provider', label: 'Theme Provider', type: 'provider', level: 2, description: '7 theme system with localStorage' },
+      { id: 'tooltip-provider', label: 'Tooltip Provider', type: 'provider', level: 2, description: 'Radix UI tooltips' },
+      { id: 'auth-check', label: 'Auth Check', type: 'router', level: 2, description: 'Authentication guard' },
+      { id: 'routes', label: 'Protected Routes', type: 'router', level: 2, description: 'Authenticated user routes' },
       
       // Level 3 (selective key routes)
-      { id: 'login-page', label: 'Login Page', type: 'page', level: 3, description: 'User authentication', x: 450, y: 500 },
-      { id: 'dashboard', label: 'Dashboard', type: 'page', level: 3, description: 'Main dashboard page', x: 600, y: 500 },
-      { id: 'quiz-routes', label: 'Quiz Routes', type: 'router', level: 3, description: 'Learning session pages', x: 750, y: 500 },
-      { id: 'admin', label: 'Admin Dashboard', type: 'page', level: 3, description: 'Multi-tenant administration', x: 900, y: 500 },
+      { id: 'login-page', label: 'Login Page', type: 'page', level: 3, description: 'User authentication' },
+      { id: 'dashboard', label: 'Dashboard', type: 'page', level: 3, description: 'Main dashboard page' },
+      { id: 'quiz-routes', label: 'Quiz Routes', type: 'router', level: 3, description: 'Learning session pages' },
+      { id: 'admin', label: 'Admin Dashboard', type: 'page', level: 3, description: 'Multi-tenant administration' },
     ];
+
+    const positionedNodeData = calculateNodePositions(nodeData);
 
     const connections = [
       // Level 0 to 1
@@ -140,7 +179,7 @@ export default function UIStructurePage() {
       { from: 'routes', to: 'admin' },
     ];
 
-    const nodes: Node<UINodeData>[] = nodeData.map(node => ({
+    const nodes: Node<UINodeData>[] = positionedNodeData.map(node => ({
       id: node.id,
       type: 'custom',
       position: { x: node.x, y: node.y },
