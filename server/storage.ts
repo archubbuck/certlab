@@ -62,6 +62,8 @@ export interface IStorage {
   // Lectures
   createLecture(userId: number, quizId: number, missedTopics: string[]): Promise<any>;
   getUserLectures(userId: number): Promise<any[]>;
+  getLecture(id: number): Promise<any>;
+  createLectureFromQuiz(userId: number, quizId: number, title: string, content: string, topics: string[], categoryId: number): Promise<any>;
   
   // Mastery scores
   updateMasteryScore(userId: number, categoryId: number, subcategoryId: number, isCorrect: boolean): Promise<void>;
@@ -1997,6 +1999,20 @@ export class DatabaseStorage implements IStorage {
   async getLecture(lectureId: number): Promise<any> {
     const [lecture] = await db.select().from(lectures)
       .where(eq(lectures.id, lectureId));
+    return lecture;
+  }
+
+  async createLectureFromQuiz(userId: number, quizId: number, title: string, content: string, topics: string[], categoryId: number): Promise<any> {
+    const [lecture] = await db.insert(lectures).values({
+      userId,
+      quizId,
+      title,
+      content,
+      topics,
+      categoryId,
+      subcategoryId: null
+    }).returning();
+
     return lecture;
   }
 

@@ -738,6 +738,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate lecture notes from quiz review
+  app.post('/api/quiz/:quizId/generate-lecture', async (req, res) => {
+    try {
+      const quizId = parseInt(req.params.quizId);
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Get quiz details
+      const quiz = await storage.getQuiz(quizId);
+      if (!quiz || quiz.userId !== userId) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
+
+      if (!quiz.completedAt) {
+        return res.status(400).json({ message: "Quiz must be completed first" });
+      }
+
+      // Get quiz questions
+      const questions = await storage.getQuestionsByCategories(
+        quiz.categoryIds as number[],
+        quiz.subcategoryIds as number[]
+      );
+
+      // Get categories for context
+      const categories = await storage.getCategories();
+      const categoryNames = (quiz.categoryIds as number[])
+        .map(id => categories.find(c => c.id === id)?.name)
+        .filter(Boolean)
+        .join(", ");
+
+      // Prepare quiz data for AI generation
+      const { generateLectureNotes } = await import('./openai-service');
+      
+      const quizData = {
+        quizTitle: quiz.title,
+        categoryName: categoryNames,
+        totalQuestions: quiz.totalQuestions || questions.length,
+        score: quiz.score || 0,
+        correctAnswers: quiz.correctAnswers || 0,
+        questions: questions.slice(0, quiz.totalQuestions || questions.length).map((q, index) => {
+          const userAnswer = (quiz.answers as any[])?.[index];
+          return {
+            id: q.id,
+            text: q.text,
+            options: q.options as { id: number; text: string }[],
+            correctAnswer: q.correctAnswer,
+            userAnswer: userAnswer?.answer,
+            explanation: q.explanation || undefined,
+            isCorrect: userAnswer?.answer === q.correctAnswer
+          };
+        })
+      };
+
+      // Generate lecture notes using AI
+      const lectureContent = await generateLectureNotes(quizData);
+      
+      // Extract topics from questions for tagging
+      const topics = questions
+        .slice(0, quiz.totalQuestions || questions.length)
+        .map(q => q.explanation?.split('.')[0] || q.text.substring(0, 50))
+        .filter((topic, index, array) => array.indexOf(topic) === index)
+        .slice(0, 10); // Limit to 10 topics
+
+      // Save lecture to database
+      const lecture = await storage.createLectureFromQuiz(
+        userId,
+        quizId,
+        `Study Notes: ${quiz.title}`,
+        lectureContent,
+        topics,
+        (quiz.categoryIds as number[])[0] || 1
+      );
+
+      res.json({
+        success: true,
+        lecture: {
+          id: lecture.id,
+          title: lecture.title,
+          content: lecture.content,
+          createdAt: lecture.createdAt
+        }
+      });
+
+    } catch (error) {
+      console.error('Lecture generation error:', error);
+      res.status(500).json({ 
+        message: "Failed to generate lecture notes",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Development endpoint to sync UI structure
   if (process.env.NODE_ENV === 'development') {
     app.post('/api/dev/sync-ui-structure', async (req, res) => {

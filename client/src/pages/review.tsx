@@ -1,11 +1,15 @@
 import { useRoute, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { Quiz, Category } from "@shared/schema";
 
 interface QuizResult {
@@ -37,7 +41,11 @@ interface Question {
 export default function Review() {
   const [, params] = useRoute("/review/:id");
   const [, setLocation] = useLocation();
+  const [showLectureDialog, setShowLectureDialog] = useState(false);
+  const [generatedLecture, setGeneratedLecture] = useState<string>("");
   const quizId = parseInt(params?.id || "0");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: quiz, isLoading: quizLoading } = useQuery<Quiz>({
     queryKey: ['/api/quiz', quizId],
@@ -51,6 +59,31 @@ export default function Review() {
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
+  });
+
+  // Mutation for generating lecture notes
+  const generateLectureMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest(`/api/quiz/${quizId}/generate-lecture`, {
+        method: 'POST'
+      });
+      return response;
+    },
+    onSuccess: (data: any) => {
+      setGeneratedLecture(data.lecture.content);
+      setShowLectureDialog(true);
+      toast({
+        title: "Lecture Notes Generated!",
+        description: "Your comprehensive study notes are ready to review.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Unable to generate lecture notes. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
 
   const isLoading = quizLoading || questionsLoading;
@@ -168,7 +201,25 @@ export default function Review() {
                 <h3 className="font-medium text-blue-900">Quiz Completed</h3>
                 <p className="text-sm text-blue-800">Review all {questions.length} questions below</p>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => generateLectureMutation.mutate()}
+                  disabled={generateLectureMutation.isPending}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                  size="sm"
+                >
+                  {generateLectureMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-graduation-cap mr-2"></i>
+                      Generate Study Notes
+                    </>
+                  )}
+                </Button>
                 <Button
                   variant="outline"
                   onClick={() => setLocation(`/results/${quizId}`)}
@@ -268,6 +319,57 @@ export default function Review() {
             Back to Top
           </Button>
         </div>
+
+        {/* Lecture Notes Dialog */}
+        <Dialog open={showLectureDialog} onOpenChange={setShowLectureDialog}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <i className="fas fa-graduation-cap text-purple-600"></i>
+                AI-Generated Study Notes
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-auto">
+              <div className="prose prose-sm max-w-none">
+                <div 
+                  className="whitespace-pre-wrap text-sm leading-relaxed"
+                  dangerouslySetInnerHTML={{ 
+                    __html: generatedLecture.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') 
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Generated with AI based on your quiz performance
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedLecture);
+                    toast({
+                      title: "Copied!",
+                      description: "Study notes copied to clipboard.",
+                    });
+                  }}
+                  size="sm"
+                >
+                  <i className="fas fa-copy mr-2"></i>
+                  Copy
+                </Button>
+                <Button
+                  onClick={() => setShowLectureDialog(false)}
+                  size="sm"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
