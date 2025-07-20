@@ -14,6 +14,7 @@ import Lecture from "@/pages/lecture";
 import Achievements from "@/pages/achievements";
 import Accessibility from "@/pages/accessibility";
 import AdminDashboard from "@/pages/admin";
+import UIStructurePage from "@/pages/ui-structure";
 import { localStorage } from "@/lib/localStorage";
 
 function Router() {
@@ -33,12 +34,14 @@ function Router() {
       <Route path="/app/lecture/:id" component={Lecture} />
       <Route path="/app/achievements" component={Achievements} />
       <Route path="/app/accessibility" component={Accessibility} />
+      <Route path="/app/ui-structure" component={UIStructurePage} />
       <Route path="/quiz/:id" component={Quiz} />
       <Route path="/results/:id" component={Results} />
       <Route path="/review/:id" component={Review} />
       <Route path="/lecture/:id" component={Lecture} />
       <Route path="/achievements" component={Achievements} />
       <Route path="/accessibility" component={Accessibility} />
+      <Route path="/ui-structure" component={UIStructurePage} />
       <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
