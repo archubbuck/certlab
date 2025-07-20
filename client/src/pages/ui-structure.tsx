@@ -74,186 +74,9 @@ const UIStructurePage = () => {
   // Enable automatic syncing in development
   useDevUISync();
   
-  // Use dynamic data or fallback to static
-  const routeHierarchy: RouteHierarchy[] = structureData?.routes || [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      route: '/dashboard',
-      type: 'route',
-      description: 'Main user dashboard with progress tracking and quick actions',
-      icon: 'Home',
-      children: [
-        {
-          id: 'dashboard-hero',
-          label: 'DashboardHero',
-          route: '/dashboard',
-          type: 'component',
-          description: 'Progress cards, AI assistant, and performance metrics',
-          icon: 'BarChart3',
-          dependencies: ['User Stats API', 'Progress Tracking', 'Achievement System']
-        },
-        {
-          id: 'activity-sidebar',
-          label: 'ActivitySidebar',
-          route: '/dashboard',
-          type: 'component', 
-          description: 'Recent quizzes, mastery scores, and quick actions',
-          icon: 'BookOpen',
-          dependencies: ['Quiz History API', 'Mastery Score API', 'Quick Actions']
-        },
-        {
-          id: 'learning-mode-selector',
-          label: 'LearningModeSelector',
-          route: '/dashboard',
-          type: 'component',
-          description: 'Certification selection and quiz configuration',
-          icon: 'Settings',
-          dependencies: ['Categories API', 'Quiz Creation API']
-        }
-      ]
-    },
-    {
-      id: 'quiz',
-      label: 'Quiz System',
-      route: '/quiz',
-      type: 'route',
-      description: 'Interactive learning sessions with immediate feedback',
-      icon: 'BookOpen',
-      children: [
-        {
-          id: 'quiz-interface',
-          label: 'QuizInterface',
-          route: '/quiz/:id',
-          type: 'component',
-          description: 'Question display, answer selection, and real-time feedback',
-          icon: 'FileText',
-          dependencies: ['Question API', 'Answer Submission', 'Progress Tracking']
-        },
-        {
-          id: 'quiz-results',
-          label: 'Results Page',
-          route: '/results/:id',
-          type: 'component',
-          description: 'Performance analytics, score display, and recommendations',
-          icon: 'BarChart3',
-          dependencies: ['Quiz Results API', 'Performance Analytics', 'Recommendation Engine']
-        },
-        {
-          id: 'review-answers',
-          label: 'Review Page',
-          route: '/review/:id',
-          type: 'component',
-          description: 'Detailed answer review with explanations and navigation',
-          icon: 'Eye',
-          dependencies: ['Quiz History API', 'Answer Explanations']
-        }
-      ]
-    },
-    {
-      id: 'admin',
-      label: 'Admin System',
-      route: '/admin',
-      type: 'route',
-      description: 'Multi-tenant administration and management portal',
-      icon: 'Settings',
-      children: [
-        {
-          id: 'tenant-management',
-          label: 'Tenant Management',
-          route: '/admin',
-          type: 'component',
-          description: 'Organization management with statistics and settings',
-          icon: 'Users',
-          dependencies: ['Tenant API', 'Statistics API', 'CRUD Operations']
-        },
-        {
-          id: 'question-admin',
-          label: 'Question Management',
-          route: '/admin',
-          type: 'component',
-          description: 'Question database administration and bulk operations',
-          icon: 'Database',
-          dependencies: ['Question CRUD API', 'CSV Import/Export', 'Search & Filter']
-        },
-        {
-          id: 'user-admin',
-          label: 'User Management',
-          route: '/admin',
-          type: 'component',
-          description: 'User administration and role-based access control',
-          icon: 'Shield',
-          dependencies: ['User API', 'Role Management', 'Access Control']
-        }
-      ]
-    },
-    {
-      id: 'achievements',
-      label: 'Achievements',
-      route: '/achievements',
-      type: 'route',
-      description: 'Gamification system with badges and progress tracking',
-      icon: 'Trophy',
-      children: [
-        {
-          id: 'achievement-badges',
-          label: 'AchievementBadges',
-          route: '/achievements',
-          type: 'component',
-          description: 'Badge display with progress indicators and categories',
-          icon: 'Trophy',
-          dependencies: ['Badges API', 'Progress Tracking', 'Achievement Engine']
-        },
-        {
-          id: 'level-progress',
-          label: 'LevelProgress',
-          route: '/achievements',
-          type: 'component',
-          description: 'XP tracking, level progression, and motivational display',
-          icon: 'BarChart3',
-          dependencies: ['XP System', 'Level Calculation', 'User Stats']
-        }
-      ]
-    },
-    {
-      id: 'accessibility',
-      label: 'Accessibility',
-      route: '/accessibility',
-      type: 'route',
-      description: 'WCAG compliance tools and contrast analysis',
-      icon: 'Eye',
-      children: [
-        {
-          id: 'contrast-analyzer',
-          label: 'ContrastAnalyzer',
-          route: '/accessibility',
-          type: 'component',
-          description: 'Real-time contrast ratio analysis for theme compliance',
-          icon: 'Eye',
-          dependencies: ['Theme System', 'WCAG Guidelines', 'Color Analysis']
-        }
-      ]
-    },
-    {
-      id: 'login',
-      label: 'Authentication',
-      route: '/login',
-      type: 'route',
-      description: 'User authentication and registration system',
-      icon: 'Shield',
-      children: [
-        {
-          id: 'login-form',
-          label: 'Login Form',
-          route: '/login',
-          type: 'component',
-          description: 'User authentication with validation and error handling',
-          icon: 'Shield',
-          dependencies: ['Auth API', 'Form Validation', 'Session Management']
-        }
-      ]
-    }
-  ];
+  // Use dynamic data from JSON file - this ensures consistent type-based icons
+  const routeHierarchy: RouteHierarchy[] = structureData?.routes || [];
+
 
   // Flatten hierarchy for easy lookup
   const allNodes = useMemo(() => {
@@ -443,6 +266,14 @@ const UIStructurePage = () => {
               <CardContent className="pt-6 text-center">
                 <RefreshCw className="w-8 h-8 mx-auto animate-spin text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">Loading UI structure...</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {!loading && routeHierarchy.length === 0 && (
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <p className="text-muted-foreground">No UI structure data available. The dynamic sync may be initializing.</p>
               </CardContent>
             </Card>
           )}
