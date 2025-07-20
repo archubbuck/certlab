@@ -48,7 +48,7 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <i className="fas fa-shield-alt text-primary text-2xl"></i>
-              <h1 className="text-xl font-medium text-gray-900">SecuraCert</h1>
+              <h1 className="text-xl font-medium text-foreground">SecuraCert</h1>
             </div>
           </div>
           
@@ -56,7 +56,7 @@ export default function Header() {
             <Button 
               variant="ghost" 
               onClick={() => setLocation("/")}
-              className="text-gray-600 hover:text-primary"
+              className="text-muted-foreground hover:text-primary"
             >
               Dashboard
             </Button>
@@ -67,11 +67,11 @@ export default function Header() {
             {currentUser && (
               <div className="hidden md:flex items-center space-x-3">
                 <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
+                  <span className="text-primary-foreground text-sm font-medium">
                     {getInitials(currentUser.username)}
                   </span>
                 </div>
-                <span className="text-gray-700 text-sm">{currentUser.username}</span>
+                <span className="text-foreground text-sm">{currentUser.username}</span>
               </div>
             )}
             <Button 
@@ -79,7 +79,7 @@ export default function Header() {
               size="sm" 
               onClick={handleLogout}
               disabled={logoutMutation.isPending}
-              className="text-gray-600 hover:text-red-600 hover:bg-red-50"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             >
               <i className="fas fa-sign-out-alt mr-2"></i>
               Sign Out
