@@ -37,7 +37,6 @@ interface Question {
 export default function Review() {
   const [, params] = useRoute("/review/:id");
   const [, setLocation] = useLocation();
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const quizId = parseInt(params?.id || "0");
 
   const { data: quiz, isLoading: quizLoading } = useQuery<Quiz>({
@@ -110,9 +109,6 @@ export default function Review() {
   }
 
   const userAnswers = quiz.answers as { questionId: number; answer: number }[] || [];
-  const currentQuestion = questions[currentQuestionIndex];
-  const userAnswer = userAnswers.find(a => a.questionId === currentQuestion.id);
-  const isCorrect = userAnswer?.answer === currentQuestion.correctAnswer;
   const totalQuestions = quiz.totalQuestions || quiz.questionCount || questions.length;
   const score = quiz.score || 0;
   const correctAnswers = quiz.correctAnswers || 0;
@@ -124,10 +120,11 @@ export default function Review() {
     return names.length > 0 ? names.join(", ") : "Mixed Quiz";
   };
 
-  const getOptionStatus = (optionId: number) => {
+  const getOptionStatus = (optionId: number, question: Question, userAnswer?: { answer: number }) => {
+    const isCorrect = userAnswer?.answer === question.correctAnswer;
     if (userAnswer?.answer === optionId && isCorrect) return "correct-selected";
     if (userAnswer?.answer === optionId && !isCorrect) return "incorrect-selected";
-    if (optionId === currentQuestion.correctAnswer) return "correct";
+    if (optionId === question.correctAnswer) return "correct";
     return "default";
   };
 
@@ -164,142 +161,113 @@ export default function Review() {
             </div>
           </div>
           
-          {/* Progress */}
-          <div className="mb-4">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
-              <span>{Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}% Complete</span>
+          {/* Summary */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-blue-900">Quiz Completed</h3>
+                <p className="text-sm text-blue-800">Review all {questions.length} questions below</p>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation(`/results/${quizId}`)}
+                  size="sm"
+                >
+                  <i className="fas fa-chart-bar mr-2"></i>
+                  View Results
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation("/")}
+                  size="sm"
+                >
+                  <i className="fas fa-home mr-2"></i>
+                  Dashboard
+                </Button>
+              </div>
             </div>
-            <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="h-2" />
           </div>
         </div>
 
-        {/* Question Card */}
-        <Card className="material-shadow border border-gray-100 mb-6">
-          <CardHeader className="p-6 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-medium text-gray-900">
-                Question {currentQuestionIndex + 1}
-              </CardTitle>
-              <Badge variant={isCorrect ? "default" : "destructive"}>
-                {isCorrect ? "Correct" : "Incorrect"}
-              </Badge>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="p-6">
-            {/* Question Text */}
-            <div className="mb-6">
-              <p className="text-lg text-gray-900 leading-relaxed">
-                {currentQuestion.text}
-              </p>
-            </div>
-
-            {/* Answer Options */}
-            <div className="space-y-3 mb-6">
-              {currentQuestion.options.map((option) => {
-                const status = getOptionStatus(option.id);
-                return (
-                  <div key={option.id} className={getOptionClasses(status)}>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-sm font-bold">
-                        {String.fromCharCode(65 + option.id)}
-                      </div>
-                      <div className="flex-1">
-                        <span className="font-medium">{option.text}</span>
-                        {status === "correct-selected" && (
-                          <span className="ml-2 text-sm">✓ Your answer (Correct)</span>
-                        )}
-                        {status === "incorrect-selected" && (
-                          <span className="ml-2 text-sm">✗ Your answer (Incorrect)</span>
-                        )}
-                        {status === "correct" && userAnswer?.answer !== option.id && (
-                          <span className="ml-2 text-sm">✓ Correct answer</span>
-                        )}
-                      </div>
-                    </div>
+        {/* All Questions */}
+        <div className="space-y-6">
+          {questions.map((question, index) => {
+            const userAnswer = userAnswers.find(a => a.questionId === question.id);
+            const isCorrect = userAnswer?.answer === question.correctAnswer;
+            
+            return (
+              <Card key={question.id} className="material-shadow border border-gray-100">
+                <CardHeader className="p-6 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-medium text-gray-900">
+                      Question {index + 1}
+                    </CardTitle>
+                    <Badge variant={isCorrect ? "default" : "destructive"}>
+                      {isCorrect ? "Correct" : "Incorrect"}
+                    </Badge>
                   </div>
-                );
-              })}
-            </div>
+                </CardHeader>
+                
+                <CardContent className="p-6">
+                  {/* Question Text */}
+                  <div className="mb-6">
+                    <p className="text-lg text-gray-900 leading-relaxed">
+                      {question.text}
+                    </p>
+                  </div>
 
-            {/* Explanation */}
-            {currentQuestion.explanation && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 mb-2">Explanation</h4>
-                <p className="text-blue-800 leading-relaxed">{currentQuestion.explanation}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  {/* Answer Options */}
+                  <div className="space-y-3 mb-6">
+                    {question.options.map((option) => {
+                      const status = getOptionStatus(option.id, question, userAnswer);
+                      return (
+                        <div key={option.id} className={getOptionClasses(status)}>
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-sm font-bold">
+                              {String.fromCharCode(65 + option.id)}
+                            </div>
+                            <div className="flex-1">
+                              <span className="font-medium">{option.text}</span>
+                              {status === "correct-selected" && (
+                                <span className="ml-2 text-sm">✓ Your answer (Correct)</span>
+                              )}
+                              {status === "incorrect-selected" && (
+                                <span className="ml-2 text-sm">✗ Your answer (Incorrect)</span>
+                              )}
+                              {status === "correct" && userAnswer?.answer !== option.id && (
+                                <span className="ml-2 text-sm">✓ Correct answer</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
+                  {/* Explanation */}
+                  {question.explanation && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-900 mb-2">Explanation</h4>
+                      <p className="text-blue-800 leading-relaxed">{question.explanation}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Back to Top */}
+        <div className="mt-8 text-center">
           <Button
             variant="outline"
-            onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
-            disabled={currentQuestionIndex === 0}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
-            <i className="fas fa-chevron-left mr-2"></i>
-            Previous
-          </Button>
-          
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setLocation(`/results/${quizId}`)}
-            >
-              <i className="fas fa-chart-bar mr-2"></i>
-              View Results
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setLocation("/")}
-            >
-              <i className="fas fa-home mr-2"></i>
-              Dashboard
-            </Button>
-          </div>
-
-          <Button
-            onClick={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))}
-            disabled={currentQuestionIndex === questions.length - 1}
-            className="bg-primary hover:bg-blue-700"
-          >
-            Next
-            <i className="fas fa-chevron-right ml-2"></i>
+            <i className="fas fa-chevron-up mr-2"></i>
+            Back to Top
           </Button>
         </div>
-
-        {/* Question Navigation Grid */}
-        <Card className="material-shadow border border-gray-100 mt-6">
-          <CardHeader className="p-4 border-b border-gray-100">
-            <CardTitle className="text-sm font-medium text-gray-900">Jump to Question</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-10 gap-2">
-              {questions.map((question, index) => {
-                const questionAnswer = userAnswers.find(a => a.questionId === question.id);
-                const questionCorrect = questionAnswer?.answer === question.correctAnswer;
-                return (
-                  <button
-                    key={question.id}
-                    onClick={() => setCurrentQuestionIndex(index)}
-                    className={`w-8 h-8 rounded text-xs font-medium transition-all ${
-                      index === currentQuestionIndex
-                        ? "bg-primary text-white border-2 border-primary"
-                        : questionCorrect
-                        ? "bg-green-100 text-green-800 border border-green-300 hover:bg-green-200"
-                        : "bg-red-100 text-red-800 border border-red-300 hover:bg-red-200"
-                    }`}
-                  >
-                    {index + 1}
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );
