@@ -261,3 +261,14 @@ export type InsertUserBadge = z.infer<typeof insertUserBadgeSchema>;
 export type UserBadge = typeof userBadges.$inferSelect;
 export type InsertUserGameStats = z.infer<typeof insertUserGameStatsSchema>;
 export type UserGameStats = typeof userGameStats.$inferSelect;
+
+// User statistics type for dashboard
+export type UserStats = {
+  totalQuizzes: number;
+  averageScore: number;
+  studyStreak: number;
+  currentStreak: number;
+  certifications: number;
+  passingRate: number;
+  masteryScore: number;
+};

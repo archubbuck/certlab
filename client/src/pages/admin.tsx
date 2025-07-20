@@ -52,6 +52,24 @@ interface Question {
   tags?: string[];
 }
 
+interface User {
+  id: number;
+  tenantId: number;
+  username: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  isAdmin?: boolean;
+  lastLogin?: string;
+}
+
+interface TenantStats {
+  categories: number;
+  questions: number;
+  users: number;
+  subcategories: number;
+}
+
 // Question Form Component
 function QuestionForm({ 
   categories, 
@@ -66,9 +84,10 @@ function QuestionForm({
 }) {
   const createQuestionMutation = useMutation({
     mutationFn: (data: any) =>
-      apiRequest(`/api/admin/tenants/${tenantId}/questions`, {
+      apiRequest({
         method: "POST",
-        body: JSON.stringify(data),
+        endpoint: `/api/admin/tenants/${tenantId}/questions`,
+        data,
       }),
     onSuccess,
     onError,
@@ -168,7 +187,7 @@ function QuestionForm({
 
 // User Management Component
 function UserManagement({ selectedTenant }: { selectedTenant: number | null }) {
-  const { data: users = [] } = useQuery({
+  const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/admin/tenants", selectedTenant, "users"],
     enabled: !!selectedTenant,
   });
@@ -201,7 +220,7 @@ function UserManagement({ selectedTenant }: { selectedTenant: number | null }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user: any) => (
+              {users.map((user: User) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.username}</TableCell>
                   <TableCell>{user.email || 'No email'}</TableCell>
@@ -276,24 +295,24 @@ export default function AdminDashboard() {
   const queryClient = useQueryClient();
 
   // Fetch tenants
-  const { data: tenants = [], isLoading: tenantsLoading } = useQuery({
+  const { data: tenants = [], isLoading: tenantsLoading } = useQuery<Tenant[]>({
     queryKey: ["/api/admin/tenants"],
   });
 
   // Fetch tenant statistics if tenant is selected
-  const { data: tenantStats } = useQuery({
+  const { data: tenantStats } = useQuery<TenantStats>({
     queryKey: ["/api/admin/tenants", selectedTenant, "stats"],
     enabled: !!selectedTenant,
   });
 
   // Fetch tenant categories
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["/api/admin/tenants", selectedTenant, "categories"],
     enabled: !!selectedTenant,
   });
 
   // Fetch tenant questions (paginated)
-  const { data: questions = [] } = useQuery({
+  const { data: questions = [] } = useQuery<Question[]>({
     queryKey: ["/api/admin/tenants", selectedTenant, "questions"],
     enabled: !!selectedTenant,
   });
@@ -301,9 +320,10 @@ export default function AdminDashboard() {
   // Create tenant mutation
   const createTenantMutation = useMutation({
     mutationFn: (data: { name: string; domain?: string }) =>
-      apiRequest("/api/admin/tenants", {
+      apiRequest({
         method: "POST",
-        body: JSON.stringify(data),
+        endpoint: "/api/admin/tenants",
+        data,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tenants"] });
@@ -318,9 +338,10 @@ export default function AdminDashboard() {
   // Create category mutation
   const createCategoryMutation = useMutation({
     mutationFn: (data: { name: string; description?: string; icon?: string }) =>
-      apiRequest(`/api/admin/tenants/${selectedTenant}/categories`, {
+      apiRequest({
         method: "POST",
-        body: JSON.stringify(data),
+        endpoint: `/api/admin/tenants/${selectedTenant}/categories`,
+        data,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tenants", selectedTenant, "categories"] });
@@ -336,8 +357,9 @@ export default function AdminDashboard() {
   // Delete tenant mutation
   const deleteTenantMutation = useMutation({
     mutationFn: (tenantId: number) =>
-      apiRequest(`/api/admin/tenants/${tenantId}`, {
+      apiRequest({
         method: "DELETE",
+        endpoint: `/api/admin/tenants/${tenantId}`,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tenants"] });
