@@ -84,6 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/me", async (req, res) => {
     try {
       const userId = (req as any).session?.userId;
+      
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -750,6 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/quiz/:quizId/generate-lecture', async (req, res) => {
     try {
       const quizId = parseInt(req.params.quizId);
+      
       const userId = (req as any).session?.userId;
       
       if (!userId) {
