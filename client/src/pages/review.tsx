@@ -64,10 +64,11 @@ export default function Review() {
   // Mutation for generating lecture notes
   const generateLectureMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest(`/api/quiz/${quizId}/generate-lecture`, {
-        method: 'POST'
+      const response = await apiRequest({
+        method: 'POST',
+        endpoint: `/api/quiz/${quizId}/generate-lecture`
       });
-      return response;
+      return response.json();
     },
     onSuccess: (data: any) => {
       setGeneratedLecture(data.lecture.content);
