@@ -39,6 +39,7 @@ export const useUIStructure = () => {
     const loadStructureData = async () => {
       try {
         setLoading(true);
+        setError(null);
         
         // Try to load from generated JSON file with cache-busting
         const timestamp = Date.now();
@@ -46,13 +47,15 @@ export const useUIStructure = () => {
         
         if (response.ok) {
           const data = await response.json();
+          console.log('Loaded UI structure with', data.routes?.length || 0, 'routes');
           setStructureData(data);
         } else {
           // Fallback to static data if JSON doesn't exist
+          console.log('Using static fallback data');
           setStructureData(getStaticStructureData());
         }
       } catch (err) {
-        console.warn('Failed to load dynamic UI structure, using static fallback');
+        console.warn('Failed to load dynamic UI structure, using static fallback:', err);
         setStructureData(getStaticStructureData());
       } finally {
         setLoading(false);

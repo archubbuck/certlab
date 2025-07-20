@@ -274,11 +274,15 @@ const UIStructurePage = () => {
             <Card>
               <CardContent className="pt-6 text-center">
                 <p className="text-muted-foreground">No UI structure data available. The dynamic sync may be initializing.</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Debug: structureData={structureData ? 'loaded' : 'null'}, routes={structureData?.routes?.length || 0}
+                </p>
               </CardContent>
             </Card>
           )}
 
           {/* Main Layout */}
+          {!loading && routeHierarchy.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Navigation Tree Sidebar */}
             <div className="lg:col-span-1 space-y-4">
@@ -454,6 +458,7 @@ const UIStructurePage = () => {
               )}
             </div>
           </div>
+          )}
         </div>
       </main>
     </div>
