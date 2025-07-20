@@ -2290,19 +2290,25 @@ ${recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')}
     if (updates.completedAt && updates.answers && Array.isArray(updates.answers)) {
       const quiz = await this.getQuiz(id);
       if (quiz) {
-        const quizQuestions = await this.getQuizQuestions(id);
+        // Get quiz questions using the same approach as in routes
+        const quizQuestions = await this.getQuestionsByCategories(
+          quiz.categoryIds as number[],
+          quiz.subcategoryIds as number[]
+        );
         
-        for (let i = 0; i < quizQuestions.length && i < updates.answers.length; i++) {
-          const question = quizQuestions[i];
-          const answer = updates.answers[i] as any;
-          const isCorrect = answer.correct === true;
-          
-          await this.updateMasteryScore(
-            quiz.userId, 
-            question.categoryId, 
-            question.subcategoryId, 
-            isCorrect
-          );
+        // Process each answer to update mastery scores
+        for (const answer of updates.answers as any[]) {
+          const question = quizQuestions.find(q => q.id === answer.questionId);
+          if (question) {
+            const isCorrect = answer.correct === true;
+            
+            await this.updateMasteryScore(
+              quiz.userId, 
+              question.categoryId, 
+              question.subcategoryId, 
+              isCorrect
+            );
+          }
         }
 
         // Check for new achievements after quiz completion
