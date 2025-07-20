@@ -177,10 +177,12 @@ export default function UIStructurePage() {
     // Calculate positions using force-directed layout
     const positionedNodes = calculateNodePositions(rawNodes);
     
-    // Generate connections
+    // Generate connections (only for nodes within the 3-level limit)
     const connections: Connection[] = [];
-    rawNodes.forEach(node => {
-      if (node.parent) {
+    const nodeIds = new Set(positionedNodes.map(n => n.id));
+    
+    positionedNodes.forEach(node => {
+      if (node.parent && nodeIds.has(node.parent)) {
         connections.push({ from: node.parent, to: node.id });
       }
     });
@@ -189,32 +191,35 @@ export default function UIStructurePage() {
   };
 
   const calculateNodePositions = (rawNodes: Omit<UINode, 'x' | 'y'>[]): UINode[] => {
-    const centerX = 600;
-    const centerY = 400;
-    const levelSpacing = 150;
-    const angleSpacing = Math.PI * 2;
+    const canvasWidth = 800;
+    const canvasHeight = 600;
+    const levelSpacing = 180; // Vertical spacing between levels
+    const nodeSpacing = 120; // Horizontal spacing between nodes
+    
+    // Filter to show only first 3 levels
+    const filteredNodes = rawNodes.filter(node => node.level <= 2);
 
     // Group nodes by level
     const nodesByLevel: { [level: number]: Omit<UINode, 'x' | 'y'>[] } = {};
-    rawNodes.forEach(node => {
+    filteredNodes.forEach(node => {
       if (!nodesByLevel[node.level]) {
         nodesByLevel[node.level] = [];
       }
       nodesByLevel[node.level].push(node);
     });
 
-    // Position nodes
+    // Position nodes vertically
     const positionedNodes: UINode[] = [];
     
     Object.keys(nodesByLevel).forEach(levelStr => {
       const level = parseInt(levelStr);
       const levelNodes = nodesByLevel[level];
-      const radius = level * levelSpacing + 100;
+      const totalWidth = (levelNodes.length - 1) * nodeSpacing;
+      const startX = (canvasWidth - totalWidth) / 2;
+      const y = 80 + (level * levelSpacing); // Start from top with padding
       
       levelNodes.forEach((node, index) => {
-        const angle = (index / levelNodes.length) * angleSpacing + (level * 0.5);
-        const x = centerX + Math.cos(angle) * radius;
-        const y = centerY + Math.sin(angle) * radius;
+        const x = startX + (index * nodeSpacing);
         
         positionedNodes.push({
           ...node,
@@ -265,11 +270,74 @@ export default function UIStructurePage() {
   };
 
   const drawConnection = (ctx: CanvasRenderingContext2D, fromNode: UINode, toNode: UINode) => {
+    const fromRadius = getNodeRadius(fromNode.type);
+    const toRadius = getNodeRadius(toNode.type);
+    
+    // Calculate connection points at edge of circles
+    const dx = toNode.x - fromNode.x;
+    const dy = toNode.y - fromNode.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance === 0) return;
+    
+    const unitX = dx / distance;
+    const unitY = dy / distance;
+    
+    const startX = fromNode.x + unitX * fromRadius;
+    const startY = fromNode.y + unitY * fromRadius;
+    const endX = toNode.x - unitX * toRadius;
+    const endY = toNode.y - unitY * toRadius;
+    
+    // Create curved connection with rounded corners
+    const midY = startY + (endY - startY) * 0.6;
+    const controlOffset = Math.abs(endX - startX) * 0.3;
+    
     ctx.beginPath();
-    ctx.moveTo(fromNode.x, fromNode.y);
-    ctx.lineTo(toNode.x, toNode.y);
-    ctx.strokeStyle = '#E5E7EB';
-    ctx.lineWidth = 1;
+    ctx.moveTo(startX, startY);
+    
+    if (Math.abs(endX - startX) > 50) {
+      // Curved path for horizontally separated nodes
+      ctx.bezierCurveTo(
+        startX, startY + controlOffset,
+        endX, midY - controlOffset,
+        endX, endY
+      );
+    } else {
+      // Simple curved line for vertically aligned nodes
+      ctx.quadraticCurveTo(
+        startX + (endX - startX) / 2, 
+        midY,
+        endX, endY
+      );
+    }
+    
+    ctx.strokeStyle = '#D1D5DB';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    
+    // Add arrow at end
+    drawArrow(ctx, endX, endY, Math.atan2(dy, dx));
+  };
+  
+  const drawArrow = (ctx: CanvasRenderingContext2D, x: number, y: number, angle: number) => {
+    const arrowLength = 8;
+    const arrowAngle = Math.PI / 6;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(
+      x - arrowLength * Math.cos(angle - arrowAngle),
+      y - arrowLength * Math.sin(angle - arrowAngle)
+    );
+    ctx.moveTo(x, y);
+    ctx.lineTo(
+      x - arrowLength * Math.cos(angle + arrowAngle),
+      y - arrowLength * Math.sin(angle + arrowAngle)
+    );
+    ctx.strokeStyle = '#9CA3AF';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
     ctx.stroke();
   };
 
@@ -355,7 +423,7 @@ export default function UIStructurePage() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-foreground mb-2">UI Structure Visualization</h1>
           <p className="text-muted-foreground">
-            Interactive map of the SecuraCert application architecture
+            Interactive map of the SecuraCert application architecture (showing top 3 levels)
           </p>
         </div>
 
@@ -422,7 +490,7 @@ export default function UIStructurePage() {
                   ref={canvasRef}
                   width={800}
                   height={600}
-                  className="w-full h-[600px] cursor-move"
+                  className="w-full h-[600px] cursor-move border border-border rounded-lg"
                   onClick={handleCanvasClick}
                   onMouseDown={handleCanvasMouseDown}
                   onMouseMove={handleCanvasMouseMove}
@@ -503,6 +571,7 @@ export default function UIStructurePage() {
                 <p>• Use zoom controls to scale</p>
                 <p>• Search to highlight nodes</p>
                 <p>• Filter by node type</p>
+                <p>• Showing top 3 architectural levels</p>
                 <p>• Export as PNG image</p>
               </CardContent>
             </Card>
