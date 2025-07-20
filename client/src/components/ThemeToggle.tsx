@@ -74,12 +74,12 @@ export function ThemeToggle() {
             <DropdownMenuItem
               key={themeOption.value}
               onClick={() => setTheme(themeOption.value)}
-              className="flex items-center gap-2 cursor-pointer hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+              className="flex items-center gap-2 cursor-pointer hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground [&:hover_.description]:text-accent-foreground"
             >
               <Icon className="h-4 w-4" />
               <div className="flex flex-col">
                 <span className="text-sm font-medium">{themeOption.name}</span>
-                <span className="text-xs text-muted-foreground">{themeOption.description}</span>
+                <span className="description text-xs text-muted-foreground">{themeOption.description}</span>
               </div>
               {theme === themeOption.value && (
                 <span className="ml-auto text-xs">✓</span>
