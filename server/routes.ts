@@ -349,6 +349,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get certification mastery scores
+  app.get("/api/user/:id/mastery", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const masteryScores = await storage.getCertificationMasteryScores(userId);
+      res.json(masteryScores);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to get mastery scores" });
+    }
+  });
+
   // Create adaptive quiz - enhanced version of regular quiz
   app.post("/api/quiz/adaptive", async (req, res) => {
     try {

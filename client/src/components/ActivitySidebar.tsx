@@ -25,6 +25,11 @@ export default function ActivitySidebar() {
     queryKey: ['/api/categories'],
   });
 
+  const { data: masteryScores = [] } = useQuery<{ categoryId: number; masteryScore: number }[]>({
+    queryKey: ['/api/user', currentUser?.id, 'mastery'],
+    enabled: !!currentUser,
+  });
+
   const completedQuizzes = recentQuizzes
     .filter(quiz => quiz.completedAt)
     .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
@@ -51,6 +56,11 @@ export default function ActivitySidebar() {
 
   const getProgressForCategory = (categoryId: number) => {
     return userProgress.find(p => p.categoryId === categoryId);
+  };
+
+  const getMasteryScoreForCategory = (categoryId: number): number => {
+    const masteryData = masteryScores.find(m => m.categoryId === categoryId);
+    return masteryData?.masteryScore || 0;
   };
 
   // Mutation for creating quick action quizzes
@@ -292,23 +302,22 @@ export default function ActivitySidebar() {
         <CardContent className="p-4 space-y-4">
           {categories.map((category) => {
             const progress = getProgressForCategory(category.id);
-            const percentage = progress ? Math.round((progress.questionsCompleted / Math.max(progress.totalQuestions, 1)) * 100) : 0;
-            const score = progress?.averageScore || 0;
+            const masteryScore = getMasteryScoreForCategory(category.id);
             
             return (
               <div key={category.id}>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-700">{category.name}</span>
-                  <span className="text-sm text-gray-500">{score}%</span>
+                  <span className="text-sm text-gray-500">{masteryScore}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full ${
-                      score >= 90 ? 'bg-secondary' :
-                      score >= 80 ? 'bg-primary' :
-                      score >= 70 ? 'bg-accent' : 'bg-gray-400'
+                      masteryScore >= 90 ? 'bg-secondary' :
+                      masteryScore >= 80 ? 'bg-primary' :
+                      masteryScore >= 70 ? 'bg-accent' : 'bg-gray-400'
                     }`}
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
+                    style={{ width: `${Math.min(masteryScore, 100)}%` }}
                   ></div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">

@@ -49,6 +49,7 @@ export interface IStorage {
   updateMasteryScore(userId: number, categoryId: number, subcategoryId: number, isCorrect: boolean): Promise<void>;
   getUserMasteryScores(userId: number): Promise<MasteryScore[]>;
   calculateOverallMasteryScore(userId: number): Promise<number>;
+  getCertificationMasteryScores(userId: number): Promise<{ categoryId: number; masteryScore: number }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2279,6 +2280,41 @@ ${recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')}
     return totalWeight > 0 ? Math.round(totalWeightedScore / totalWeight) : 0;
   }
 
+  async getCertificationMasteryScores(userId: number): Promise<{ categoryId: number; masteryScore: number }[]> {
+    const masteryScoreRecords = await this.getUserMasteryScores(userId);
+    
+    if (masteryScoreRecords.length === 0) {
+      return [];
+    }
+
+    // Group mastery scores by certification category
+    const categoryMasteryMap = new Map<number, { totalWeightedScore: number; totalWeight: number }>();
+    
+    for (const record of masteryScoreRecords) {
+      const categoryId = record.categoryId;
+      const weight = record.totalAnswers;
+      const weightedScore = record.rollingAverage * weight;
+      
+      if (!categoryMasteryMap.has(categoryId)) {
+        categoryMasteryMap.set(categoryId, { totalWeightedScore: 0, totalWeight: 0 });
+      }
+      
+      const categoryData = categoryMasteryMap.get(categoryId)!;
+      categoryData.totalWeightedScore += weightedScore;
+      categoryData.totalWeight += weight;
+    }
+    
+    // Calculate mastery score for each certification
+    const certificationMasteryScores: { categoryId: number; masteryScore: number }[] = [];
+    
+    categoryMasteryMap.forEach((data, categoryId) => {
+      const masteryScore = data.totalWeight > 0 ? Math.round(data.totalWeightedScore / data.totalWeight) : 0;
+      certificationMasteryScores.push({ categoryId, masteryScore });
+    });
+    
+    return certificationMasteryScores;
+  }
+
   // Override updateQuiz to update mastery scores and check achievements when quiz is completed
   async updateQuiz(id: number, updates: Partial<Quiz>): Promise<Quiz> {
     const [updatedQuiz] = await db.update(quizzes)
@@ -2660,13 +2696,13 @@ ${recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')}
           
         case "mastery_score":
           const masteryScores = await this.getUserMasteryScores(userId);
-          const highMastery = masteryScores.filter(m => m.masteryPercentage >= req.threshold);
+          const highMastery = masteryScores.filter(m => m.rollingAverage >= req.threshold);
           shouldAward = highMastery.length > 0;
           break;
           
         case "multi_mastery":
           const allMastery = await this.getUserMasteryScores(userId);
-          const qualifyingAreas = allMastery.filter(m => m.masteryPercentage >= req.threshold);
+          const qualifyingAreas = allMastery.filter(m => m.rollingAverage >= req.threshold);
           shouldAward = qualifyingAreas.length >= req.areas;
           break;
           
