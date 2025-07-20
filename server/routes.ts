@@ -327,20 +327,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Generate lecture for failed quiz (below 85%)
+      // Generate lecture for failed quiz (below 85%) - temporarily disabled due to database issues
+      // TODO: Fix lecture creation with proper topics handling
+      /*
       if (!isPassing) {
-        const missedTopics = results
-          .filter((r: any) => !r.correct)
-          .map((r: any) => {
-            const question = questions.find(q => q.id === r.questionId);
-            return question?.explanation?.split('.')[0] || 'Review Required';
-          })
-          .filter((topic, index, array) => array.indexOf(topic) === index); // Remove duplicates
+        try {
+          const missedTopics = results
+            .filter((r: any) => !r.correct)
+            .map((r: any) => {
+              const question = questions.find(q => q.id === r.questionId);
+              return question?.explanation?.split('.')[0] || 'Review Required';
+            })
+            .filter((topic, index, array) => array.indexOf(topic) === index); // Remove duplicates
 
-        if (missedTopics.length > 0) {
-          await storage.createLecture(quiz.userId, quizId, missedTopics);
+          if (missedTopics.length > 0) {
+            await storage.createLecture(quiz.userId, quizId, missedTopics);
+          }
+        } catch (lectureError) {
+          console.error('Failed to create lecture:', lectureError);
+          // Continue without failing the quiz submission
         }
       }
+      */
       
       res.json({
         quiz: updatedQuiz,

@@ -2902,12 +2902,12 @@ ${recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')}
         quizId,
         title,
         content: lectureContent,
-        topics: topics, // This will be stored as JSONB
+        topics: JSON.parse(JSON.stringify(topics)), // Ensure proper JSON format
         categoryId: (quiz.categoryIds as number[])[0], // Use first category
         isRead: false
       };
       
-      console.log('Inserting lecture data:', lectureData);
+      console.log('Inserting lecture data:', JSON.stringify(lectureData, null, 2));
       
       await db.insert(lectures).values(lectureData);
       console.log('Lecture created successfully');
