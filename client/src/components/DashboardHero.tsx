@@ -152,8 +152,48 @@ export default function DashboardHero() {
         {/* HELEN AI Insights Header */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 p-6">
           <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <i className="fas fa-robot text-white text-lg"></i>
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+              <svg 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                className="text-white animate-bounce"
+                style={{
+                  animation: 'gentle-float 3s ease-in-out infinite'
+                }}
+              >
+                {/* Friendly AI Avatar */}
+                <circle cx="12" cy="8" r="3" fill="currentColor" opacity="0.9">
+                  <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
+                </circle>
+                <path 
+                  d="M12 12c-2.5 0-4.5 1.5-4.5 3.5v2c0 0.5 0.5 1 1 1h7c0.5 0 1-0.5 1-1v-2c0-2-2-3.5-4.5-3.5z" 
+                  fill="currentColor" 
+                  opacity="0.8"
+                >
+                  <animate attributeName="opacity" values="0.6;0.9;0.6" dur="2.5s" repeatCount="indefinite" />
+                </path>
+                {/* Friendly eyes */}
+                <circle cx="10.5" cy="7.5" r="0.5" fill="white">
+                  <animate attributeName="r" values="0.5;0.3;0.5" dur="3s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="13.5" cy="7.5" r="0.5" fill="white">
+                  <animate attributeName="r" values="0.5;0.3;0.5" dur="3s" repeatCount="indefinite" />
+                </circle>
+                {/* Thinking dots */}
+                <g opacity="0.6">
+                  <circle cx="8" cy="4" r="1" fill="currentColor">
+                    <animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite" begin="0s" />
+                  </circle>
+                  <circle cx="16" cy="4" r="1" fill="currentColor">
+                    <animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite" begin="0.5s" />
+                  </circle>
+                  <circle cx="12" cy="2" r="1" fill="currentColor">
+                    <animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite" begin="1s" />
+                  </circle>
+                </g>
+              </svg>
             </div>
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-2">
