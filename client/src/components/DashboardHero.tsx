@@ -286,7 +286,7 @@ export default function DashboardHero() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Quick Actions */}
             <div className="lg:col-span-1">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Quick Actions</h4>
               <div className="space-y-2">
                 {categories.slice(0, 3).map((category) => (
                   <div key={category.id} className="flex space-x-2">
@@ -304,7 +304,7 @@ export default function DashboardHero() {
                       size="sm"
                       onClick={() => handleQuickQuiz(category.id, "quiz")}
                       disabled={isCreatingQuiz}
-                      className="flex-1 text-xs bg-primary hover:bg-blue-700"
+                      className="flex-1 text-xs bg-primary hover:bg-primary/90"
                     >
                       <i className="fas fa-clipboard-check mr-1"></i>
                       Quiz {category.name}
@@ -316,33 +316,33 @@ export default function DashboardHero() {
 
             {/* Progress Metrics */}
             <div className="lg:col-span-2">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Your Progress</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Your Progress</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{stats.totalQuizzes}</div>
-                  <div className="text-xs text-blue-700">Total Sessions</div>
+                <div className="text-center p-3 bg-primary/10 rounded-lg">
+                  <div className="text-2xl font-bold text-primary">{stats.totalQuizzes}</div>
+                  <div className="text-xs text-primary/80">Total Sessions</div>
                 </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{stats.averageScore}%</div>
-                  <div className="text-xs text-green-700">Average Score</div>
+                <div className="text-center p-3 bg-secondary/10 rounded-lg">
+                  <div className="text-2xl font-bold text-secondary">{stats.averageScore}%</div>
+                  <div className="text-xs text-secondary/80">Average Score</div>
                 </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">{overallMastery}%</div>
-                  <div className="text-xs text-purple-700">Overall Mastery</div>
+                <div className="text-center p-3 bg-accent/10 rounded-lg">
+                  <div className="text-2xl font-bold text-accent">{overallMastery}%</div>
+                  <div className="text-xs text-accent/80">Overall Mastery</div>
                 </div>
-                <div className="text-center p-3 bg-orange-50 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">{stats.currentStreak || 0}</div>
-                  <div className="text-xs text-orange-700">Day Streak</div>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <div className="text-2xl font-bold text-muted-foreground">{stats.currentStreak || 0}</div>
+                  <div className="text-xs text-muted-foreground/80">Day Streak</div>
                 </div>
               </div>
 
               {/* Motivation Message */}
-              <div className="mt-4 p-3 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-200">
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-border">
                 <div className="flex items-center space-x-2">
-                  <i className="fas fa-lightbulb text-yellow-600"></i>
-                  <span className="text-sm font-medium text-gray-900">Today's Focus</span>
+                  <i className="fas fa-lightbulb text-accent"></i>
+                  <span className="text-sm font-medium text-foreground">Today's Focus</span>
                 </div>
-                <p className="text-sm text-gray-700 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   {masteryScores.length > 0 ? (
                     `Work on ${masteryScores
                       .sort((a, b) => a.rollingAverage - b.rollingAverage)
