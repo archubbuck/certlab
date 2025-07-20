@@ -37,22 +37,45 @@ export function AchievementNotification({ userId, onClose }: AchievementNotifica
   const { data: achievements } = useQuery<AchievementData>({
     queryKey: ["/api/user", userId, "achievements"],
     enabled: !!userId,
-    refetchInterval: 30000, // Check for new achievements every 30 seconds
+    refetchInterval: 5000, // Check for new achievements every 5 seconds
   });
 
   useEffect(() => {
-    if (achievements && achievements.newBadges > 0) {
-      // Get only the newest badges that haven't been notified
-      const unnotifiedBadges = achievements.badges.filter(b => !b.isNotified).slice(0, achievements.newBadges);
+    if (achievements && achievements.badges) {
+      // Get only badges that haven't been notified
+      const unnotifiedBadges = achievements.badges.filter(b => !b.isNotified);
       if (unnotifiedBadges.length > 0) {
         setNewAchievements(unnotifiedBadges);
         setShowNotification(true);
+        
+        // Play achievement sound
+        try {
+          const audio = new Audio();
+          audio.src = 'data:audio/wav;base64,UklGRvIBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU4BAABhbZNXnF+eKq1V2Xv/5dnrfQHAOD7mWPPP9xTB5F+HT4Z4XB7fHPHO2zxfGO8xHPDN7PVnNwKG3XVP5OWj7G4qPu37wv7/+v3t0fjYGVGzx3UZTLt+hY9y6Z1qHr9/vfrzxfWUVfv8+d3v6fftxe8XtO/Rv55q2r3N9pNDvfwcXe65e9Pv4uy7/ufE2aWq7fT/+vz7ZjWyf2Xy4f7s6pGYNfX25e6Vbfzo6/BZ7fHnxeb4ufXvwufX9/Yf/fHn3Yjv9v7z8s3xjfX2x+/7/ev359fHu+Hj1sj53uj74f//9t75yfTt8a7xwfPZ7/n16f37///g+8Pq4/Hg7Hxm8tPC8vwUufP8Eujv6Pf/+aTb3e/3+9OT2vHB7Oz7++7n+//n+Pv1/dz1+sT1zPHlxe/u8PDm4ubn7uz79dH7xfLq8OX/+/L1xvLD+vf1/eBZMUX5/PP5+8GUfvbY/fj799zx6vf/+/Hv7/P5/ev/8fT/+9b12vHkxeznUNf74PD79u7z+vLz+P3j7Pv52fPs+vr9+8P/5uj37+Xj7OPu7fP28eL78/Z//PP/9/f/f2Nv8f/6z+T5XfT3/7sB8vL+/eb39s7s8uL2+fL5/v/';
+          audio.volume = 0.3;
+          audio.play().catch(() => {}); // Ignore autoplay policy errors
+        } catch (error) {
+          // Ignore sound errors
+        }
       }
     }
   }, [achievements]);
 
-  const handleClose = () => {
+  const handleClose = async () => {
+    // Mark all new achievements as notified
+    try {
+      await Promise.all(newAchievements.map(achievement => 
+        fetch(`/api/user/${userId}/badges/${achievement.badgeId}/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+      ));
+    } catch (error) {
+      console.error('Failed to mark badges as notified:', error);
+    }
+    
     setShowNotification(false);
+    setNewAchievements([]);
     if (onClose) {
       onClose();
     }
@@ -88,8 +111,8 @@ export function AchievementNotification({ userId, onClose }: AchievementNotifica
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <Card className="w-full max-w-md mx-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-purple-200 dark:border-purple-700 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
+      <Card className="w-full max-w-md mx-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-purple-200 dark:border-purple-700 shadow-2xl animate-in zoom-in slide-in-from-bottom-4 duration-500">
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-2">
@@ -109,10 +132,11 @@ export function AchievementNotification({ userId, onClose }: AchievementNotifica
           </div>
 
           <div className="space-y-3">
-            {newAchievements.map((achievement) => (
+            {newAchievements.map((achievement, index) => (
               <div
                 key={achievement.id}
-                className={`p-4 rounded-lg border-2 transition-all duration-200 ${getBadgeColor(achievement.badge.color)}`}
+                className={`p-4 rounded-lg border-2 transition-all duration-200 animate-in slide-in-from-right-4 ${getBadgeColor(achievement.badge.color)}`}
+                style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex items-center gap-3">
                   <div className="text-3xl">{achievement.badge.icon}</div>

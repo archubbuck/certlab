@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { AchievementNotification } from "@/components/AchievementNotification";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
@@ -49,12 +50,18 @@ function Router() {
 }
 
 function App() {
+  const isLoggedIn = localStorage.isLoggedIn();
+  const currentUser = localStorage.getCurrentUser();
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="ui-theme">
         <TooltipProvider>
           <Toaster />
           <Router />
+          {isLoggedIn && currentUser && (
+            <AchievementNotification userId={currentUser.id} />
+          )}
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
