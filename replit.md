@@ -110,6 +110,17 @@ Core entities include:
 - **Production**: Serves static files from Express with API routes
 
 ### Recent Changes (July 20, 2025)
+- **Mastery Score System Implemented**: Progress bars now display true mastery percentages (0-100%) for each certification
+  - ✅ New API endpoint `/api/user/:id/mastery` for certification-specific mastery scores
+  - ✅ Updated ActivitySidebar to fetch and display mastery scores instead of completion percentages
+  - ✅ Progress bars represent rolling average performance across all answers in each certification area
+  - ✅ Color-coded progress levels: 90%+ green, 80%+ blue, 70%+ orange, <70% gray
+  - ✅ Mastery scores calculated from masteryScores table with weighted averages
+- **Quiz Interface Click Selection Fixed**: Improved user experience for answer selection
+  - ✅ Added click handler to entire answer option div area for better accessibility
+  - ✅ Users can now click anywhere in the answer area (not just radio button/text) to select
+  - ✅ Click handler disabled during feedback phase to prevent accidental selections
+  - ✅ Enhanced cursor pointer indication across entire clickable area
 - **End-to-End Registration Workflow Implemented**: Complete user registration system with database persistence validated
   - ✅ User registration API endpoint with PostgreSQL database storage
   - ✅ Password hashing with bcrypt for security (10 salt rounds)

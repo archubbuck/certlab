@@ -243,7 +243,11 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
                 }
 
                 return (
-                  <div key={`${currentQuestion.id}-option-${index}`} className={optionClassName}>
+                  <div 
+                    key={`${currentQuestion.id}-option-${index}`} 
+                    className={`${optionClassName} cursor-pointer`}
+                    onClick={() => !showFeedback && handleAnswerChange(index.toString())}
+                  >
                     <RadioGroupItem 
                       value={index.toString()} 
                       id={`question-${currentQuestion.id}-option-${index}`}
