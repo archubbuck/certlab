@@ -260,6 +260,12 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
                 const isSelectedAnswer = selectedAnswer === optionId;
                 const isCorrectAnswer = optionId === currentQuestion.correctAnswer;
                 
+                // Debug logging
+                if (index === 0) {
+                  console.log(`Question ${currentQuestion.id} options:`, currentQuestion.options);
+                  console.log(`Selected answer: ${selectedAnswer}, Correct answer: ${currentQuestion.correctAnswer}`);
+                }
+                
                 let optionClassName = "flex items-start space-x-3 p-3 sm:p-4 border-2 rounded-lg transition-all";
                 
                 if (showFeedback && isSelectedAnswer) {
