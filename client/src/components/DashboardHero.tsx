@@ -84,7 +84,7 @@ export default function DashboardHero() {
     return Math.round(total / masteryScores.length);
   };
 
-  // Get HELEN AI insights based on user data
+  // Get Helen AI insights based on user data
   const getAIInsights = () => {
     const overallMastery = calculateOverallMastery();
     const recentQuizzes = stats?.totalQuizzes || 0;
@@ -93,48 +93,48 @@ export default function DashboardHero() {
 
     if (recentQuizzes === 0) {
       return {
-        message: "Welcome to your certification journey! Let's start with your first assessment to understand your current knowledge level.",
+        message: "Welcome to Cert Lab! I'm Helen, your AI learning assistant. Let's begin by running your first diagnostic assessment to design your personalized learning path.",
         type: "welcome",
-        action: "Take your first quiz to get personalized study recommendations."
+        action: "Start your certification lab experience with an initial assessment."
       };
     }
 
     if (overallMastery >= 85) {
       return {
-        message: "Excellent progress! You're approaching certification readiness. Focus on maintaining consistency across all domains.",
+        message: "Outstanding lab work! Your experiments show certification-level mastery. I'm configuring final readiness protocols to ensure you're exam-ready.",
         type: "excellent",
-        action: "Take practice exams to simulate the real certification experience."
+        action: "Execute certification simulation protocols to validate your readiness."
       };
     }
 
     if (overallMastery >= 70) {
       return {
-        message: "Great momentum! You're building solid foundational knowledge. Keep focusing on your weaker areas to reach mastery.",
+        message: "Excellent lab progress! Your knowledge synthesis is accelerating. I'm identifying optimal experimental areas to advance your mastery.",
         type: "good",
-        action: "Target quiz mode sessions in domains with lower mastery scores."
+        action: "Focus lab sessions on domains requiring reinforcement for breakthrough results."
       };
     }
 
     if (streak >= 7) {
       return {
-        message: "Amazing dedication! Your consistent daily practice is paying off. This habit will accelerate your certification success.",
+        message: "Exceptional lab discipline! Your consistent experimentation protocol is yielding breakthrough results. This systematic approach will ensure certification success.",
         type: "streak",
-        action: "Maintain this momentum - consistency is key to retention."
+        action: "Continue your daily lab sessions - consistent practice optimizes long-term retention."
       };
     }
 
     if (averageScore < 60) {
       return {
-        message: "Every expert was once a beginner. Focus on study mode first to build understanding, then test with quiz mode.",
+        message: "Every certification expert started in the lab as a beginner. I'm designing foundational experiments to build your knowledge base systematically.",
         type: "encouragement",
-        action: "Start with study mode sessions to learn concepts before assessments."
+        action: "Begin with guided study lab sessions before advancing to assessment protocols."
       };
     }
 
     return {
-      message: "You're making steady progress! Regular practice and review will help solidify your knowledge for certification success.",
+      message: "Your lab work shows steady advancement! I'm calibrating your learning experiments to optimize knowledge synthesis and retention patterns.",
       type: "progress",
-      action: "Continue balanced practice with both study and quiz modes."
+      action: "Continue balanced lab protocols with both study and assessment modes."
     };
   };
 
@@ -160,7 +160,7 @@ export default function DashboardHero() {
   return (
     <div className="mb-8 animate-fade-in">
       <Card className="shadow-medium border-0 overflow-hidden bg-card/50 backdrop-blur-sm">
-        {/* HELEN AI Insights Header */}
+        {/* Helen AI Insights Header */}
         <div className="gradient-mesh border-b border-border/50 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-4 text-center sm:text-left">
             <div className="w-20 h-20 sm:w-24 sm:h-24 gradient-primary rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden avatar-container group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 shadow-glow">
@@ -278,7 +278,7 @@ export default function DashboardHero() {
             </div>
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start space-y-2 sm:space-y-0 sm:space-x-2 mb-3">
-                <h3 className="text-lg sm:text-xl font-bold text-foreground">HELEN AI Assistant</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground">Helen AI Assistant</h3>
                 <Badge 
                   variant={insights.type === "excellent" ? "default" : "secondary"} 
                   className={`text-xs font-medium ${

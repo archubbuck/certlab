@@ -2,11 +2,38 @@
 
 ## Overview
 
-This is HELEN (Highly Efficient Learning Engine for Next-Gen Certification) - a comprehensive full-stack web application for cybersecurity certification training. Built with a React frontend and Express.js backend, HELEN features an intelligent quiz-based learning platform with adaptive learning, difficulty filtering, pass/fail tracking, and AI-generated study materials for various cybersecurity certifications.
+This is Cert Lab - a comprehensive AI-powered certification learning laboratory powered by Helen, our intelligent learning assistant. Built with a React frontend and Express.js backend, Cert Lab features an advanced learning platform designed as a laboratory environment where learners can experiment, practice, and master certifications through Helen's AI-guided learning experiences with adaptive assessments, personalized study paths, and intelligent feedback systems.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes
+
+### December 2024 - Cert Lab Rebranding & Helen AI Integration
+
+**✓ Complete Brand Transformation**: Successfully rebranded from "SecuraCert" to "Cert Lab"
+- Updated all application branding throughout the codebase
+- Replaced 8+ instances of "SecuraCert" with "Cert Lab" across login, header, and UI components
+- Updated HTML title and meta descriptions for SEO optimization
+- Transformed messaging to reflect laboratory learning concept
+
+**✓ Helen AI Assistant Enhancement**: Redesigned AI personality and messaging
+- Updated Helen AI insights to use laboratory-focused language and concepts
+- Transformed learning messages to emphasize experimentation and scientific approach
+- Enhanced welcome messages to introduce Helen as lab assistant
+- Implemented lab-specific terminology (protocols, experiments, diagnostics, synthesis)
+
+**✓ Domain Integration**: Configured for certlab.ai domain
+- Updated meta descriptions to reference new domain purpose
+- Enhanced branding consistency across all user touchpoints
+- Prepared application for deployment on new domain infrastructure
+
+**✓ Laboratory Learning Concept**: Redesigned platform as certification learning lab
+- Transformed user experience to emphasize hands-on experimentation
+- Updated messaging to position learning as laboratory work with Helen as guide
+- Enhanced AI insights to reflect scientific approach to certification mastery
+- Implemented systematic learning protocols and assessment methodologies
 
 ## System Architecture
 

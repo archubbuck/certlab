@@ -84,7 +84,7 @@ export default function Header() {
               <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-xl font-semibold text-foreground tracking-tight">SecuraCert</h1>
+              <h1 className="text-xl font-semibold text-foreground tracking-tight">Cert Lab</h1>
             </div>
           </div>
           

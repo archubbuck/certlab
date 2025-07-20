@@ -2,7 +2,7 @@
 
 ## Overview
 
-The UI Structure system provides comprehensive documentation and navigation tools for the SecuraCert learning platform. It automatically maintains an up-to-date representation of the application's architecture through dynamic codebase scanning and synchronization.
+The UI Structure system provides comprehensive documentation and navigation tools for the Cert Lab learning platform. It automatically maintains an up-to-date representation of the application's architecture through dynamic codebase scanning and synchronization.
 
 ## Components
 

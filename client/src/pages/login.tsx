@@ -68,7 +68,7 @@ export default function Login() {
       await register(data.username, data.email, data.password);
       toast({
         title: "Account Created",
-        description: "Welcome to SecuraCert! Your account has been created successfully.",
+        description: "Welcome to Cert Lab! Your account has been created successfully.",
       });
     } catch (error) {
       toast({
@@ -89,10 +89,10 @@ export default function Login() {
             <i className="fas fa-shield-alt text-primary text-3xl"></i>
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">
-            Welcome to SecuraCert
+            Welcome to Cert Lab
           </CardTitle>
           <p className="text-gray-600">
-            Master security certifications with our quiz platform
+            Master certifications with Helen's AI-powered learning lab
           </p>
         </CardHeader>
 

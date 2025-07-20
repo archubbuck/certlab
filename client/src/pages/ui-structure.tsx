@@ -243,7 +243,7 @@ const UIStructurePage = () => {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">UI Structure Navigation</h1>
               <p className="text-muted-foreground mt-2">
-                Explore the SecuraCert application routes, components, and dependencies through an intuitive tree navigation.
+                Explore the Cert Lab application routes, components, and dependencies through an intuitive tree navigation.
               </p>
             </div>
             
