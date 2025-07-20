@@ -64,9 +64,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store user in session
       (req as any).session.userId = user.id;
       
-      // Don't return password
-      const { password: _, ...userResponse } = user;
-      res.json(userResponse);
+      // Save session explicitly
+      (req as any).session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: "Session error" });
+        }
+        
+        // Don't return password
+        const { password: _, ...userResponse } = user;
+        res.json(userResponse);
+      });
     } catch (error) {
       res.status(400).json({ message: "Invalid login data" });
     }
