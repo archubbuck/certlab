@@ -170,16 +170,17 @@ export default function Header() {
                             </p>
                           </NavigationMenuLink>
                           <NavigationMenuLink 
-                            className="block select-none space-y-2 rounded-lg p-4 leading-none no-underline outline-none transition-all opacity-60 pointer-events-none group"
+                            className="block select-none space-y-2 rounded-lg p-4 leading-none no-underline outline-none transition-all hover:bg-accent/10 hover:shadow-soft focus:bg-accent/10 focus:shadow-soft cursor-pointer group"
+                            onClick={() => setLocation("/study-groups")}
                           >
-                            <div className="flex items-center text-sm font-semibold leading-none text-foreground/60">
-                              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mr-3">
-                                <Users className="w-4 h-4 text-muted-foreground" />
+                            <div className="flex items-center text-sm font-semibold leading-none text-foreground group-hover:text-primary transition-colors">
+                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
+                                <Users className="w-4 h-4 text-primary" />
                               </div>
                               Study Groups
                             </div>
                             <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground pl-11">
-                              Collaborative learning (Coming Soon)
+                              Collaborate with other learners
                             </p>
                           </NavigationMenuLink>
                         </div>

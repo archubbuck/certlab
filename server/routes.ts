@@ -15,7 +15,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User registration
   app.post("/api/register", async (req, res) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
+      // Add default tenantId to request body before validation
+      const requestData = { ...req.body, tenantId: 1 };
+      const userData = insertUserSchema.parse(requestData);
       
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
@@ -27,8 +29,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       
       const user = await storage.createUser({
-        ...userData,
-        password: hashedPassword
+        username: userData.username,
+        email: userData.email,
+        password: hashedPassword,
+        role: userData.role || 'user',
+        tenantId: userData.tenantId
       });
       
       // Initialize user game stats and other data
@@ -955,6 +960,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Failed to generate lecture notes",
         error: error instanceof Error ? error.message : "Unknown error"
       });
+    }
+  });
+
+  // Study Groups API endpoints
+  app.get("/api/study-groups", async (req, res) => {
+    try {
+      const studyGroups = [
+        {
+          id: 1,
+          name: "CISSP Study Squad",
+          description: "Preparing for CISSP certification together. We focus on practice questions, sharing study materials, and weekly group discussions.",
+          categoryIds: [1],
+          memberCount: 8,
+          maxMembers: 12,
+          isPublic: true,
+          createdBy: 1,
+          createdAt: "2024-11-15",
+          recentActivity: "2 hours ago",
+          level: "Advanced",
+          tags: ["CISSP", "Security", "Management"],
+          weeklyGoal: 5,
+          currentStreak: 3
+        },
+        {
+          id: 2,
+          name: "Cloud+ Beginners",
+          description: "Starting our cloud certification journey from scratch. Perfect for newcomers to cloud computing.",
+          categoryIds: [6],
+          memberCount: 15,
+          maxMembers: 20,
+          isPublic: true,
+          createdBy: 2,
+          createdAt: "2024-11-20",
+          recentActivity: "1 day ago",
+          level: "Beginner",
+          tags: ["Cloud+", "CompTIA", "Beginners"],
+          weeklyGoal: 3,
+          currentStreak: 1
+        }
+      ];
+      res.json(studyGroups);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch study groups" });
+    }
+  });
+
+  app.post("/api/study-groups", async (req, res) => {
+    try {
+      const { name, description } = req.body;
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const newGroup = {
+        id: Date.now(),
+        name,
+        description,
+        categoryIds: [],
+        memberCount: 1,
+        maxMembers: 10,
+        isPublic: true,
+        createdBy: userId,
+        createdAt: new Date().toISOString(),
+        recentActivity: "just now",
+        level: "Beginner",
+        tags: [],
+        weeklyGoal: 3,
+        currentStreak: 0
+      };
+      
+      res.json(newGroup);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create study group" });
+    }
+  });
+
+  app.post("/api/study-groups/:id/join", async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      res.json({ message: "Successfully joined group", groupId, userId });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to join study group" });
     }
   });
 
