@@ -50,7 +50,7 @@ export default function QuickActionsCard() {
     }
   });
 
-  const handleQuickAction = async (action: string) => {
+  const handleQuickAction = (action: string) => {
     if (!currentUser) {
       toast({
         title: "Login Required",
@@ -131,8 +131,18 @@ export default function QuickActionsCard() {
             mode: "quiz"
           });
           break;
+
+        default:
+          toast({
+            title: "Unknown Action",
+            description: "This action is not recognized.",
+            variant: "destructive",
+          });
+          setIsCreating(false);
+          break;
       }
     } catch (error) {
+      console.error('Quick action error:', error);
       toast({
         title: "Error",
         description: "Failed to create quiz. Please try again.",

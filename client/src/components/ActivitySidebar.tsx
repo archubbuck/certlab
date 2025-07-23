@@ -87,7 +87,7 @@ export default function ActivitySidebar() {
   };
 
   // Quick action handlers
-  const handleReviewIncorrect = () => {
+  const handleReviewIncorrect = async () => {
     if (!currentUser) {
       toast({
         title: "Login Required",
@@ -137,7 +137,13 @@ export default function ActivitySidebar() {
       },
     };
     
-    mutation.mutationFn(quizData).then(mutation.onSuccess).catch(mutation.onError);
+    try {
+      const result = await mutation.mutationFn(quizData);
+      mutation.onSuccess(result);
+    } catch (error) {
+      console.error('Adaptive quiz creation error:', error);
+      mutation.onError();
+    }
   };
 
   const handleRandomQuiz = () => {
