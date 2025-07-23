@@ -200,7 +200,7 @@ export default function QuickActionsCard() {
   ];
 
   return (
-    <Card className="h-full relative z-10 bg-card overflow-hidden force-stacking">
+    <Card className="h-full backdrop-blur-sm bg-card/80 border-border/50 overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Zap className="h-5 w-5" />

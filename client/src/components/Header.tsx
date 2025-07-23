@@ -133,124 +133,115 @@ export default function Header() {
                     </Button>
                   </NavigationMenuItem>
 
-                  {/* Learning Section */}
+                  {/* Tools & Features Mega Menu */}
                   <NavigationMenuItem>
                     <NavigationMenuTrigger className="text-muted-foreground hover:text-primary h-10 px-4 py-2 font-medium transition-colors">
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Learning
+                      <Settings className="w-4 h-4 mr-2" />
+                      Tools & Features
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <div className="grid gap-3 p-6 w-[450px] md:w-[500px] bg-card/95 backdrop-blur-md">
-                        <div className="grid grid-cols-2 gap-3">
-                          <NavigationMenuLink 
-                            className="block select-none space-y-2 rounded-lg p-4 leading-none no-underline outline-none transition-all hover:bg-accent/10 hover:shadow-soft focus:bg-accent/10 focus:shadow-soft cursor-pointer group"
-                            onClick={() => setLocation("/achievements")}
-                          >
-                            <div className="flex items-center text-sm font-semibold leading-none text-foreground group-hover:text-primary transition-colors">
-                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
-                                <Trophy className="w-4 h-4 text-primary" />
+                      <div className="grid gap-6 p-6 w-[600px] md:w-[700px] bg-card/95 backdrop-blur-md">
+                        {/* Learning Section */}
+                        <div>
+                          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4" />
+                            Learning Features
+                          </h3>
+                          <div className="grid grid-cols-2 gap-3">
+                            <NavigationMenuLink 
+                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 hover:shadow-soft focus:bg-accent/10 focus:shadow-soft cursor-pointer group"
+                              onClick={() => setLocation("/achievements")}
+                            >
+                              <div className="flex items-center text-sm font-medium leading-none text-foreground group-hover:text-primary transition-colors">
+                                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center mr-2 group-hover:bg-primary/20 transition-colors">
+                                  <Trophy className="w-3 h-3 text-primary" />
+                                </div>
+                                Achievements
                               </div>
-                              Achievements
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground pl-11">
-                              View earned badges and certifications
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink 
-                            className="block select-none space-y-2 rounded-lg p-4 leading-none no-underline outline-none transition-all opacity-60 pointer-events-none group"
-                          >
-                            <div className="flex items-center text-sm font-semibold leading-none text-foreground/60">
-                              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mr-3">
-                                <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                              <p className="text-xs leading-relaxed text-muted-foreground pl-8">
+                                View earned badges and certifications
+                              </p>
+                            </NavigationMenuLink>
+                            <NavigationMenuLink 
+                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 hover:shadow-soft focus:bg-accent/10 focus:shadow-soft cursor-pointer group"
+                              onClick={() => setLocation("/study-groups")}
+                            >
+                              <div className="flex items-center text-sm font-medium leading-none text-foreground group-hover:text-primary transition-colors">
+                                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center mr-2 group-hover:bg-primary/20 transition-colors">
+                                  <Users className="w-3 h-3 text-primary" />
+                                </div>
+                                Study Groups
                               </div>
-                              Progress Reports
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground pl-11">
-                              Detailed learning analytics (Coming Soon)
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink 
-                            className="block select-none space-y-2 rounded-lg p-4 leading-none no-underline outline-none transition-all opacity-60 pointer-events-none group"
-                          >
-                            <div className="flex items-center text-sm font-semibold leading-none text-foreground/60">
-                              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mr-3">
-                                <FileText className="w-4 h-4 text-muted-foreground" />
+                              <p className="text-xs leading-relaxed text-muted-foreground pl-8">
+                                Collaborate with other learners
+                              </p>
+                            </NavigationMenuLink>
+                          </div>
+                        </div>
+
+                        {/* Tools Section */}
+                        <div>
+                          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                            <Shield className="w-4 h-4" />
+                            Developer Tools
+                          </h3>
+                          <div className="grid grid-cols-2 gap-3">
+                            <NavigationMenuLink 
+                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 hover:shadow-soft focus:bg-accent/10 focus:shadow-soft cursor-pointer group"
+                              onClick={() => setLocation("/accessibility")}
+                            >
+                              <div className="flex items-center text-sm font-medium leading-none text-foreground group-hover:text-primary transition-colors">
+                                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center mr-2 group-hover:bg-primary/20 transition-colors">
+                                  <Accessibility className="w-3 h-3 text-primary" />
+                                </div>
+                                Accessibility
                               </div>
-                              Study Materials
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground pl-11">
-                              Downloadable resources (Coming Soon)
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink 
-                            className="block select-none space-y-2 rounded-lg p-4 leading-none no-underline outline-none transition-all hover:bg-accent/10 hover:shadow-soft focus:bg-accent/10 focus:shadow-soft cursor-pointer group"
-                            onClick={() => setLocation("/study-groups")}
-                          >
-                            <div className="flex items-center text-sm font-semibold leading-none text-foreground group-hover:text-primary transition-colors">
-                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
-                                <Users className="w-4 h-4 text-primary" />
+                              <p className="text-xs leading-relaxed text-muted-foreground pl-8">
+                                Check color contrast and accessibility features
+                              </p>
+                            </NavigationMenuLink>
+                            <NavigationMenuLink 
+                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 hover:shadow-soft focus:bg-accent/10 focus:shadow-soft cursor-pointer group"
+                              onClick={() => setLocation("/ui-structure")}
+                            >
+                              <div className="flex items-center text-sm font-medium leading-none text-foreground group-hover:text-primary transition-colors">
+                                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center mr-2 group-hover:bg-primary/20 transition-colors">
+                                  <Database className="w-3 h-3 text-primary" />
+                                </div>
+                                UI Structure
                               </div>
-                              Study Groups
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground pl-11">
-                              Collaborate with other learners
-                            </p>
-                          </NavigationMenuLink>
+                              <p className="text-xs leading-relaxed text-muted-foreground pl-8">
+                                Interactive visualization of application architecture
+                              </p>
+                            </NavigationMenuLink>
+                          </div>
+                        </div>
+
+                        {/* Admin Section */}
+                        <div>
+                          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                            <Settings className="w-4 h-4" />
+                            Administration
+                          </h3>
+                          <div className="grid grid-cols-1 gap-3">
+                            <NavigationMenuLink 
+                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 hover:shadow-soft focus:bg-accent/10 focus:shadow-soft cursor-pointer group"
+                              onClick={() => setLocation("/admin")}
+                            >
+                              <div className="flex items-center text-sm font-medium leading-none text-foreground group-hover:text-primary transition-colors">
+                                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center mr-2 group-hover:bg-primary/20 transition-colors">
+                                  <Settings className="w-3 h-3 text-primary" />
+                                </div>
+                                Admin Dashboard
+                              </div>
+                              <p className="text-xs leading-relaxed text-muted-foreground pl-8">
+                                Manage users, content, and system settings
+                              </p>
+                            </NavigationMenuLink>
+                          </div>
                         </div>
                       </div>
                     </NavigationMenuContent>
-                  </NavigationMenuItem>
-
-                  {/* Tools Section */}
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger className="text-muted-foreground hover:text-primary h-10 px-4 py-2 font-medium transition-colors">
-                      <Shield className="w-4 h-4 mr-2" />
-                      Tools
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <div className="grid gap-3 p-6 w-[400px] bg-card/95 backdrop-blur-md">
-                        <NavigationMenuLink 
-                          className="block select-none space-y-2 rounded-lg p-4 leading-none no-underline outline-none transition-all hover:bg-accent/10 hover:shadow-soft focus:bg-accent/10 focus:shadow-soft cursor-pointer group"
-                          onClick={() => setLocation("/accessibility")}
-                        >
-                          <div className="flex items-center text-sm font-semibold leading-none text-foreground group-hover:text-primary transition-colors">
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
-                              <Accessibility className="w-4 h-4 text-primary" />
-                            </div>
-                            Accessibility
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground pl-11">
-                            Check color contrast and accessibility features
-                          </p>
-                        </NavigationMenuLink>
-                        <NavigationMenuLink 
-                          className="block select-none space-y-2 rounded-lg p-4 leading-none no-underline outline-none transition-all hover:bg-accent/10 hover:shadow-soft focus:bg-accent/10 focus:shadow-soft cursor-pointer group"
-                          onClick={() => setLocation("/ui-structure")}
-                        >
-                          <div className="flex items-center text-sm font-semibold leading-none text-foreground group-hover:text-primary transition-colors">
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
-                              <Database className="w-4 h-4 text-primary" />
-                            </div>
-                            UI Structure
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground pl-11">
-                            Interactive visualization of application architecture
-                          </p>
-                        </NavigationMenuLink>
-                      </div>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-
-                  {/* Admin Section */}
-                  <NavigationMenuItem>
-                    <Button 
-                      variant="ghost" 
-                      onClick={() => setLocation("/admin")}
-                      className="text-muted-foreground hover:text-primary h-10 px-4 py-2"
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Admin
-                    </Button>
                   </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
@@ -299,50 +290,72 @@ export default function Header() {
                         <Home className="w-4 h-4 mr-2" />
                         Dashboard
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => {
-                          setLocation("/achievements");
-                          setMobileMenuOpen(false);
-                        }}
-                        className="justify-start w-full"
-                      >
-                        <Trophy className="w-4 h-4 mr-2" />
-                        Achievements
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => {
-                          setLocation("/accessibility");
-                          setMobileMenuOpen(false);
-                        }}
-                        className="justify-start w-full"
-                      >
-                        <Accessibility className="w-4 h-4 mr-2" />
-                        Accessibility
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => {
-                          setLocation("/ui-structure");
-                          setMobileMenuOpen(false);
-                        }}
-                        className="justify-start w-full"
-                      >
-                        <Database className="w-4 h-4 mr-2" />
-                        UI Structure
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => {
-                          setLocation("/admin");
-                          setMobileMenuOpen(false);
-                        }}
-                        className="justify-start w-full"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Admin
-                      </Button>
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">Learning</div>
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => {
+                            setLocation("/achievements");
+                            setMobileMenuOpen(false);
+                          }}
+                          className="justify-start w-full"
+                        >
+                          <Trophy className="w-4 h-4 mr-2" />
+                          Achievements
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => {
+                            setLocation("/study-groups");
+                            setMobileMenuOpen(false);
+                          }}
+                          className="justify-start w-full"
+                        >
+                          <Users className="w-4 h-4 mr-2" />
+                          Study Groups
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">Tools</div>
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => {
+                            setLocation("/accessibility");
+                            setMobileMenuOpen(false);
+                          }}
+                          className="justify-start w-full"
+                        >
+                          <Accessibility className="w-4 h-4 mr-2" />
+                          Accessibility
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => {
+                            setLocation("/ui-structure");
+                            setMobileMenuOpen(false);
+                          }}
+                          className="justify-start w-full"
+                        >
+                          <Database className="w-4 h-4 mr-2" />
+                          UI Structure
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">Admin</div>
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => {
+                            setLocation("/admin");
+                            setMobileMenuOpen(false);
+                          }}
+                          className="justify-start w-full"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Admin Dashboard
+                        </Button>
+                      </div>
                     </>
                   )}
                 </div>

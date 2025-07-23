@@ -144,7 +144,7 @@ export default function DashboardHero() {
   if (!stats) {
     return (
       <div className="mb-8">
-        <Card className="material-shadow border border-gray-100">
+        <Card className="backdrop-blur-sm bg-card/80 border-border/50">
           <CardContent className="p-6">
             <div className="animate-pulse">
               <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>

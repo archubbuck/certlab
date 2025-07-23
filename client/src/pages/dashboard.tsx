@@ -1,10 +1,9 @@
 import Header from "@/components/Header";
 import DashboardHero from "@/components/DashboardHero";
-import LearningModeSelector from "@/components/LearningModeSelector";
+import LearningModeWizard from "@/components/LearningModeWizard";
 import ActivitySidebar from "@/components/ActivitySidebar";
 import MasteryMeter from "@/components/MasteryMeter";
 import StudyPlanCard from "@/components/StudyPlanCard";
-import WeeklyProgress from "@/components/WeeklyProgress";
 import QuickActionsCard from "@/components/QuickActionsCard";
 import StudyGroupCard from "@/components/StudyGroupCard";
 import PracticeTestMode from "@/components/PracticeTestMode";
@@ -19,29 +18,24 @@ export default function Dashboard() {
         
         {/* Enhanced Study Dashboard Layout */}
         <div className="space-y-6 sm:space-y-8">
-          {/* Main Learning Mode Selector */}
+          {/* Main Learning Mode Wizard */}
           <div className="grid-item">
-            <LearningModeSelector />
+            <LearningModeWizard />
           </div>
           
-          {/* Helen's Study Plan and This Week's Progress */}
+          {/* Helen's AI Assistant (includes study plan and progress) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div className="grid-item">
               <StudyPlanCard />
             </div>
             <div className="grid-item">
-              <WeeklyProgress />
+              <QuickActionsCard />
             </div>
           </div>
           
-          {/* Other Action Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            <div className="grid-item">
-              <QuickActionsCard />
-            </div>
-            <div className="grid-item">
-              <ActivitySidebar />
-            </div>
+          {/* Activity Sidebar */}
+          <div className="grid-item">
+            <ActivitySidebar />
           </div>
         </div>
 
