@@ -984,12 +984,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/user/:id/generate-daily-challenges", isAuthenticated, async (req, res) => {
     try {
       const userId = req.params.id;
-      console.log("Generating daily challenges for user:", userId);
+      console.log("=== Challenge Generation Debug ===");
+      console.log("User ID:", userId);
+      console.log("Request authenticated:", !!req.user);
+      console.log("Request body:", req.body);
+      
       const challenges = await storage.generateDailyChallenges(userId);
-      console.log("Generated challenges:", challenges.length);
+      console.log("Generated challenges count:", challenges.length);
+      console.log("Challenge titles:", challenges.map(c => c.title));
+      
       res.json(challenges);
     } catch (error) {
-      console.error("Error generating daily challenges:", error);
+      console.error("=== Challenge Generation Error ===");
+      console.error("Error type:", typeof error);
+      console.error("Error message:", error instanceof Error ? error.message : String(error));
+      console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
       res.status(400).json({ message: "Failed to generate daily challenges: " + (error instanceof Error ? error.message : String(error)) });
     }
   });

@@ -31,9 +31,11 @@ export default function ChallengesPage() {
 
   // Mutation to generate daily challenges
   const generateDailyChallengesMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/user/${currentUser?.id}/generate-daily-challenges`, {
-      method: "POST",
-    }),
+    mutationFn: async () => {
+      return await apiRequest(`/api/user/${currentUser?.id}/generate-daily-challenges`, {
+        method: "POST",
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/user/${currentUser?.id}/challenges`] });
       toast({
@@ -53,11 +55,10 @@ export default function ChallengesPage() {
   // Mutation to start a challenge
   const startChallengeMutation = useMutation({
     mutationFn: async (challengeId: number) => {
-      const response = await apiRequest(`/api/challenge/${challengeId}/start`, {
+      return await apiRequest(`/api/challenge/${challengeId}/start`, {
         method: "POST",
         body: { userId: currentUser?.id },
       });
-      return response.json();
     },
     onSuccess: (attempt: ChallengeAttempt) => {
       // Redirect to quiz interface with challenge mode
