@@ -19,6 +19,15 @@ import StudyGroups from "@/pages/study-groups";
 import AdminDashboard from "@/pages/admin";
 import UIStructurePage from "@/pages/ui-structure";
 import ChallengesPage from "@/pages/challenges";
+import { useEffect } from "react";
+
+// Global unhandled rejection handler
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
+    event.preventDefault(); // Prevent the default browser error
+  });
+}
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();

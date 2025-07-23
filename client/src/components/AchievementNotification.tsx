@@ -65,12 +65,21 @@ export function AchievementNotification({ userId, onClose }: AchievementNotifica
   const handleClose = async () => {
     // Mark all new achievements as notified
     try {
-      await Promise.all(newAchievements.map(achievement => 
-        fetch(`/api/user/${userId}/badges/${achievement.badgeId}/notify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+      await Promise.all(
+        newAchievements.map(async (achievement) => {
+          try {
+            const response = await fetch(`/api/user/${userId}/badges/${achievement.badgeId}/notify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            if (!response.ok) {
+              console.warn(`Failed to notify badge ${achievement.badgeId}:`, response.status);
+            }
+          } catch (err) {
+            console.warn(`Error notifying badge ${achievement.badgeId}:`, err);
+          }
         })
-      ));
+      );
     } catch (error) {
       console.error('Failed to mark badges as notified:', error);
     }
