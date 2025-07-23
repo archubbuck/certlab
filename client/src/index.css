@@ -324,6 +324,18 @@
     box-shadow: var(--shadow-lg);
   }
   
+  /* Layout isolation fixes */
+  .layout-container {
+    isolation: isolate;
+    contain: layout;
+  }
+  
+  .grid-item {
+    position: relative;
+    overflow: visible;
+    contain: layout style;
+  }
+  
   /* Focus styles */
   .focus-ring {
     outline: 2px solid transparent;

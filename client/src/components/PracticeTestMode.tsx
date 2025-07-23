@@ -162,7 +162,7 @@ export default function PracticeTestMode() {
   };
 
   return (
-    <Card>
+    <Card className="relative z-10 bg-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
@@ -181,7 +181,7 @@ export default function PracticeTestMode() {
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Choose a certification" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50">
                 {categories.map(category => (
                   <SelectItem key={category.id} value={category.id.toString()}>
                     {category.name}

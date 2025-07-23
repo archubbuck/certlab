@@ -190,7 +190,7 @@ export default function QuickActionsCard() {
   ];
 
   return (
-    <Card className="h-full">
+    <Card className="h-full relative z-10 bg-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Zap className="h-5 w-5" />

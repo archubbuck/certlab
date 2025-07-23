@@ -18,27 +18,27 @@ export default function Dashboard() {
         <DashboardHero />
         
         {/* Enhanced Study Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 layout-container">
           {/* Main Study Area */}
-          <div className="lg:col-span-2 order-3 lg:order-1">
+          <div className="lg:col-span-2 order-3 lg:order-1 grid-item">
             <LearningModeSelector />
           </div>
           
           {/* Study Planning Sidebar */}
-          <div className="lg:col-span-1 order-1 lg:order-2 space-y-4">
+          <div className="lg:col-span-1 order-1 lg:order-2 space-y-4 grid-item">
             <StudyPlanCard />
             <QuickActionsCard />
           </div>
           
           {/* Activity & Progress Sidebar */}
-          <div className="lg:col-span-1 order-2 lg:order-3 space-y-4">
+          <div className="lg:col-span-1 order-2 lg:order-3 space-y-4 grid-item">
             <WeeklyProgress />
             <ActivitySidebar />
           </div>
         </div>
 
         {/* Advanced Features Section */}
-        <div className="mt-4 sm:mt-6 lg:mt-8 space-y-6">
+        <div className="mt-8 sm:mt-10 lg:mt-12 space-y-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <StudyGroupCard />
             <PracticeTestMode />
