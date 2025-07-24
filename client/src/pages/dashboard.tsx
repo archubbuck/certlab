@@ -14,65 +14,62 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Dashboard Overview Section */}
-        <section className="dashboard-section">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome & Quick Stats */}
+        <div className="mb-8">
           <DashboardHero />
-        </section>
+        </div>
 
-        {/* Key Statistics */}
-        <DashboardStats />
+        {/* Main Learning Tools */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Start Learning - Primary Action */}
+          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-border p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-foreground mb-2">Start Learning</h2>
+              <p className="text-muted-foreground">Choose your certification and begin studying</p>
+            </div>
+            <LearningModeWizard />
+          </div>
 
-        {/* Learning Session Configuration */}
-        <section className="dashboard-section">
-          <div className="section-header mb-6">
-            <h2 className="text-xl font-semibold text-foreground">Start Learning Session</h2>
-            <p className="text-sm text-muted-foreground">Configure and begin your certification study session</p>
-          </div>
-          <LearningModeWizard />
-        </section>
-        
-        {/* AI Assistant & Quick Actions */}
-        <section className="dashboard-section">
-          <div className="section-header mb-6">
-            <h2 className="text-xl font-semibold text-foreground">Helen AI Assistant</h2>
-            <p className="text-sm text-muted-foreground">Personalized study guidance and quick learning actions</p>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <StudyPlanCard />
+          {/* Quick Actions */}
+          <div className="bg-white rounded-xl shadow-sm border border-border p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground mb-2">Quick Actions</h2>
+              <p className="text-sm text-muted-foreground">Jump into learning</p>
+            </div>
             <QuickActionsCard />
           </div>
-        </section>
-        
-        {/* Recent Activity & Progress */}
-        <section className="dashboard-section">
-          <div className="section-header mb-6">
-            <h2 className="text-xl font-semibold text-foreground">Learning Activity</h2>
-            <p className="text-sm text-muted-foreground">Your recent quiz results and performance trends</p>
-          </div>
-          <ActivitySidebar />
-        </section>
+        </div>
 
-        {/* Advanced Learning Features */}
-        <section className="dashboard-section">
-          <div className="section-header mb-6">
-            <h2 className="text-xl font-semibold text-foreground">Advanced Features</h2>
-            <p className="text-sm text-muted-foreground">Collaborative learning and practice test preparation</p>
+        {/* Progress & Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Your Progress */}
+          <div className="bg-white rounded-xl shadow-sm border border-border p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground mb-2">Your Progress</h2>
+              <p className="text-sm text-muted-foreground">Track mastery across certifications</p>
+            </div>
+            <MasteryMeter />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <StudyGroupCard />
-            <PracticeTestMode />
-          </div>
-        </section>
 
-        {/* Mastery Progress Tracking */}
-        <section id="progress-section" className="dashboard-section">
-          <div className="section-header mb-6">
-            <h2 className="text-xl font-semibold text-foreground">Mastery Progress</h2>
-            <p className="text-sm text-muted-foreground">Track your certification mastery across all study areas</p>
+          {/* Recent Activity */}
+          <div className="bg-white rounded-xl shadow-sm border border-border p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground mb-2">Recent Activity</h2>
+              <p className="text-sm text-muted-foreground">Your latest study sessions</p>
+            </div>
+            <ActivitySidebar />
           </div>
-          <MasteryMeter />
-        </section>
+        </div>
+
+        {/* AI Assistant & Study Plan */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-border p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-foreground mb-2">Helen AI Study Assistant</h2>
+            <p className="text-sm text-muted-foreground">Personalized recommendations and study guidance</p>
+          </div>
+          <StudyPlanCard />
+        </div>
       </main>
     </div>
   );
