@@ -162,10 +162,10 @@ export default function PracticeTestMode() {
   };
 
   return (
-    <Card className="h-full backdrop-blur-sm bg-card/80 border-border/50 card-hover overflow-hidden">
+    <Card className="h-full stat-card card-hover overflow-hidden">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+          <FileText className="h-5 w-5 text-primary" />
           Practice Test Mode
         </CardTitle>
         <p className="text-sm text-muted-foreground">

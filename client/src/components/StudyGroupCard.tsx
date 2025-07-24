@@ -173,11 +173,11 @@ export default function StudyGroupCard() {
   };
 
   return (
-    <Card className="h-full backdrop-blur-sm bg-card/80 border-border/50 card-hover overflow-hidden">
+    <Card className="h-full stat-card card-hover overflow-hidden">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <Users className="h-5 w-5 text-primary" />
             Study Groups
           </CardTitle>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

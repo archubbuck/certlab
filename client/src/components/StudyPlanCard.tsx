@@ -90,9 +90,9 @@ export default function StudyPlanCard() {
   };
 
   return (
-    <Card className="h-full backdrop-blur-sm bg-card/80 border-border/50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className="h-full stat-card">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
           <Bot className="h-5 w-5 text-primary" />
           Helen AI Assistant
         </CardTitle>

@@ -200,10 +200,10 @@ export default function QuickActionsCard() {
   ];
 
   return (
-    <Card className="h-full backdrop-blur-sm bg-card/80 border-border/50 overflow-hidden">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Zap className="h-5 w-5" />
+    <Card className="h-full stat-card overflow-hidden">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+          <Zap className="h-5 w-5 text-primary" />
           Quick Actions
         </CardTitle>
       </CardHeader>

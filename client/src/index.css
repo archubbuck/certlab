@@ -3,26 +3,26 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(220, 14%, 92%);
-  --foreground: hsl(220, 17%, 11%);
-  --muted: hsl(220, 14%, 88%);
-  --muted-foreground: hsl(220, 13%, 40%);
-  --popover: hsl(220, 14%, 99%);
-  --popover-foreground: hsl(220, 17%, 11%);
-  --card: hsl(220, 14%, 99%);
-  --card-foreground: hsl(220, 17%, 11%);
-  --border: hsl(220, 13%, 91%);
-  --input: hsl(220, 13%, 91%);
-  --primary: hsl(217, 91%, 54%);
-  --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(142, 43%, 49%);
-  --secondary-foreground: hsl(0, 0%, 100%);
-  --accent: hsl(217, 80%, 45%);
-  --accent-foreground: hsl(0, 0%, 100%);
-  --destructive: hsl(0, 72%, 51%);
-  --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(217, 91%, 54%);
-  --radius: 0.75rem;
+  --background: hsl(214, 32%, 91%);
+  --foreground: hsl(222, 84%, 4.9%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(215.4, 16.3%, 46.9%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 84%, 4.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 84%, 4.9%);
+  --border: hsl(214.3, 31.8%, 91.4%);
+  --input: hsl(214.3, 31.8%, 91.4%);
+  --primary: hsl(221.2, 83.2%, 53.3%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(210, 40%, 96%);
+  --secondary-foreground: hsl(222.2, 84%, 4.9%);
+  --accent: hsl(210, 40%, 96%);
+  --accent-foreground: hsl(222.2, 84%, 4.9%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(221.2, 83.2%, 53.3%);
+  --radius: 0.5rem;
   
   /* Custom enhanced colors */
   --surface: hsl(220, 14%, 99%);
@@ -186,7 +186,7 @@
 @layer base {
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
 }
 
@@ -316,12 +316,55 @@
   
   /* Modern card styles */
   .card-hover {
-    transition: all var(--transition-base);
+    transition: all 0.2s ease;
   }
   
   .card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Professional statistics cards */
+  .stat-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+  }
+  
+  .stat-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  /* Clean metric displays */
+  .metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    color: hsl(var(--primary));
+  }
+  
+  .metric-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+  
+  .metric-change {
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .metric-change.positive {
+    color: hsl(142, 71%, 45%);
+  }
+  
+  .metric-change.negative {
+    color: hsl(0, 72%, 51%);
   }
   
   /* Layout isolation fixes */
@@ -342,17 +385,15 @@
   .dashboard-section {
     position: relative;
     padding: 1.5rem;
-    border-radius: 12px;
-    background: hsl(var(--card) / 0.4);
-    border: 1px solid hsl(var(--border) / 0.3);
-    backdrop-filter: blur(8px);
-    transition: all 0.3s ease;
+    border-radius: 8px;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
   }
   
   .dashboard-section:hover {
-    background: hsl(var(--card) / 0.5);
-    border-color: hsl(var(--border) / 0.4);
-    box-shadow: 0 8px 32px hsl(var(--foreground) / 0.08);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
   
   .section-header {

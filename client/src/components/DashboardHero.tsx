@@ -153,14 +153,25 @@ export default function DashboardHero() {
 
   return (
     <div className="animate-fade-in">
-        {/* Helen AI Insights Header */}
-        <div className="section-header mb-6">
-          <h2 className="text-xl font-semibold text-foreground">Helen AI Assistant</h2>
-          <p className="text-sm text-muted-foreground">Your personalized AI learning companion and study guidance</p>
+        {/* Welcome Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Welcome back, {currentUser?.firstName || 'Student'}!
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            You have {stats?.totalQuizzes || 0} sessions completed and {stats?.currentStreak || 0} day study streak
+          </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-4 text-center sm:text-left mb-6">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 gradient-primary rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden avatar-container group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 shadow-glow">
+        {/* Helen AI Insights Section */}
+        <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg p-6 mb-6">
+          <div className="section-header mb-4">
+            <h2 className="text-xl font-semibold text-foreground">Helen AI Assistant</h2>
+            <p className="text-sm text-muted-foreground">Your personalized AI learning companion and study guidance</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-4 text-center sm:text-left">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 gradient-primary rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden avatar-container group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 shadow-glow">
               <svg 
                 width="80" 
                 height="80" 
@@ -299,6 +310,7 @@ export default function DashboardHero() {
               </p>
             </div>
           </div>
+        </div>
         
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
