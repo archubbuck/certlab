@@ -143,23 +143,16 @@ export default function DashboardHero() {
 
   if (!stats) {
     return (
-      <div className="mb-8">
-        <Card className="backdrop-blur-sm bg-card/80 border-border/50">
-          <CardContent className="p-6">
-            <div className="animate-pulse">
-              <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="animate-pulse">
+        <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
       </div>
     );
   }
 
   return (
-    <div className="mb-8 animate-fade-in">
-      <Card className="shadow-medium border-0 overflow-hidden bg-card/50 backdrop-blur-sm">
+    <div className="animate-fade-in">
         {/* Helen AI Insights Header */}
         <div className="gradient-mesh border-b border-border/50 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-4 text-center sm:text-left">
@@ -305,7 +298,7 @@ export default function DashboardHero() {
           </div>
         </div>
 
-        <CardContent className="p-4 sm:p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {/* Quick Actions */}
             <div className="lg:col-span-1">
@@ -382,8 +375,7 @@ export default function DashboardHero() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+        </div>
+      </div>
+    );
+  }

@@ -13,51 +13,62 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <DashboardHero />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-8">
+        {/* Dashboard Overview Section */}
+        <section className="dashboard-section">
+          <DashboardHero />
+        </section>
+
+        {/* Learning Session Configuration */}
+        <section className="dashboard-section">
+          <div className="section-header mb-6">
+            <h2 className="text-xl font-semibold text-foreground">Start Learning Session</h2>
+            <p className="text-sm text-muted-foreground">Configure and begin your certification study session</p>
+          </div>
+          <LearningModeWizard />
+        </section>
         
-        {/* Enhanced Study Dashboard Layout */}
-        <div className="space-y-6 sm:space-y-8">
-          {/* Main Learning Mode Wizard */}
-          <div className="grid-item">
-            <LearningModeWizard />
+        {/* AI Assistant & Quick Actions */}
+        <section className="dashboard-section">
+          <div className="section-header mb-6">
+            <h2 className="text-xl font-semibold text-foreground">Helen AI Assistant</h2>
+            <p className="text-sm text-muted-foreground">Personalized study guidance and quick learning actions</p>
           </div>
-          
-          {/* Helen's AI Assistant (includes study plan and progress) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            <div className="grid-item">
-              <StudyPlanCard />
-            </div>
-            <div className="grid-item">
-              <QuickActionsCard />
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StudyPlanCard />
+            <QuickActionsCard />
           </div>
-          
-          {/* Activity Sidebar */}
-          <div className="grid-item">
-            <ActivitySidebar />
+        </section>
+        
+        {/* Recent Activity & Progress */}
+        <section className="dashboard-section">
+          <div className="section-header mb-6">
+            <h2 className="text-xl font-semibold text-foreground">Learning Activity</h2>
+            <p className="text-sm text-muted-foreground">Your recent quiz results and performance trends</p>
           </div>
-        </div>
+          <ActivitySidebar />
+        </section>
 
-        {/* Section Separator */}
-        <div className="section-separator mt-8 sm:mt-10 lg:mt-12"></div>
-
-        {/* Advanced Features Section */}
-        <div className="mt-8 sm:mt-10 lg:mt-12 space-y-6 section-separator">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 layout-container">
-            <div className="grid-item">
-              <StudyGroupCard />
-            </div>
-            <div className="grid-item">
-              <PracticeTestMode />
-            </div>
+        {/* Advanced Learning Features */}
+        <section className="dashboard-section">
+          <div className="section-header mb-6">
+            <h2 className="text-xl font-semibold text-foreground">Advanced Features</h2>
+            <p className="text-sm text-muted-foreground">Collaborative learning and practice test preparation</p>
           </div>
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StudyGroupCard />
+            <PracticeTestMode />
+          </div>
+        </section>
 
-        {/* Mastery Progress Section */}
-        <div id="progress-section" className="mt-4 sm:mt-6 lg:mt-8">
+        {/* Mastery Progress Tracking */}
+        <section id="progress-section" className="dashboard-section">
+          <div className="section-header mb-6">
+            <h2 className="text-xl font-semibold text-foreground">Mastery Progress</h2>
+            <p className="text-sm text-muted-foreground">Track your certification mastery across all study areas</p>
+          </div>
           <MasteryMeter />
-        </div>
+        </section>
       </main>
     </div>
   );

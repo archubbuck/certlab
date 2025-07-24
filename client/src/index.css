@@ -338,6 +338,39 @@
     z-index: 1;
   }
   
+  /* Dashboard Section Styling */
+  .dashboard-section {
+    position: relative;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: hsl(var(--card) / 0.4);
+    border: 1px solid hsl(var(--border) / 0.3);
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+  }
+  
+  .dashboard-section:hover {
+    background: hsl(var(--card) / 0.5);
+    border-color: hsl(var(--border) / 0.4);
+    box-shadow: 0 8px 32px hsl(var(--foreground) / 0.08);
+  }
+  
+  .section-header {
+    border-bottom: 1px solid hsl(var(--border) / 0.2);
+    padding-bottom: 0.75rem;
+  }
+  
+  .section-header h2 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+  
+  .section-header p {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    opacity: 0.8;
+  }
+
   /* Prevent layout bleeding */
   .section-separator {
     clear: both;
