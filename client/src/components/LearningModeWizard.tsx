@@ -214,7 +214,7 @@ export default function LearningModeWizard() {
               </CardTitle>
               <p className="text-muted-foreground text-xs sm:text-sm flex items-center gap-2">
                 <Target className="w-4 h-4" />
-                Configure your personalized learning experience
+                Choose your mode, topics, and session preferences
               </p>
             </div>
           </div>
