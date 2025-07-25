@@ -128,7 +128,7 @@ export default function DashboardHero() {
                   </h1>
                   <p className="text-lg text-muted-foreground flex items-center gap-2">
                     <BookOpen className="w-5 h-5" />
-                    Ready to continue your certification journey
+                    Are you ready to continue your certification journey?
                   </p>
                 </div>
               </div>
