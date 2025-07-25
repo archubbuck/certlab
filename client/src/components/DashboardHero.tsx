@@ -294,42 +294,7 @@ export default function DashboardHero() {
           </div>
         </div>
 
-        {/* Helen's Additional Insights */}
-        <div className="mt-8 p-6 rounded-md bg-gradient-to-r from-purple-50/50 to-blue-50/50 dark:from-purple-950/20 dark:to-blue-950/20 border border-purple-200/50 dark:border-purple-800/50">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 shadow-lg rounded-xl relative overflow-hidden">
-              {/* Smaller geometric Helen for insights */}
-              <div className="relative w-6 h-6">
-                {/* Mini hexagon face */}
-                <div className="absolute inset-0.5 bg-white/80"
-                     style={{clipPath: 'polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%)'}}>
-                </div>
-                {/* Mini circuit lines */}
-                <div className="absolute top-1 left-1.5 w-1.5 h-0.5 bg-purple-500 rounded-full"></div>
-                <div className="absolute bottom-1 right-1.5 w-1.5 h-0.5 bg-purple-500 rounded-full"></div>
-                {/* Glowing eyes */}
-                <div className="absolute top-1.5 left-1.5 w-0.5 h-0.5 bg-cyan-400 rounded-full"></div>
-                <div className="absolute top-1.5 right-1.5 w-0.5 h-0.5 bg-cyan-400 rounded-full"></div>
-                {/* LED smile */}
-                <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 flex gap-0.5">
-                  <div className="w-0.5 h-0.5 bg-cyan-400 rounded-full"></div>
-                  <div className="w-0.5 h-0.5 bg-cyan-400 rounded-full"></div>
-                  <div className="w-0.5 h-0.5 bg-cyan-400 rounded-full"></div>
-                </div>
-              </div>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-                Helen's Smart Insights
-                <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200">
-                  Personalized
-                </Badge>
-              </h3>
-              <p className="text-muted-foreground mb-3">{insights.message}</p>
-              <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">{insights.action}</p>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );
