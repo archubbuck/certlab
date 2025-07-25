@@ -125,14 +125,9 @@ export default function Dashboard() {
               </div>
               <div className="space-y-4">
                 <QuickStartMode
-                  stats={stats}
-                  isQuickMode={isQuickStartMode}
-                  onToggleMode={setIsQuickStartMode}
+                  onToggleMode={() => setIsQuickStartMode(!isQuickStartMode)}
                 />
-                <ContextualQuickActions 
-                  stats={stats} 
-                  userGoals={(currentUser as any)?.certificationGoals}
-                />
+                <ContextualQuickActions />
                 {!isQuickStartMode && <QuickActionsCard />}
               </div>
             </div>

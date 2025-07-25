@@ -1,276 +1,238 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, TrendingUp, Brain, Clock, Award, ArrowRight } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
-import type { UserStats } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Play, 
+  RotateCcw, 
+  TrendingUp, 
+  Clock,
+  Target,
+  BookOpen,
+  Award,
+  Users
+} from "lucide-react";
+import type { Quiz, UserStats } from "@shared/schema";
 
-interface ContextualQuickActionsProps {
-  stats?: UserStats;
-  userGoals?: string[];
-}
+export default function ContextualQuickActions() {
+  const [location, setLocation] = useLocation();
+  const { user: currentUser } = useAuth();
+  const { toast } = useToast();
 
-interface SmartAction {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  priority: 'high' | 'medium' | 'low';
-  action: () => void;
-  badge?: string;
-  disabled?: boolean;
-}
+  const { data: stats } = useQuery<UserStats>({
+    queryKey: [`/api/user/${currentUser?.id}/stats`],
+    enabled: !!currentUser?.id,
+  });
 
-export default function ContextualQuickActions({ stats, userGoals }: ContextualQuickActionsProps) {
-  const { user } = useAuth();
-  const [isCreating, setIsCreating] = useState(false);
-  const queryClient = useQueryClient();
+  const { data: recentQuizzes = [] } = useQuery<Quiz[]>({
+    queryKey: ['/api/user', currentUser?.id, 'quizzes'],
+    enabled: !!currentUser,
+  });
 
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: any) => {
-      return await apiRequest('/api/quiz', {
-        method: 'POST',
-        body: JSON.stringify(quizData),
+      const response = await apiRequest({
+        method: "POST",
+        endpoint: "/api/quiz",
+        data: quizData,
+      });
+      return response.json();
+    },
+    onSuccess: (quiz) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      setLocation(`/app/quiz/${quiz.id}`);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create learning session.",
+        variant: "destructive",
       });
     },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-      window.location.href = `/quiz/${data.id}`;
-    },
-    onError: (error) => {
-      console.error('Failed to create quiz:', error);
-    },
-    onSettled: () => {
-      setIsCreating(false);
-    }
   });
 
-  const generateSmartActions = (): SmartAction[] => {
-    const actions: SmartAction[] = [];
-    const hasStats = stats && stats.totalQuizzes > 0;
-    const hasGoals = userGoals && userGoals.length > 0;
-    const isNewUser = !hasStats || stats.totalQuizzes === 0;
-    const lowPerformance = hasStats && stats.averageScore < 70;
-    const noStreak = !hasStats || stats.currentStreak === 0;
+  // Get contextual actions based on current page
+  const getContextualActions = () => {
+    const actions = [];
+    const currentPath = location;
 
-    // New User Quick Start
-    if (isNewUser) {
-      actions.push({
-        id: 'quick-start',
-        title: 'Take Your First Quiz',
-        description: 'Start with 5 beginner-friendly questions',
-        icon: <Target className="w-4 h-4" />,
-        priority: 'high',
-        badge: 'Recommended',
-        action: () => {
-          setIsCreating(true);
+    // Universal quick actions
+    actions.push({
+      key: 'quick-session',
+      label: 'Quick Session',
+      description: '15 questions, mixed topics',
+      icon: <Play className="w-4 h-4" />,
+      variant: 'default' as const,
+      onClick: () => {
+        if (currentUser?.id) {
           createQuizMutation.mutate({
-            userId: user?.id,
-            categoryIds: [35], // CC category for beginners
-            subcategoryIds: [],
-            questionCount: 5,
-            title: 'Quick Start Quiz',
-            timeLimit: 600, // 10 minutes
-          });
-        }
-      });
-    }
-
-    // Performance Improvement
-    if (lowPerformance) {
-      actions.push({
-        id: 'focus-weak-areas',
-        title: 'Focus on Weak Areas',
-        description: 'Target your lowest scoring topics',
-        icon: <TrendingUp className="w-4 h-4" />,
-        priority: 'high',
-        badge: 'High Impact',
-        action: () => {
-          setIsCreating(true);
-          createQuizMutation.mutate({
-            userId: user?.id,
-            categoryIds: [35, 36], // Mix of categories
-            subcategoryIds: [],
-            questionCount: 10,
-            title: 'Improvement Focus Quiz',
-            timeLimit: 900, // 15 minutes
-          });
-        }
-      });
-    }
-
-    // Daily Streak Recovery
-    if (noStreak && hasStats) {
-      actions.push({
-        id: 'restart-streak',
-        title: 'Restart Your Streak',
-        description: 'Quick 5-minute daily practice session',
-        icon: <Clock className="w-4 h-4" />,
-        priority: 'high',
-        badge: 'Daily Goal',
-        action: () => {
-          setIsCreating(true);
-          createQuizMutation.mutate({
-            userId: user?.id,
-            categoryIds: [35],
-            subcategoryIds: [],
-            questionCount: 3,
-            title: 'Daily Streak Quiz',
-            timeLimit: 300, // 5 minutes
-          });
-        }
-      });
-    }
-
-    // Goal-Based Practice
-    if (hasGoals && userGoals.length > 0) {
-      const primaryGoal = userGoals[0];
-      actions.push({
-        id: 'goal-practice',
-        title: `${primaryGoal} Practice`,
-        description: 'Focused practice for your certification goal',
-        icon: <Award className="w-4 h-4" />,
-        priority: 'medium',
-        badge: 'Goal-Aligned',
-        action: () => {
-          setIsCreating(true);
-          // Map certification names to category IDs
-          const categoryMap: { [key: string]: number } = {
-            'CC': 35,
-            'CGRC': 36,
-            'CISA': 37,
-            'CISM': 38,
-            'CISSP': 39,
-            'Cloud+': 40
-          };
-          const categoryId = categoryMap[primaryGoal] || 35;
-          
-          createQuizMutation.mutate({
-            userId: user?.id,
-            categoryIds: [categoryId],
-            subcategoryIds: [],
+            userId: currentUser.id,
+            categoryIds: [35], // Default to CC
             questionCount: 15,
-            title: `${primaryGoal} Goal Practice`,
-            timeLimit: 1200, // 20 minutes
+            title: `Quick Session - ${new Date().toLocaleDateString()}`,
           });
         }
-      });
-    }
-
-    // Advanced Challenge
-    if (hasStats && stats.averageScore >= 80) {
-      actions.push({
-        id: 'challenge-mode',
-        title: 'Advanced Challenge',
-        description: 'Test your knowledge with harder questions',
-        icon: <Brain className="w-4 h-4" />,
-        priority: 'medium',
-        badge: 'Expert',
-        action: () => {
-          setIsCreating(true);
-          createQuizMutation.mutate({
-            userId: user?.id,
-            categoryIds: [35, 36, 37, 38], // Multiple categories
-            subcategoryIds: [],
-            questionCount: 20,
-            title: 'Advanced Challenge Quiz',
-            timeLimit: 1800, // 30 minutes
-          });
-        }
-      });
-    }
-
-    // Mixed Review
-    if (hasStats && stats.totalQuizzes >= 5) {
-      actions.push({
-        id: 'mixed-review',
-        title: 'Mixed Review',
-        description: 'Review across all your studied topics',
-        icon: <ArrowRight className="w-4 h-4" />,
-        priority: 'low',
-        action: () => {
-          setIsCreating(true);
-          createQuizMutation.mutate({
-            userId: user?.id,
-            categoryIds: [35, 36, 37], // Multiple categories
-            subcategoryIds: [],
-            questionCount: 12,
-            title: 'Mixed Review Quiz',
-            timeLimit: 1200, // 20 minutes
-          });
-        }
-      });
-    }
-
-    return actions.sort((a, b) => {
-      const priorityOrder = { high: 3, medium: 2, low: 1 };
-      return priorityOrder[b.priority] - priorityOrder[a.priority];
+      }
     });
+
+    // Page-specific contextual actions
+    if (currentPath === '/app/dashboard') {
+      actions.push({
+        key: 'review-weak',
+        label: 'Review Weak Areas',
+        description: 'Focus on areas needing improvement',
+        icon: <Target className="w-4 h-4" />,
+        variant: 'outline' as const,
+        badge: (stats?.totalQuizzes || 0) > 0 ? 'Smart' : undefined,
+        onClick: () => setLocation('/app/quiz?mode=review')
+      });
+
+      actions.push({
+        key: 'achievements',
+        label: 'View Progress',
+        description: 'Check badges and milestones',
+        icon: <Award className="w-4 h-4" />,
+        variant: 'ghost' as const,
+        onClick: () => setLocation('/app/achievements')
+      });
+    }
+
+    if (currentPath.startsWith('/app/quiz')) {
+      actions.push({
+        key: 'timed-practice',
+        label: 'Timed Practice',
+        description: 'Exam-style time pressure',
+        icon: <Clock className="w-4 h-4" />,
+        variant: 'outline' as const,
+        badge: 'Challenge',
+        onClick: () => {
+          if (currentUser?.id) {
+            createQuizMutation.mutate({
+              userId: currentUser.id,
+              categoryIds: [35],
+              questionCount: 20,
+              timeLimit: 30,
+              title: `Timed Practice - ${new Date().toLocaleDateString()}`,
+            });
+          }
+        }
+      });
+    }
+
+    if (currentPath === '/app/achievements') {
+      actions.push({
+        key: 'unlock-badges',
+        label: 'Earn More Badges',
+        description: 'Start learning to unlock achievements',
+        icon: <BookOpen className="w-4 h-4" />,
+        variant: 'outline' as const,
+        onClick: () => setLocation('/app/quiz')
+      });
+
+      if (recentQuizzes.length > 0) {
+        actions.push({
+          key: 'repeat-success',
+          label: 'Repeat Best Performance',
+          description: 'Use your most successful format',
+          icon: <RotateCcw className="w-4 h-4" />,
+          variant: 'ghost' as const,
+          onClick: () => {
+            const bestQuiz = recentQuizzes
+              .filter(quiz => quiz.completedAt && (quiz.score || 0) >= 70)
+              .sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+
+            if (bestQuiz && currentUser?.id) {
+              createQuizMutation.mutate({
+                userId: currentUser.id,
+                categoryIds: bestQuiz.categoryIds,
+                questionCount: bestQuiz.questionCount || 15,
+                title: `Repeat Success - ${new Date().toLocaleDateString()}`,
+              });
+            }
+          }
+        });
+      }
+    }
+
+    if (currentPath === '/app/study-groups') {
+      actions.push({
+        key: 'solo-practice',
+        label: 'Practice Solo',
+        description: 'Individual learning session',
+        icon: <BookOpen className="w-4 h-4" />,
+        variant: 'outline' as const,
+        onClick: () => setLocation('/app/quiz')
+      });
+
+      actions.push({
+        key: 'group-challenge',
+        label: 'Group Challenge',
+        description: 'Compete with study partners',
+        icon: <Users className="w-4 h-4" />,
+        variant: 'ghost' as const,
+        badge: 'Coming Soon',
+        onClick: () => {
+          toast({
+            title: "Coming Soon",
+            description: "Group challenges will be available soon!",
+          });
+        }
+      });
+    }
+
+    return actions.slice(0, 3); // Limit to 3 actions to avoid clutter
   };
 
-  const smartActions = generateSmartActions();
+  const actions = getContextualActions();
 
-  if (smartActions.length === 0) {
+  if (actions.length === 0) {
     return null;
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Brain className="w-5 h-5" />
-          Smart Actions
+    <Card className="card-enhanced">
+      <CardHeader className="card-spacious pb-3">
+        <CardTitle className="text-base font-semibold text-comfortable flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-primary" />
+          Quick Actions
         </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Personalized actions based on your progress and goals
-        </p>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {smartActions.slice(0, 3).map((action) => (
-          <div
-            key={action.id}
-            className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-          >
-            <div className="flex items-start gap-3 flex-1">
-              <div className="mt-1">
-                {action.icon}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-medium text-sm">{action.title}</h4>
-                  {action.badge && (
-                    <Badge 
-                      variant={action.priority === 'high' ? 'destructive' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {action.badge}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">{action.description}</p>
-              </div>
-            </div>
+      <CardContent className="card-breathing pt-0">
+        <div className="flex flex-wrap gap-2">
+          {actions.map((action) => (
             <Button
+              key={action.key}
+              variant={action.variant}
               size="sm"
-              onClick={action.action}
-              disabled={action.disabled || isCreating}
-              className="shrink-0"
+              onClick={action.onClick}
+              disabled={createQuizMutation.isPending}
+              className="flex-1 min-w-0 sm:flex-none"
             >
-              {isCreating ? 'Creating...' : 'Start'}
+              <span className="flex items-center gap-2 min-w-0">
+                {action.icon}
+                <span className="truncate">{action.label}</span>
+                {action.badge && (
+                  <Badge variant="secondary" className="text-xs px-1.5 py-0.5 ml-1">
+                    {action.badge}
+                  </Badge>
+                )}
+              </span>
             </Button>
-          </div>
-        ))}
+          ))}
+        </div>
         
-        {smartActions.length > 3 && (
-          <div className="text-center pt-2">
-            <Button variant="ghost" size="sm">
-              View All Actions ({smartActions.length - 3} more)
-            </Button>
-          </div>
-        )}
+        {/* Contextual description */}
+        <div className="mt-3 text-xs text-muted-foreground">
+          {actions[0]?.description && (
+            <p className="text-relaxed">
+              <strong>{actions[0].label}:</strong> {actions[0].description}
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

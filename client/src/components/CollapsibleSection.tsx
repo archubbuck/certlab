@@ -1,96 +1,99 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 interface CollapsibleSectionProps {
   title: string;
   description?: string;
+  icon?: React.ReactNode;
   children: React.ReactNode;
   defaultExpanded?: boolean;
-  persistKey?: string; // Key for localStorage persistence
+  storageKey?: string;
   className?: string;
-  icon?: React.ReactNode;
 }
 
 export default function CollapsibleSection({
   title,
   description,
+  icon,
   children,
-  defaultExpanded = true,
-  persistKey,
-  className = "",
-  icon
+  defaultExpanded = false,
+  storageKey,
+  className = ""
 }: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  // Load persisted state on mount
+  // Load state from localStorage if storageKey is provided
   useEffect(() => {
-    if (persistKey) {
-      try {
-        const saved = localStorage.getItem(`collapsible-${persistKey}`);
-        if (saved !== null) {
-          setIsExpanded(JSON.parse(saved));
-        }
-      } catch (error) {
-        console.warn('Failed to load collapse state:', error);
+    if (storageKey) {
+      const savedState = localStorage.getItem(`collapsible-${storageKey}`);
+      if (savedState !== null) {
+        setIsExpanded(JSON.parse(savedState));
       }
     }
-  }, [persistKey]);
+  }, [storageKey]);
 
-  const handleToggle = () => {
-    const newState = !isExpanded;
-    setIsExpanded(newState);
-    
-    // Persist state if key provided
-    if (persistKey) {
-      try {
-        localStorage.setItem(`collapsible-${persistKey}`, JSON.stringify(newState));
-      } catch (error) {
-        console.warn('Failed to save collapse state:', error);
-      }
+  // Save state to localStorage when changed
+  useEffect(() => {
+    if (storageKey) {
+      localStorage.setItem(`collapsible-${storageKey}`, JSON.stringify(isExpanded));
     }
+  }, [isExpanded, storageKey]);
+
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded);
   };
 
   return (
-    <Card className={`card-enhanced transition-all duration-200 ${className}`}>
-      <CardHeader 
-        className="cursor-pointer select-none card-spacious border-b border-border/50"
-        onClick={handleToggle}
-      >
-        <div className="flex items-center justify-between">
+    <Card className={`card-enhanced transition-all duration-300 ${className}`}>
+      <CardHeader className="card-spacious pb-3">
+        <Button
+          variant="ghost"
+          onClick={toggleExpanded}
+          className="w-full justify-between p-0 h-auto text-left hover:bg-transparent"
+          aria-expanded={isExpanded}
+          aria-controls={`section-${title.replace(/\s+/g, '-').toLowerCase()}`}
+        >
           <div className="flex items-center gap-3">
-            {icon && <div className="text-primary">{icon}</div>}
-            <div>
-              <CardTitle className="text-lg font-semibold text-comfortable">
-                {title}
-              </CardTitle>
+            {icon && (
+              <div className="flex-shrink-0 p-2 rounded-lg bg-primary/10 text-primary">
+                {icon}
+              </div>
+            )}
+            <div className="text-left">
+              <h3 className="font-semibold text-comfortable">{title}</h3>
               {description && (
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1 text-relaxed">
                   {description}
                 </p>
               )}
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-foreground"
-          >
+          <div className="flex-shrink-0 transition-transform duration-200 ease-in-out">
             {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
             ) : (
-              <ChevronDown className="h-4 w-4" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
             )}
-          </Button>
-        </div>
+          </div>
+        </Button>
       </CardHeader>
       
-      {isExpanded && (
-        <CardContent className="card-breathing animate-in slide-in-from-top-2 duration-200">
-          {children}
+      <div
+        id={`section-${title.replace(/\s+/g, '-').toLowerCase()}`}
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isExpanded 
+            ? 'max-h-[2000px] opacity-100' 
+            : 'max-h-0 opacity-0'
+        }`}
+      >
+        <CardContent className="card-breathing pt-0">
+          <div className="content-breathing">
+            {children}
+          </div>
         </CardContent>
-      )}
+      </div>
     </Card>
   );
 }

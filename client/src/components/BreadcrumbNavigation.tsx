@@ -1,150 +1,92 @@
+import { useLocation } from "wouter";
 import { ChevronRight, Home } from "lucide-react";
-import { Link, useLocation } from "wouter";
-import { 
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-  BreadcrumbPage
-} from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 
 interface BreadcrumbItem {
   label: string;
   href?: string;
-  isCurrentPage?: boolean;
+  icon?: React.ReactNode;
 }
 
-const routeMap: Record<string, BreadcrumbItem[]> = {
-  '/': [
-    { label: 'Dashboard', isCurrentPage: true }
-  ],
-  '/achievements': [
-    { label: 'Dashboard', href: '/' },
-    { label: 'Achievements', isCurrentPage: true }
-  ],
-  '/accessibility': [
-    { label: 'Dashboard', href: '/' },
-    { label: 'Tools', href: '/' },
-    { label: 'Accessibility', isCurrentPage: true }
-  ],
-  '/ui-structure': [
-    { label: 'Dashboard', href: '/' },
-    { label: 'Tools', href: '/' },
-    { label: 'App Structure', isCurrentPage: true }
-  ],
-  '/admin': [
-    { label: 'Dashboard', href: '/' },
-    { label: 'Administration', isCurrentPage: true }
-  ]
-};
-
-// Dynamic route patterns
-const dynamicRoutes = [
-  {
-    pattern: /^\/quiz\/(\d+)$/,
-    generator: (matches: RegExpMatchArray) => [
-      { label: 'Dashboard', href: '/' },
-      { label: 'Quiz Session', isCurrentPage: true }
-    ]
-  },
-  {
-    pattern: /^\/results\/(\d+)$/,
-    generator: (matches: RegExpMatchArray) => [
-      { label: 'Dashboard', href: '/' },
-      { label: 'Quiz Results', isCurrentPage: true }
-    ]
-  },
-  {
-    pattern: /^\/review\/(\d+)$/,
-    generator: (matches: RegExpMatchArray) => [
-      { label: 'Dashboard', href: '/' },
-      { label: 'Quiz Review', isCurrentPage: true }
-    ]
-  }
-];
-
 export default function BreadcrumbNavigation() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
-  const getBreadcrumbItems = (): BreadcrumbItem[] => {
-    // Check static routes first
-    if (routeMap[location]) {
-      return routeMap[location];
-    }
-
-    // Check dynamic routes
-    for (const route of dynamicRoutes) {
-      const matches = location.match(route.pattern);
-      if (matches) {
-        return route.generator(matches);
-      }
-    }
-
-    // Fallback for unknown routes
+  const getBreadcrumbs = (): BreadcrumbItem[] => {
     const pathSegments = location.split('/').filter(Boolean);
+    
+    // Always start with home
     const breadcrumbs: BreadcrumbItem[] = [
-      { label: 'Dashboard', href: '/' }
+      { label: 'Dashboard', href: '/app/dashboard', icon: <Home className="w-4 h-4" /> }
     ];
 
-    pathSegments.forEach((segment, index) => {
-      const isLast = index === pathSegments.length - 1;
-      const href = '/' + pathSegments.slice(0, index + 1).join('/');
-      const label = segment.charAt(0).toUpperCase() + segment.slice(1);
+    // Map path segments to readable labels
+    const pathMapping: Record<string, string> = {
+      'app': '',
+      'dashboard': 'Dashboard',
+      'quiz': 'Learning Session',
+      'achievements': 'Achievements',
+      'review': 'Review Sessions',
+      'results': 'Results',
+      'study-groups': 'Study Groups',
+      'accessibility': 'Accessibility',
+      'admin': 'Administration',
+      'ui-structure': 'UI Structure'
+    };
 
-      breadcrumbs.push({
-        label,
-        href: isLast ? undefined : href,
-        isCurrentPage: isLast
-      });
+    let currentPath = '';
+    
+    pathSegments.forEach((segment, index) => {
+      currentPath += `/${segment}`;
+      const label = pathMapping[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+      
+      // Skip empty labels and don't duplicate dashboard
+      if (label && label !== 'Dashboard' && segment !== 'app') {
+        breadcrumbs.push({
+          label,
+          href: index < pathSegments.length - 1 ? currentPath : undefined
+        });
+      }
     });
 
     return breadcrumbs;
   };
 
-  const breadcrumbItems = getBreadcrumbItems();
+  const breadcrumbs = getBreadcrumbs();
 
-  // Don't show breadcrumbs on home page or if only one item
-  if (location === '/' || breadcrumbItems.length <= 1) {
+  // Don't show breadcrumbs if we're only on dashboard
+  if (breadcrumbs.length <= 1) {
     return null;
   }
 
   return (
-    <div className="border-b bg-muted/30 px-4 py-2">
-      <div className="max-w-7xl mx-auto">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href="/">
-                  <Home className="w-3 h-3" />
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            
-            {breadcrumbItems.slice(1).map((item, index) => (
-              <div key={index} className="flex items-center">
-                <BreadcrumbSeparator>
-                  <ChevronRight className="w-3 h-3" />
-                </BreadcrumbSeparator>
-                <BreadcrumbItem>
-                  {item.isCurrentPage ? (
-                    <BreadcrumbPage className="text-sm">
-                      {item.label}
-                    </BreadcrumbPage>
-                  ) : (
-                    <BreadcrumbLink asChild>
-                      <Link href={item.href!} className="text-sm hover:text-foreground">
-                        {item.label}
-                      </Link>
-                    </BreadcrumbLink>
-                  )}
-                </BreadcrumbItem>
-              </div>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-    </div>
+    <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-4" aria-label="Breadcrumb">
+      <ol className="flex items-center space-x-2">
+        {breadcrumbs.map((crumb, index) => (
+          <li key={crumb.label} className="flex items-center">
+            {index > 0 && (
+              <ChevronRight className="w-4 h-4 mx-2 text-muted-foreground/60" />
+            )}
+            {crumb.href ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation(crumb.href!)}
+                className="h-auto p-1 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  {crumb.icon}
+                  {crumb.label}
+                </span>
+              </Button>
+            ) : (
+              <span className="flex items-center gap-1.5 text-foreground font-medium">
+                {crumb.icon}
+                {crumb.label}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 }
