@@ -198,11 +198,10 @@ export default function LearningModeWizard() {
   const progressPercentage = ((currentStep - 1) / 3) * 100;
 
   return (
-    <Card className="shadow-hard border-primary/20 overflow-hidden bg-gradient-to-br from-card/95 to-primary/5 backdrop-blur-md animate-fade-in interactive-scale">
+    <Card className="shadow-hard border-primary/20 overflow-hidden bg-gradient-to-br from-card to-primary/3 animate-fade-in interactive-scale">
       <CardHeader className="relative p-4 sm:p-6 lg:p-8 border-b border-border/50">
-        {/* Beautiful background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5"></div>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-2xl"></div>
+        {/* Clean background accent */}
+        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/6 to-transparent rounded-full"></div>
         
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-4">

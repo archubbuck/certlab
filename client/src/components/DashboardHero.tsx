@@ -106,12 +106,10 @@ export default function DashboardHero() {
 
   return (
     <div className="animate-fade-in">
-      {/* Enhanced Welcome Hero with Beautiful Background */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-background to-secondary/5 border border-border/50 p-8 mb-8">
-        {/* Background Decorative Elements */}
-        <div className="absolute inset-0 gradient-mesh opacity-30"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-secondary/20 to-transparent rounded-full blur-2xl"></div>
+      {/* Enhanced Welcome Hero with Clean Background */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-background to-secondary/3 border border-border/50 p-8 mb-8">
+        {/* Subtle background accent */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/8 to-transparent rounded-full"></div>
         
         <div className="relative z-10">
           {/* Welcome Header with Key Stats */}

@@ -10,15 +10,8 @@ import PracticeTestMode from "@/components/PracticeTestMode";
 
 export default function Dashboard() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-background">
       <Header />
-      
-      {/* Beautiful background patterns */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl"></div>
-        <div className="absolute top-1/2 -left-40 w-80 h-80 rounded-full bg-gradient-to-br from-secondary/10 to-transparent blur-3xl"></div>
-        <div className="absolute -bottom-40 right-1/4 w-80 h-80 rounded-full bg-gradient-to-br from-accent/10 to-transparent blur-3xl"></div>
-      </div>
       
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome & Quick Stats with enhanced spacing */}
