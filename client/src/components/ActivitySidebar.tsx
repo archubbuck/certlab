@@ -219,32 +219,33 @@ export default function ActivitySidebar() {
   return (
     <div className="space-y-6">
       {/* Recent Quiz Results */}
-      <Card className="card-raised overflow-hidden">
-        <CardHeader className="p-4 border-b border-border">
-          <CardTitle className="font-medium text-foreground">Recent Quiz Results</CardTitle>
+      <Card className="card-enhanced overflow-hidden">
+        <CardHeader className="card-spacious border-b border-border">
+          <CardTitle className="font-medium text-foreground text-comfortable">Recent Quiz Results</CardTitle>
         </CardHeader>
-        <CardContent className="p-4 space-y-3">
-          {completedQuizzes.length > 0 ? (
-            completedQuizzes.map((quiz) => (
-              <div key={quiz.id} className="p-3 bg-muted/50 rounded-md">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-foreground">
-                      {getCategoryName(quiz.categoryIds as number[])}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(quiz.completedAt!)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-lg font-bold ${getScoreColor(quiz.score || 0)}`}>
-                      {quiz.score}%
+        <CardContent className="card-spacious">
+          <div className="list-breathable">
+            {completedQuizzes.length > 0 ? (
+              completedQuizzes.map((quiz) => (
+                <div key={quiz.id} className="p-3 bg-muted/50 rounded-md">
+                  <div className="flex items-center justify-between section-rhythm">
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-foreground text-comfortable">
+                        {getCategoryName(quiz.categoryIds as number[])}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(quiz.completedAt!)}
+                      </p>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {quiz.correctAnswers}/{quiz.totalQuestions || quiz.questionCount}
+                    <div className="text-right">
+                      <div className={`text-lg font-bold ${getScoreColor(quiz.score || 0)}`}>
+                        {quiz.score}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {quiz.correctAnswers}/{quiz.totalQuestions || quiz.questionCount}
+                      </div>
                     </div>
                   </div>
-                </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -271,13 +272,10 @@ export default function ActivitySidebar() {
             <p className="text-sm text-gray-500 text-center py-4">
               No completed quizzes yet
             </p>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
-
-
-
-
     </div>
   );
 }

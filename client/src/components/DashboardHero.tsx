@@ -91,8 +91,8 @@ export default function DashboardHero() {
               <div className="absolute left-0 top-6 w-0 h-0 border-t-12 border-t-transparent border-b-12 border-b-transparent border-r-16 border-r-card -translate-x-4"></div>
 
               {/* Chat Content */}
-              <div className="card-borderless p-8 rounded-xl bg-gradient-to-br from-card to-purple-50/30 dark:to-purple-950/30 shadow-xl">
-                <div className="flex items-center gap-3 mb-4">
+              <div className="card-breathing rounded-xl bg-gradient-to-br from-card to-purple-50/30 dark:to-purple-950/30 shadow-xl">
+                <div className="flex items-center gap-3 section-rhythm">
                   <h3 className="font-bold text-purple-700 dark:text-purple-300 text-2xl">
                     Helen
                   </h3>
@@ -103,10 +103,10 @@ export default function DashboardHero() {
                     AI Learning Assistant
                   </Badge>
                 </div>
-                <p className="text-foreground mb-3 text-2xl font-semibold">
+                <p className="text-foreground text-comfortable text-2xl font-semibold">
                   Welcome back, {currentUser?.firstName || "Student"}!
                 </p>
-                <p className="text-muted-foreground mb-6 text-lg leading-relaxed">
+                <p className="text-muted-foreground text-relaxed text-lg section-rhythm">
                   I've been analyzing your learning patterns and progress data.
                   Based on your recent performance, I've identified optimal
                   study opportunities that align with your certification goals.

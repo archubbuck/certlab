@@ -1,98 +1,96 @@
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface CollapsibleSectionProps {
-  id: string;
   title: string;
   description?: string;
   children: React.ReactNode;
   defaultExpanded?: boolean;
+  persistKey?: string; // Key for localStorage persistence
   className?: string;
-  showToggle?: boolean;
+  icon?: React.ReactNode;
 }
 
-const COLLAPSED_SECTIONS_KEY = 'cert-lab-collapsed-sections';
-
 export default function CollapsibleSection({
-  id,
   title,
   description,
   children,
   defaultExpanded = true,
+  persistKey,
   className = "",
-  showToggle = true,
+  icon
 }: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  // Load saved preferences on mount
+  // Load persisted state on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(COLLAPSED_SECTIONS_KEY);
-      if (saved) {
-        const collapsedSections = JSON.parse(saved);
-        if (collapsedSections[id] !== undefined) {
-          setIsExpanded(!collapsedSections[id]);
+    if (persistKey) {
+      try {
+        const saved = localStorage.getItem(`collapsible-${persistKey}`);
+        if (saved !== null) {
+          setIsExpanded(JSON.parse(saved));
         }
+      } catch (error) {
+        console.warn('Failed to load collapse state:', error);
       }
-    } catch (error) {
-      console.warn('Failed to load section preferences:', error);
     }
-  }, [id]);
+  }, [persistKey]);
 
-  // Save preferences when state changes
   const handleToggle = () => {
     const newState = !isExpanded;
     setIsExpanded(newState);
-
-    try {
-      const saved = localStorage.getItem(COLLAPSED_SECTIONS_KEY);
-      const collapsedSections = saved ? JSON.parse(saved) : {};
-      collapsedSections[id] = !newState; // Store collapsed state (inverse of expanded)
-      localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify(collapsedSections));
-    } catch (error) {
-      console.warn('Failed to save section preferences:', error);
+    
+    // Persist state if key provided
+    if (persistKey) {
+      try {
+        localStorage.setItem(`collapsible-${persistKey}`, JSON.stringify(newState));
+      } catch (error) {
+        console.warn('Failed to save collapse state:', error);
+      }
     }
   };
 
   return (
-    <section className={`dashboard-section ${className}`}>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-center text-foreground mb-2">
-            {title}
-          </h2>
-          {description && (
-            <p className="text-center text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              {description}
-            </p>
-          )}
-        </div>
-        
-        {showToggle && (
+    <Card className={`card-enhanced transition-all duration-200 ${className}`}>
+      <CardHeader 
+        className="cursor-pointer select-none card-spacious border-b border-border/50"
+        onClick={handleToggle}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {icon && <div className="text-primary">{icon}</div>}
+            <div>
+              <CardTitle className="text-lg font-semibold text-comfortable">
+                {title}
+              </CardTitle>
+              {description && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {description}
+                </p>
+              )}
+            </div>
+          </div>
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleToggle}
-            className="ml-4 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
+            className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-foreground"
           >
             {isExpanded ? (
-              <ChevronUp className="w-4 h-4" />
+              <ChevronUp className="h-4 w-4" />
             ) : (
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDown className="h-4 w-4" />
             )}
           </Button>
-        )}
-      </div>
-
-      <div
-        className={`transition-all duration-300 ease-in-out ${
-          isExpanded ? 'opacity-100 max-h-none' : 'opacity-0 max-h-0 overflow-hidden'
-        }`}
-      >
-        {children}
-      </div>
-    </section>
+        </div>
+      </CardHeader>
+      
+      {isExpanded && (
+        <CardContent className="card-breathing animate-in slide-in-from-top-2 duration-200">
+          {children}
+        </CardContent>
+      )}
+    </Card>
   );
 }

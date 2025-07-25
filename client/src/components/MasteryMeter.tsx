@@ -110,13 +110,13 @@ export default function MasteryMeter({ selectedCategoryId }: MasteryMeterProps) 
         ).length;
 
         return (
-          <Card key={category.id} className="bg-card border-border/50 card-hover transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
+          <Card key={category.id} className="card-enhanced card-hover transition-colors">
+            <CardContent className="card-spacious">
+              <div className="flex items-center justify-between section-rhythm">
                 <div className="flex items-center space-x-3">
                   <i className={`${category.icon} text-primary text-lg`}></i>
                   <div>
-                    <h3 className="font-medium text-gray-900">{category.name}</h3>
+                    <h3 className="font-medium text-gray-900 text-comfortable">{category.name}</h3>
                     <p className="text-xs text-gray-500">
                       {completedDomains}/{categorySubcategories.length} domains ready
                     </p>

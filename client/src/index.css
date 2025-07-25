@@ -522,6 +522,70 @@
     outline: 2px solid transparent;
     outline-offset: 2px;
   }
+
+  /* Card Layout Improvements - UI/UX Task 2.3 */
+  .card-spacious {
+    padding: 1.5rem;
+  }
+  
+  .card-breathing {
+    padding: 2rem;
+    line-height: 1.65;
+  }
+  
+  .content-breathing {
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+  
+  .content-breathing:last-child {
+    margin-bottom: 0;
+  }
+  
+  .section-rhythm {
+    margin-bottom: 2rem;
+  }
+  
+  .section-rhythm:last-child {
+    margin-bottom: 0;
+  }
+  
+  /* Enhanced card spacing for better readability */
+  .card-enhanced {
+    padding: 1.5rem;
+    line-height: 1.6;
+    border-radius: 12px;
+    background: hsl(var(--card));
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+  }
+  
+  .card-enhanced:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Improved text density classes */
+  .text-relaxed {
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+  }
+  
+  .text-comfortable {
+    line-height: 1.65;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Better list spacing */
+  .list-breathable li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+  
+  .list-breathable li:last-child {
+    margin-bottom: 0;
+  }
   
   .focus-ring:focus-visible {
     outline-color: hsl(var(--ring));
