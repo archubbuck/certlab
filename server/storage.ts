@@ -1837,8 +1837,9 @@ export class DatabaseStorage implements IStorage {
       ? Math.round((passingQuizzes.length / totalQuizzes) * 100)
       : 0;
     
-    // Simple streak calculation - consecutive days with quizzes
-    const studyStreak = this.calculateStudyStreak(completedQuizzes);
+    // Get study streak from user_game_stats table
+    const gameStats = await db.select().from(userGameStats).where(eq(userGameStats.userId, userId)).limit(1);
+    const studyStreak = gameStats.length > 0 ? gameStats[0].currentStreak : 0;
     
     // Count certifications (categories with >80% average score)
     const progress = await this.getUserProgress(userId);
