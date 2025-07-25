@@ -12,7 +12,11 @@ import GoalSettingWizard from "@/components/GoalSettingWizard";
 import NewFeatureBadge from "@/components/NewFeatureBadge";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import QuickViewToggle from "@/components/QuickViewToggle";
+import PersonalizedInsights from "@/components/PersonalizedInsights";
+import ContextualQuickActions from "@/components/ContextualQuickActions";
+import QuickStartMode from "@/components/QuickStartMode";
 import { shouldShowHelenIntro, shouldShowGoalWizard, markGoalSettingCompleted } from "@/lib/onboarding";
+import { calculateContentPriorities, getContentOrder, shouldShowInQuickView, getPersonalizedInsights } from "@/lib/content-prioritization";
 import { useAuth } from "@/lib/auth";
 import { checkAndUnlockFeatures, isFeatureUnlocked } from "@/lib/feature-discovery";
 import type { UserStats } from "@shared/schema";
@@ -22,12 +26,18 @@ export default function Dashboard() {
   const [showHelenIntro, setShowHelenIntro] = useState(false);
   const [showGoalWizard, setShowGoalWizard] = useState(false);
   const [isQuickView, setIsQuickView] = useState(false);
+  const [isQuickStartMode, setIsQuickStartMode] = useState(false);
 
   // Get user stats for feature discovery
   const { data: stats } = useQuery<UserStats>({
     queryKey: [`/api/user/${currentUser?.id}/stats`],
     enabled: !!currentUser?.id,
   });
+
+  // Calculate content priorities based on user stats  
+  const contentPriorities = calculateContentPriorities(stats, (currentUser as any)?.certificationGoals);
+  const contentOrder = getContentOrder(contentPriorities);
+  const personalizedInsights = getPersonalizedInsights(contentPriorities);
 
   useEffect(() => {
     // Check if user should see Helen introduction
@@ -101,12 +111,18 @@ export default function Dashboard() {
           defaultExpanded={true}
           showToggle={!isQuickView}
         >
-          {!isQuickView && (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-fade-in">
-              <LearningStreak />
-            </div>
-          )}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-fade-in">
+            {/* Personalized Insights */}
+            {personalizedInsights && personalizedInsights.length > 0 && (
+              <PersonalizedInsights insights={personalizedInsights} />
+            )}
+            
+            {/* Learning Streak - Priority based display */}
+            {(!isQuickView || shouldShowInQuickView('learningStreak', contentPriorities)) && (
+              <LearningStreak />
+            )}
+            
+            {/* Dashboard Hero */}
             <DashboardHero />
           </div>
         </CollapsibleSection>
@@ -130,8 +146,17 @@ export default function Dashboard() {
                   <LearningModeWizard />
                 )}
               </div>
-              <div>
-                <QuickActionsCard />
+              <div className="space-y-4">
+                <QuickStartMode
+                  stats={stats}
+                  isQuickMode={isQuickStartMode}
+                  onToggleMode={setIsQuickStartMode}
+                />
+                <ContextualQuickActions 
+                  stats={stats} 
+                  userGoals={(currentUser as any)?.certificationGoals}
+                />
+                {!isQuickStartMode && <QuickActionsCard />}
               </div>
             </div>
           </div>

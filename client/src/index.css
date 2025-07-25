@@ -624,3 +624,47 @@
 .avatar-container:hover {
   animation: avatar-engage 2s ease-in-out infinite, subtle-glow 3s ease-in-out infinite;
 }
+
+/* Enhanced Card Spacing Utilities */
+.card-spacious {
+  padding: 1.5rem;
+}
+
+.card-spacious .card-header {
+  padding-bottom: 1rem;
+}
+
+.card-spacious .card-content {
+  padding-top: 0;
+  line-height: 1.6;
+}
+
+.card-breathing {
+  padding: 1.25rem;
+}
+
+.card-breathing .card-header {
+  padding-bottom: 0.75rem;
+}
+
+.card-breathing .card-content {
+  padding-top: 0;
+  line-height: 1.5;
+}
+
+.content-breathing {
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+.content-breathing > * + * {
+  margin-top: 0.75rem;
+}
+
+.section-rhythm {
+  margin-bottom: 1rem;
+}
+
+.section-rhythm:last-child {
+  margin-bottom: 0;
+}
