@@ -36,9 +36,7 @@ export default function Dashboard() {
   // Calculate content priorities based on user stats  
   const contentPriorities = calculateContentPriorities(stats, (currentUser as any)?.certificationGoals);
   const contentOrder = getContentOrder(contentPriorities);
-  // Temporarily commented out to debug parsing error
-  // const personalizedInsights = getPersonalizedInsights(contentPriorities);
-  const personalizedInsights: string[] = [];
+  const personalizedInsights = getPersonalizedInsights(contentPriorities);
 
   useEffect(() => {
     // Check if user should see Helen introduction
