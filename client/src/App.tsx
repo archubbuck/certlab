@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthProvider, useAuth } from "@/lib/auth-provider";
 import { AchievementNotification } from "@/components/AchievementNotification";
+import Header from "@/components/Header";
+import BreadcrumbNavigation from "@/components/BreadcrumbNavigation";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Landing from "@/pages/landing";
@@ -41,18 +43,25 @@ function Router() {
   }
 
   return (
-    <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
+    <div className="min-h-screen bg-background">
+      {isAuthenticated && (
         <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/app" component={Dashboard} />
-          <Route path="/app/quiz/:id" component={Quiz} />
-          <Route path="/app/results/:id" component={Results} />
-          <Route path="/app/review/:id" component={Review} />
-          <Route path="/app/lecture/:id" component={Lecture} />
-          <Route path="/app/achievements" component={Achievements} />
+          <Header />
+          <BreadcrumbNavigation />
+        </>
+      )}
+      <Switch>
+        {isLoading || !isAuthenticated ? (
+          <Route path="/" component={Landing} />
+        ) : (
+          <>
+            <Route path="/" component={Dashboard} />
+            <Route path="/app" component={Dashboard} />
+            <Route path="/app/quiz/:id" component={Quiz} />
+            <Route path="/app/results/:id" component={Results} />
+            <Route path="/app/review/:id" component={Review} />
+            <Route path="/app/lecture/:id" component={Lecture} />
+            <Route path="/app/achievements" component={Achievements} />
           <Route path="/app/accessibility" component={Accessibility} />
           <Route path="/app/study-groups" component={StudyGroups} />
           <Route path="/app/challenges" component={ChallengesPage} />
@@ -70,7 +79,8 @@ function Router() {
         </>
       )}
       <Route component={NotFound} />
-    </Switch>
+      </Switch>
+    </div>
   );
 }
 
