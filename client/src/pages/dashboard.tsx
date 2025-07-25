@@ -1,12 +1,9 @@
 import Header from "@/components/Header";
 import DashboardHero from "@/components/DashboardHero";
-import DashboardStats from "@/components/DashboardStats";
 import LearningModeWizard from "@/components/LearningModeWizard";
 import ActivitySidebar from "@/components/ActivitySidebar";
 import MasteryMeter from "@/components/MasteryMeter";
 import QuickActionsCard from "@/components/QuickActionsCard";
-import StudyGroupCard from "@/components/StudyGroupCard";
-import PracticeTestMode from "@/components/PracticeTestMode";
 import LearningStreak from "@/components/LearningStreak";
 
 export default function Dashboard() {
@@ -32,19 +29,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Section 2: Learning Streak (Alternating Background) */}
-        <section className="dashboard-section">
-          <div className="section-header">
-            <h2>Your Learning Journey</h2>
-            <p>
-              Stay motivated with your daily learning streak and build
-              consistent study habits for certification success.
-            </p>
-          </div>
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 animate-slide-up"></div>
-        </section>
-
-        {/* Section 3: Learning Configuration (Alternating Background) */}
+        {/* Section 2: Learning Configuration (Alternating Background) */}
         <section className="dashboard-section section-alt-bg">
           <div className="section-header">
             <h2>Start Your Learning Session</h2>
@@ -65,7 +50,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Section 4: Progress & Activity */}
+        {/* Section 3: Progress & Activity */}
         <section className="dashboard-section">
           <div className="section-header">
             <h2>Progress & Learning Activity</h2>
