@@ -219,7 +219,7 @@ export default function LearningModeWizard() {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-muted-foreground mb-2 font-medium">Step {currentStep} of 3</div>
+            <div className="text-sm text-muted-foreground mb-2 font-medium">Step {currentStep} of 3</div>
             <div className="w-24 bg-muted rounded-full h-2 overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 ease-out"
