@@ -13,30 +13,49 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome & Quick Stats with enhanced spacing */}
-        <div className="mb-12 animate-fade-in">
-          <DashboardHero />
-        </div>
-
-        {/* Main Learning Tools with beautiful spacing */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 animate-slide-up">
-          {/* Start Learning - Primary Action */}
-          <div className="lg:col-span-2">
-            <LearningModeWizard />
+      <main className="relative z-10">
+        {/* Section 1: Welcome & Overview */}
+        <section className="dashboard-section">
+          <div className="section-header">
+            <h2>Welcome to Your Learning Dashboard</h2>
+            <p>Track your progress, view achievements, and see personalized insights from Helen, your AI learning assistant.</p>
           </div>
-
-          {/* Quick Actions */}
-          <div>
-            <QuickActionsCard />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-fade-in">
+            <DashboardHero />
           </div>
-        </div>
+        </section>
 
-        {/* Progress & Activity with enhanced design */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
-          <MasteryMeter />
-          <ActivitySidebar />
-        </div>
+        {/* Section 2: Learning Configuration (Alternating Background) */}
+        <section className="dashboard-section section-alt-bg">
+          <div className="section-header">
+            <h2>Start Your Learning Session</h2>
+            <p>Configure your study session with Helen's intelligent recommendations and personalized settings.</p>
+          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up">
+              <div className="lg:col-span-2">
+                <LearningModeWizard />
+              </div>
+              <div>
+                <QuickActionsCard />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 3: Progress & Activity */}
+        <section className="dashboard-section">
+          <div className="section-header">
+            <h2>Progress & Learning Activity</h2>
+            <p>Monitor your mastery levels, recent quiz activity, and track your certification journey.</p>
+          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
+              <MasteryMeter />
+              <ActivitySidebar />
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

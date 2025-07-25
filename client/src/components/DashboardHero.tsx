@@ -77,9 +77,9 @@ export default function DashboardHero() {
   return (
     <div className="animate-fade-in">
       {/* Enhanced Welcome Hero with Clean Background */}
-      <div className="relative overflow-hidden rounded-md bg-gradient-to-br from-primary/5 via-background to-secondary/3 border border-border/50 p-8 mb-8">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/5 via-background to-secondary/3 p-8 mb-8 shadow-lg">
         {/* Clean background accent */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/8 to-transparent rounded-md"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/8 to-transparent rounded-xl"></div>
 
         {/* Helen's AI Learning Dashboard */}
         <div className="relative z-10 space-y-8">
@@ -91,7 +91,7 @@ export default function DashboardHero() {
               <div className="absolute left-0 top-6 w-0 h-0 border-t-12 border-t-transparent border-b-12 border-b-transparent border-r-16 border-r-card -translate-x-4"></div>
 
               {/* Chat Content */}
-              <div className="card-raised p-8 rounded-lg bg-gradient-to-br from-card to-purple-50/30 dark:to-purple-950/30 border border-purple-200/30 dark:border-purple-800/30 shadow-xl">
+              <div className="card-borderless p-8 rounded-xl bg-gradient-to-br from-card to-purple-50/30 dark:to-purple-950/30 shadow-xl">
                 <div className="flex items-center gap-3 mb-4">
                   <h3 className="font-bold text-purple-700 dark:text-purple-300 text-2xl">
                     Helen
@@ -128,7 +128,7 @@ export default function DashboardHero() {
                     size="lg"
                     variant="outline"
                     onClick={() => handleQuickQuiz("Quick Practice")}
-                    className="border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-950/50 text-base px-6 py-3"
+                    className="bg-white/80 hover:bg-purple-50 dark:bg-gray-800/80 dark:hover:bg-purple-950/50 text-base px-6 py-3 shadow-md hover:shadow-lg transition-all duration-300"
                   >
                     <BookOpen className="w-5 h-5 mr-3" />
                     Practice Mode
