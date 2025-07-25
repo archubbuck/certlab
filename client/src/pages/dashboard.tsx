@@ -7,6 +7,7 @@ import MasteryMeter from "@/components/MasteryMeter";
 import QuickActionsCard from "@/components/QuickActionsCard";
 import StudyGroupCard from "@/components/StudyGroupCard";
 import PracticeTestMode from "@/components/PracticeTestMode";
+import LearningStreak from "@/components/LearningStreak";
 
 export default function Dashboard() {
   return (
@@ -25,7 +26,18 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Section 2: Learning Configuration (Alternating Background) */}
+        {/* Section 2: Learning Streak (Alternating Background) */}
+        <section className="dashboard-section">
+          <div className="section-header">
+            <h2>Your Learning Journey</h2>
+            <p>Stay motivated with your daily learning streak and build consistent study habits for certification success.</p>
+          </div>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 animate-slide-up">
+            <LearningStreak />
+          </div>
+        </section>
+
+        {/* Section 3: Learning Configuration (Alternating Background) */}
         <section className="dashboard-section section-alt-bg">
           <div className="section-header">
             <h2>Start Your Learning Session</h2>
@@ -43,7 +55,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Section 3: Progress & Activity */}
+        {/* Section 4: Progress & Activity */}
         <section className="dashboard-section">
           <div className="section-header">
             <h2>Progress & Learning Activity</h2>
