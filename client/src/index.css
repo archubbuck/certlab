@@ -444,6 +444,65 @@
     font-size: 0.75rem;
     font-weight: 500;
   }
+
+  /* Enhanced spacing utilities for better visual hierarchy */
+  .card-breathing-extra {
+    @apply p-7;
+  }
+
+  .card-compact {
+    @apply p-3;
+  }
+
+  .content-breathing-dense {
+    @apply space-y-2;
+  }
+
+  .content-breathing-loose {
+    @apply space-y-6;
+  }
+
+  .section-rhythm-tight {
+    @apply mb-4;
+  }
+
+  .section-rhythm-loose {
+    @apply mb-12;
+  }
+
+  .text-density-comfortable {
+    @apply leading-7 tracking-wide;
+  }
+
+  .text-density-tight {
+    @apply leading-5 tracking-tight;
+  }
+
+  .list-spacing-comfortable li {
+    @apply mb-4 pb-2;
+  }
+
+  .list-spacing-tight li {
+    @apply mb-1;
+  }
+
+  /* Visual hierarchy improvements */
+  .visual-priority-high {
+    @apply text-lg font-semibold text-foreground;
+  }
+
+  .visual-priority-medium {
+    @apply text-base font-medium text-foreground/90;
+  }
+
+  .visual-priority-low {
+    @apply text-sm font-normal text-muted-foreground;
+  }
+
+  /* Section backgrounds for visual separation */
+  .section-alt-bg-subtle {
+    @apply bg-muted/10;
+  }
   
   .metric-change.positive {
     color: hsl(142, 71%, 45%);

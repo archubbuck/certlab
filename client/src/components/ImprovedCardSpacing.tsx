@@ -1,46 +1,62 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface ImprovedCardSpacingProps {
-  children: React.ReactNode;
-  className?: string;
-  variant?: 'default' | 'spacious' | 'compact';
-  title?: string;
+  title: string;
   description?: string;
+  badge?: string;
+  children: React.ReactNode;
+  variant?: "default" | "compact" | "spacious";
+  className?: string;
 }
 
-export default function ImprovedCardSpacing({ 
-  children, 
-  className, 
-  variant = 'default',
+export default function ImprovedCardSpacing({
   title,
-  description
+  description,
+  badge,
+  children,
+  variant = "default",
+  className = ""
 }: ImprovedCardSpacingProps) {
-  const getSpacingClasses = () => {
-    switch (variant) {
-      case 'spacious':
-        return 'card-spacious';
-      case 'compact':
-        return 'card-compact';
-      default:
-        return 'card-breathing';
-    }
+  
+  const spacingClasses = {
+    compact: "card-compact",
+    default: "card-enhanced",
+    spacious: "card-spacious"
+  };
+
+  const contentSpacing = {
+    compact: "p-4",
+    default: "card-breathing",
+    spacious: "card-breathing-extra"
   };
 
   return (
-    <Card className={cn(getSpacingClasses(), className)}>
-      {(title || description) && (
-        <CardHeader className="content-breathing">
-          {title && <CardTitle className="section-rhythm">{title}</CardTitle>}
-          {description && (
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {description}
-            </p>
-          )}
-        </CardHeader>
-      )}
-      <CardContent className="content-breathing section-rhythm">
-        {children}
+    <Card className={`${spacingClasses[variant]} ${className}`}>
+      <CardHeader className="card-spacious border-b border-border/30">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg font-semibold text-comfortable flex items-center gap-2">
+              {title}
+              {badge && (
+                <Badge variant="secondary" className="text-xs px-2 py-1">
+                  {badge}
+                </Badge>
+              )}
+            </CardTitle>
+            {description && (
+              <p className="text-sm text-muted-foreground mt-1 text-relaxed">
+                {description}
+              </p>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      
+      <CardContent className={contentSpacing[variant]}>
+        <div className="content-breathing">
+          {children}
+        </div>
       </CardContent>
     </Card>
   );

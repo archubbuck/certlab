@@ -9,8 +9,8 @@ import LearningStreak from "@/components/LearningStreak";
 import HelensIntroduction from "@/components/HelensIntroduction";
 import GoalSettingWizard from "@/components/GoalSettingWizard";
 import NewFeatureBadge from "@/components/NewFeatureBadge";
-
-
+import BreadcrumbNavigation from "@/components/BreadcrumbNavigation";
+import CollapsibleSection from "@/components/CollapsibleSection";
 import PersonalizedInsights from "@/components/PersonalizedInsights";
 import ContextualQuickActions from "@/components/ContextualQuickActions";
 import QuickStartMode from "@/components/QuickStartMode";
@@ -18,6 +18,7 @@ import { shouldShowHelenIntro, shouldShowGoalWizard, markGoalSettingCompleted } 
 import { calculateContentPriorities, getContentOrder, getPersonalizedInsights } from "@/lib/content-prioritization";
 import { useAuth } from "@/lib/auth";
 import { checkAndUnlockFeatures, isFeatureUnlocked } from "@/lib/feature-discovery";
+import { Target, BookOpen } from "lucide-react";
 import type { UserStats } from "@shared/schema";
 
 export default function Dashboard() {
@@ -98,8 +99,11 @@ export default function Dashboard() {
       <main className="relative z-10">
         {/* Welcome & Overview Section */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-fade-in">
+          {/* Breadcrumb Navigation */}
+          <BreadcrumbNavigation />
+          
           {/* Personalized Insights */}
-          {personalizedInsights && personalizedInsights.length > 0 && (
+          {personalizedInsights && Array.isArray(personalizedInsights) && personalizedInsights.length > 0 && (
             <PersonalizedInsights insights={personalizedInsights} />
           )}
           
@@ -124,11 +128,31 @@ export default function Dashboard() {
                 )}
               </div>
               <div className="space-y-4">
-                <QuickStartMode
-                  onToggleMode={() => setIsQuickStartMode(!isQuickStartMode)}
-                />
+                <CollapsibleSection
+                  title="Quick Learning Options"
+                  description="Fast access to your preferred study methods"
+                  icon={<Target className="w-4 h-4" />}
+                  defaultExpanded={true}
+                  storageKey="quick-learning-options"
+                >
+                  <QuickStartMode
+                    onToggleMode={() => setIsQuickStartMode(!isQuickStartMode)}
+                  />
+                </CollapsibleSection>
+                
                 <ContextualQuickActions />
-                {!isQuickStartMode && <QuickActionsCard />}
+                
+                {!isQuickStartMode && (
+                  <CollapsibleSection
+                    title="Study Tools"
+                    description="Additional learning resources and options"
+                    icon={<BookOpen className="w-4 h-4" />}
+                    defaultExpanded={false}
+                    storageKey="study-tools"
+                  >
+                    <QuickActionsCard />
+                  </CollapsibleSection>
+                )}
               </div>
             </div>
           </div>
