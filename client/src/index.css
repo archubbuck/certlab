@@ -22,7 +22,7 @@
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(210, 40%, 98%);
   --ring: hsl(221, 83%, 53%);
-  --radius: 0.5rem;
+  --radius: 0.25rem;
   
   /* Custom enhanced colors */
   --surface: hsl(220, 14%, 99%);
@@ -45,32 +45,32 @@
 }
 
 .dark {
-  --background: hsl(222, 47%, 8%);
-  --foreground: hsl(213, 31%, 91%);
-  --muted: hsl(223, 47%, 12%);
-  --muted-foreground: hsl(215, 20%, 65%);
-  --popover: hsl(224, 47%, 14%);
-  --popover-foreground: hsl(213, 31%, 91%);
-  --card: hsl(224, 47%, 14%);
-  --card-foreground: hsl(213, 31%, 91%);
-  --border: hsl(216, 34%, 17%);
-  --input: hsl(216, 34%, 17%);
-  --primary: hsl(217, 91%, 60%);
-  --primary-foreground: hsl(222, 47%, 11%);
-  --secondary: hsl(142, 43%, 55%);
-  --secondary-foreground: hsl(222, 47%, 11%);
-  --accent: hsl(217, 80%, 60%);
-  --accent-foreground: hsl(222, 47%, 11%);
-  --destructive: hsl(0, 63%, 53%);
-  --destructive-foreground: hsl(210, 40%, 98%);
-  --ring: hsl(217, 91%, 60%);
+  --background: hsl(240, 10%, 8%);
+  --foreground: hsl(0, 0%, 92%);
+  --muted: hsl(240, 8%, 12%);
+  --muted-foreground: hsl(240, 5%, 65%);
+  --popover: hsl(240, 10%, 10%);
+  --popover-foreground: hsl(0, 0%, 92%);
+  --card: hsl(240, 10%, 10%);
+  --card-foreground: hsl(0, 0%, 92%);
+  --border: hsl(240, 6%, 20%);
+  --input: hsl(240, 8%, 15%);
+  --primary: hsl(210, 100%, 60%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(240, 6%, 18%);
+  --secondary-foreground: hsl(0, 0%, 92%);
+  --accent: hsl(270, 80%, 65%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 75%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(210, 100%, 60%);
   
   /* Custom enhanced colors */
-  --surface: hsl(224, 47%, 14%);
-  --error: hsl(0, 63%, 53%);
-  --success: hsl(142, 71%, 50%);
-  --warning: hsl(38, 92%, 55%);
-  --info: hsl(217, 91%, 65%);
+  --surface: hsl(240, 10%, 10%);
+  --error: hsl(0, 75%, 60%);
+  --success: hsl(142, 71%, 55%);
+  --warning: hsl(38, 92%, 60%);
+  --info: hsl(210, 100%, 65%);
 }
 
 .ocean {

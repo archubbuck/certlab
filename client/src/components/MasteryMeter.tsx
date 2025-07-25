@@ -297,7 +297,7 @@ export default function MasteryMeter({ selectedCategoryId }: MasteryMeterProps) 
       <CardHeader className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary to-secondary/70 flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>
