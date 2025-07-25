@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-07-20T23:01:55.737Z",
+  "lastUpdated": "2025-07-25T05:07:36.576Z",
   "generatedBy": "UIStructureSync",
   "routes": [
     {
@@ -22,7 +22,11 @@
             "UI Libraries"
           ],
           "file": "pages/dashboard.tsx",
-          "hooks": [],
+          "hooks": [
+            "useAuth",
+            "useState",
+            "useEffect"
+          ],
           "apiCalls": [],
           "children": [
             {
@@ -52,16 +56,29 @@
               "description": "Progress cards, AI assistant, and performance metrics",
               "icon": "Puzzle",
               "dependencies": [
-                "useToast",
-                "useMutation"
+                "useToast"
               ],
               "file": "components/DashboardHero.tsx",
               "hooks": [
-                "useLocation",
-                "useToast",
-                "useState",
                 "useAuth",
-                "useMutation"
+                "useToast"
+              ],
+              "apiCalls": []
+            },
+            {
+              "id": "ashboardstats",
+              "label": "DashboardStats",
+              "route": "/dashboard",
+              "type": "component",
+              "description": "DashboardStats component with 0 API integrations",
+              "icon": "Puzzle",
+              "dependencies": [
+                "React Components",
+                "UI Libraries"
+              ],
+              "file": "components/DashboardStats.tsx",
+              "hooks": [
+                "useAuth"
               ],
               "apiCalls": []
             },
@@ -436,15 +453,75 @@
       ]
     },
     {
+      "name": "challenges",
+      "type": "page",
+      "file": "pages/challenges.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/progress",
+        "@/components/ui/tabs",
+        "@/components/Header",
+        "@/hooks/useAuth",
+        "@/hooks/use-toast",
+        "@/lib/queryClient"
+      ],
+      "apiCalls": [
+        {
+          "type": "apiRequest",
+          "endpoint": "/api/user/${currentUser?.id}/generate-daily-challenges"
+        },
+        {
+          "type": "apiRequest",
+          "endpoint": "/api/challenge/${challengeId}/start"
+        }
+      ],
+      "hooks": [
+        "useLocation",
+        "useAuth",
+        "useToast",
+        "useMutation"
+      ]
+    },
+    {
       "name": "dashboard",
       "type": "page",
       "file": "pages/dashboard.tsx",
       "imports": [
-        "@/components/Header",
         "@/components/DashboardHero",
-        "@/components/LearningModeSelector",
+        "@/components/LearningModeWizard",
         "@/components/ActivitySidebar",
-        "@/components/MasteryMeter"
+        "@/components/MasteryMeter",
+        "@/components/QuickActionsCard",
+        "@/components/LearningStreak",
+        "@/components/HelensIntroduction",
+        "@/components/GoalSettingWizard",
+        "@/components/NewFeatureBadge",
+        "@/components/BreadcrumbNavigation",
+        "@/components/CollapsibleSection",
+        "@/components/PersonalizedInsights",
+        "@/components/ContextualQuickActions",
+        "@/components/QuickStartMode",
+        "@/lib/onboarding",
+        "@/lib/content-prioritization",
+        "@/lib/auth",
+        "@/lib/feature-discovery"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useAuth",
+        "useState",
+        "useEffect"
+      ]
+    },
+    {
+      "name": "landing",
+      "type": "page",
+      "file": "pages/landing.tsx",
+      "imports": [
+        "@/components/ui/button",
+        "@/components/ui/card"
       ],
       "apiCalls": [],
       "hooks": []
@@ -478,9 +555,6 @@
       "imports": [
         "@/components/ui/card",
         "@/components/ui/button",
-        "@/components/ui/input",
-        "@/components/ui/label",
-        "@/components/ui/tabs",
         "@/lib/auth",
         "@/hooks/use-toast"
       ],
@@ -523,6 +597,8 @@
         "@/components/ui/card",
         "@/components/ui/button",
         "@/components/ui/progress",
+        "@/components/ui/tabs",
+        "@/components/DetailedResultsAnalysis",
         "@/lib/questions"
       ],
       "apiCalls": [],
@@ -554,6 +630,30 @@
         "useToast",
         "useQueryClient",
         "useMutation"
+      ]
+    },
+    {
+      "name": "study-groups",
+      "type": "page",
+      "file": "pages/study-groups.tsx",
+      "imports": [
+        "@/components/Header",
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/avatar",
+        "@/components/ui/input",
+        "@/components/ui/textarea",
+        "@/components/ui/select",
+        "@/components/ui/tabs",
+        "@/lib/auth",
+        "@/hooks/use-toast"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useState",
+        "useAuth",
+        "useToast"
       ]
     },
     {
@@ -635,10 +735,57 @@
         "@/lib/auth",
         "@/lib/questions",
         "@/lib/queryClient",
+        "@/hooks/use-toast",
+        "@/components/ImprovedCardSpacing"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useAuth",
+        "useToast",
+        "useMutation"
+      ]
+    },
+    {
+      "name": "BreadcrumbNavigation",
+      "type": "component",
+      "file": "components/BreadcrumbNavigation.tsx",
+      "imports": [
+        "@/components/ui/button"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useLocation"
+      ]
+    },
+    {
+      "name": "CollapsibleSection",
+      "type": "component",
+      "file": "components/CollapsibleSection.tsx",
+      "imports": [
+        "@/components/ui/button",
+        "@/components/ui/card"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    {
+      "name": "ContextualQuickActions",
+      "type": "component",
+      "file": "components/ContextualQuickActions.tsx",
+      "imports": [
+        "@/components/ui/button",
+        "@/components/ui/card",
+        "@/components/ui/badge",
+        "@/lib/auth",
+        "@/lib/queryClient",
         "@/hooks/use-toast"
       ],
       "apiCalls": [],
       "hooks": [
+        "useLocation",
         "useAuth",
         "useToast",
         "useMutation"
@@ -666,7 +813,6 @@
       "type": "component",
       "file": "components/DashboardHero.tsx",
       "imports": [
-        "@/components/ui/card",
         "@/components/ui/button",
         "@/components/ui/badge",
         "@/lib/auth",
@@ -675,11 +821,61 @@
       ],
       "apiCalls": [],
       "hooks": [
-        "useLocation",
-        "useToast",
-        "useState",
         "useAuth",
-        "useMutation"
+        "useToast"
+      ]
+    },
+    {
+      "name": "DashboardStats",
+      "type": "component",
+      "file": "components/DashboardStats.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/lib/auth"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useAuth"
+      ]
+    },
+    {
+      "name": "DetailedResultsAnalysis",
+      "type": "component",
+      "file": "components/DetailedResultsAnalysis.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/badge",
+        "@/components/ui/progress",
+        "@/components/ui/button",
+        "@/lib/auth"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useAuth"
+      ]
+    },
+    {
+      "name": "GoalSettingWizard",
+      "type": "component",
+      "file": "components/GoalSettingWizard.tsx",
+      "imports": [
+        "@/components/ui/button",
+        "@/components/ui/card",
+        "@/components/ui/badge",
+        "@/components/ui/checkbox",
+        "@/components/ui/radio-group",
+        "@/components/ui/label",
+        "@/components/ui/textarea",
+        "@/components/ui/input",
+        "@/lib/auth",
+        "@/lib/queryClient",
+        "@/hooks/use-toast"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useAuth",
+        "useToast",
+        "useState"
       ]
     },
     {
@@ -691,15 +887,40 @@
         "@/components/ui/button",
         "@/hooks/use-toast",
         "@/components/ThemeToggle",
-        "@/components/ui/badge"
+        "@/components/ui/badge",
+        "@/components/MobileNavigationEnhanced"
       ],
       "apiCalls": [],
       "hooks": [
         "useLocation",
         "useAuth",
-        "useToast",
+        "useToast"
+      ]
+    },
+    {
+      "name": "HelensIntroduction",
+      "type": "component",
+      "file": "components/HelensIntroduction.tsx",
+      "imports": [
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/lib/onboarding"
+      ],
+      "apiCalls": [],
+      "hooks": [
         "useState"
       ]
+    },
+    {
+      "name": "ImprovedCardSpacing",
+      "type": "component",
+      "file": "components/ImprovedCardSpacing.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/badge"
+      ],
+      "apiCalls": [],
+      "hooks": []
     },
     {
       "name": "LearningModeSelector",
@@ -712,6 +933,7 @@
         "@/components/ui/select",
         "@/components/ui/label",
         "@/components/ui/badge",
+        "@/components/ui/tabs",
         "@/lib/auth",
         "@/lib/queryClient",
         "@/hooks/use-toast"
@@ -723,6 +945,46 @@
         "useAuth",
         "useState",
         "useMutation"
+      ]
+    },
+    {
+      "name": "LearningModeWizard",
+      "type": "component",
+      "file": "components/LearningModeWizard.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/checkbox",
+        "@/components/ui/select",
+        "@/components/ui/label",
+        "@/components/ui/badge",
+        "@/components/ui/tabs",
+        "@/components/ui/progress",
+        "@/lib/auth",
+        "@/lib/queryClient",
+        "@/hooks/use-toast"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useLocation",
+        "useToast",
+        "useAuth",
+        "useState",
+        "useMutation"
+      ]
+    },
+    {
+      "name": "LearningStreak",
+      "type": "component",
+      "file": "components/LearningStreak.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/badge",
+        "@/lib/auth"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useAuth"
       ]
     },
     {
@@ -753,6 +1015,158 @@
       "apiCalls": [],
       "hooks": [
         "useAuth"
+      ]
+    },
+    {
+      "name": "MobileNavigationEnhanced",
+      "type": "component",
+      "file": "components/MobileNavigationEnhanced.tsx",
+      "imports": [
+        "@/components/ui/button",
+        "@/components/ui/sheet",
+        "@/components/ui/input",
+        "@/components/ui/badge",
+        "@/components/ui/scroll-area",
+        "@/components/ui/separator",
+        "@/hooks/use-mobile",
+        "@/lib/auth"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useIsMobile",
+        "useAuth",
+        "useLocation",
+        "useState"
+      ]
+    },
+    {
+      "name": "MobileTouchOptimized",
+      "type": "component",
+      "file": "components/MobileTouchOptimized.tsx",
+      "imports": [
+        "@/components/ui/button",
+        "@/components/ui/card",
+        "@/hooks/use-mobile"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useIsMobile",
+        "useState",
+        "useEffect"
+      ]
+    },
+    {
+      "name": "NewFeatureBadge",
+      "type": "component",
+      "file": "components/NewFeatureBadge.tsx",
+      "imports": [
+        "@/components/ui/badge",
+        "@/components/ui/button"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useState",
+        "useEffect"
+      ]
+    },
+    {
+      "name": "PersonalizedInsights",
+      "type": "component",
+      "file": "components/PersonalizedInsights.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/badge",
+        "@/components/ui/button"
+      ],
+      "apiCalls": [],
+      "hooks": []
+    },
+    {
+      "name": "PracticeTestMode",
+      "type": "component",
+      "file": "components/PracticeTestMode.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/progress",
+        "@/components/ui/select",
+        "@/lib/auth",
+        "@/lib/queryClient",
+        "@/hooks/use-toast"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useLocation",
+        "useToast",
+        "useState",
+        "useAuth",
+        "useMutation"
+      ]
+    },
+    {
+      "name": "QuestionPreview",
+      "type": "component",
+      "file": "components/QuestionPreview.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/badge",
+        "@/components/ui/button"
+      ],
+      "apiCalls": [],
+      "hooks": []
+    },
+    {
+      "name": "QuickActionsCard",
+      "type": "component",
+      "file": "components/QuickActionsCard.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/lib/auth",
+        "@/lib/queryClient",
+        "@/hooks/use-toast"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useLocation",
+        "useToast",
+        "useState",
+        "useAuth",
+        "useMutation"
+      ]
+    },
+    {
+      "name": "QuickStartMode",
+      "type": "component",
+      "file": "components/QuickStartMode.tsx",
+      "imports": [
+        "@/components/ui/button",
+        "@/components/ui/card",
+        "@/components/ui/badge",
+        "@/lib/auth",
+        "@/lib/queryClient",
+        "@/hooks/use-toast"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useAuth",
+        "useToast",
+        "useMutation"
+      ]
+    },
+    {
+      "name": "QuickViewToggle",
+      "type": "component",
+      "file": "components/QuickViewToggle.tsx",
+      "imports": [
+        "@/components/ui/button",
+        "@/components/ui/card"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useState",
+        "useEffect"
       ]
     },
     {
@@ -803,6 +1217,46 @@
       ]
     },
     {
+      "name": "StudyGroupCard",
+      "type": "component",
+      "file": "components/StudyGroupCard.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/avatar",
+        "@/components/ui/input",
+        "@/components/ui/dialog",
+        "@/lib/auth",
+        "@/lib/queryClient",
+        "@/hooks/use-toast"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useState",
+        "useAuth",
+        "useToast",
+        "useMutation"
+      ]
+    },
+    {
+      "name": "StudyPlanCard",
+      "type": "component",
+      "file": "components/StudyPlanCard.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/components/ui/button",
+        "@/components/ui/badge",
+        "@/components/ui/progress",
+        "@/components/ui/tabs",
+        "@/lib/auth"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useAuth"
+      ]
+    },
+    {
       "name": "ThemeToggle",
       "type": "component",
       "file": "components/ThemeToggle.tsx",
@@ -813,6 +1267,19 @@
       "apiCalls": [],
       "hooks": [
         "useTheme"
+      ]
+    },
+    {
+      "name": "WeeklyProgress",
+      "type": "component",
+      "file": "components/WeeklyProgress.tsx",
+      "imports": [
+        "@/components/ui/card",
+        "@/lib/auth"
+      ],
+      "apiCalls": [],
+      "hooks": [
+        "useAuth"
       ]
     }
   ],
