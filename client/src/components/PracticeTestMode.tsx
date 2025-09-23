@@ -132,7 +132,6 @@ export default function PracticeTestMode() {
       categoryIds: test.categoryIds,
       questionCount: test.questionCount,
       timeLimit: test.timeLimit,
-      userId: currentUser.id,
       mode: "quiz",
       isPracticeTest: true
     });

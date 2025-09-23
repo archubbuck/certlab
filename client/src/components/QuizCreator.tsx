@@ -107,7 +107,6 @@ export default function QuizCreator() {
       subcategoryIds: selectedSubcategories.length > 0 ? selectedSubcategories : undefined,
       questionCount: 10, // Default continuous learning session size
       timeLimit: timeLimit === "0" ? undefined : parseInt(timeLimit),
-      userId: currentUser.id,
     };
 
     createQuizMutation.mutate(quizData);

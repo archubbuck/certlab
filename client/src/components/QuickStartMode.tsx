@@ -99,7 +99,6 @@ export default function QuickStartMode({ onToggleMode }: QuickStartModeProps) {
 
     if (lastQuiz && currentUser?.id) {
       createQuizMutation.mutate({
-        userId: currentUser.id,
         categoryIds: lastQuiz.categoryIds,
         questionCount: lastQuiz.questionCount || 15,
         title: `Continue Session - ${new Date().toLocaleDateString()}`,
@@ -112,7 +111,6 @@ export default function QuickStartMode({ onToggleMode }: QuickStartModeProps) {
     
     if (successfulQuiz && currentUser?.id) {
       createQuizMutation.mutate({
-        userId: currentUser.id,
         categoryIds: successfulQuiz.categoryIds,
         questionCount: successfulQuiz.questionCount || 15,
         title: `Repeat Success - ${new Date().toLocaleDateString()}`,
@@ -128,7 +126,6 @@ export default function QuickStartMode({ onToggleMode }: QuickStartModeProps) {
 
     if (currentUser?.id) {
       createQuizMutation.mutate({
-        userId: currentUser.id,
         categoryIds,
         questionCount: 15,
         title: `Helen's Pick - ${new Date().toLocaleDateString()}`,

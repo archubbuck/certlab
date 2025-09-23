@@ -16,7 +16,7 @@ import {
   Award,
   Users
 } from "lucide-react";
-import type { Quiz, UserStats } from "@shared/schema";
+import type { Quiz, UserStats, Category } from "@shared/schema";
 
 export default function ContextualQuickActions() {
   const [location, setLocation] = useLocation();
@@ -31,6 +31,10 @@ export default function ContextualQuickActions() {
   const { data: recentQuizzes = [] } = useQuery<Quiz[]>({
     queryKey: ['/api/user', currentUser?.id, 'quizzes'],
     enabled: !!currentUser,
+  });
+
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
   });
 
   const createQuizMutation = useMutation({
@@ -70,8 +74,7 @@ export default function ContextualQuickActions() {
       onClick: () => {
         if (currentUser?.id) {
           createQuizMutation.mutate({
-            userId: currentUser.id,
-            categoryIds: [35], // Default to CC
+            categoryIds: categories.length > 0 ? [categories[0].id] : [35], // Use first available category or default to CC
             questionCount: 15,
             title: `Quick Session - ${new Date().toLocaleDateString()}`,
           });
@@ -112,8 +115,7 @@ export default function ContextualQuickActions() {
         onClick: () => {
           if (currentUser?.id) {
             createQuizMutation.mutate({
-              userId: currentUser.id,
-              categoryIds: [35],
+              categoryIds: categories.length > 0 ? [categories[0].id] : [35],
               questionCount: 20,
               timeLimit: 30,
               title: `Timed Practice - ${new Date().toLocaleDateString()}`,
@@ -147,7 +149,6 @@ export default function ContextualQuickActions() {
 
             if (bestQuiz && currentUser?.id) {
               createQuizMutation.mutate({
-                userId: currentUser.id,
                 categoryIds: bestQuiz.categoryIds,
                 questionCount: bestQuiz.questionCount || 15,
                 title: `Repeat Success - ${new Date().toLocaleDateString()}`,

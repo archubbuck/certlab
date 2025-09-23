@@ -84,7 +84,6 @@ export default function QuickActionsCard() {
             categoryIds: [weakestArea.categoryId],
             questionCount: 15,
             timeLimit: null,
-            userId: currentUser.id,
             mode: "study"
           });
           break;
@@ -101,7 +100,6 @@ export default function QuickActionsCard() {
             categoryIds: randomCategories,
             questionCount: 20,
             timeLimit: 25,
-            userId: currentUser.id,
             mode: "quiz"
           });
           break;
@@ -114,7 +112,6 @@ export default function QuickActionsCard() {
             categoryIds: allCategories,
             questionCount: 10,
             timeLimit: null,
-            userId: currentUser.id,
             mode: "study"
           });
           break;
@@ -127,7 +124,6 @@ export default function QuickActionsCard() {
             categoryIds: examCategories,
             questionCount: 50,
             timeLimit: 60,
-            userId: currentUser.id,
             mode: "quiz"
           });
           break;

@@ -44,7 +44,6 @@ export default function DashboardHero() {
         endpoint: "/api/quiz",
         method: "POST",
         data: {
-          userId: currentUser.id,
           categoryIds,
           questionCount: 15,
           title: `${mode} Session - ${new Date().toLocaleDateString()}`,

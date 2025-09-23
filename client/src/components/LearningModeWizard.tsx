@@ -169,7 +169,6 @@ export default function LearningModeWizard() {
       questionCount: sessionConfig.questionCount,
       timeLimit: sessionConfig.timeLimit === 0 ? undefined : sessionConfig.timeLimit,
       mode: sessionConfig.mode,
-      userId: currentUser.id,
     };
 
     createQuizMutation.mutate(quizData);

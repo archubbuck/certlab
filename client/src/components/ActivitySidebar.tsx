@@ -104,7 +104,6 @@ export default function ActivitySidebar() {
       title: "Adaptive Review - Incorrect Answers",
       categoryIds: [categoryId],
       questionCount: 10,
-      userId: currentUser.id,
       isAdaptive: true, // Enable adaptive learning for review sessions
     };
     
@@ -166,7 +165,6 @@ export default function ActivitySidebar() {
       title: "Random Mixed Quiz",
       categoryIds: selectedCategories,
       questionCount: 15,
-      userId: currentUser.id,
     };
     createQuizMutation.mutate(quizData);
   };

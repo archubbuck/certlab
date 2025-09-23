@@ -144,7 +144,6 @@ export default function LearningModeSelector() {
       questionCount: selectedMode === "study" ? 10 : 25, // Study: continuous, Quiz: fixed assessment
       timeLimit: timeLimit === "0" ? undefined : parseInt(timeLimit),
       mode: selectedMode,
-      userId: currentUser.id,
     };
 
     createQuizMutation.mutate(quizData);
