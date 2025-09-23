@@ -56,3 +56,83 @@ Core entities include: Users, Categories, Subcategories, Questions, Quizzes, Use
 - `typescript`: Language support.
 - `tsx`: TypeScript execution.
 - `@replit/*`: Replit integration plugins.
+
+## Platform Enhancement Plan (December 2024)
+
+### PHASE 1: CRITICAL FIXES & SECURITY (Week 1-2)
+#### 1.1 Security & Access Control
+- Fix Tools/Admin exposure - remove backend UI visibility from regular users
+- Implement role-based access control
+- Secure all administrative API endpoints
+
+#### 1.2 Core Quiz System Bugs
+- Fix "Failed to create quiz" error for study paths
+- Fix answer review display incorrect/correct flag bug
+- Fix answer tracking to properly distinguish selected vs correct answers
+- Activate practice quiz button in quiz summary
+
+#### 1.3 Mastery Tracking Fixes  
+- Fix static mastery percentage not updating
+- Fix domain mastery progression after 5-10 exams
+- Add proper progress persistence across sessions
+
+### PHASE 2: POLAR MEMBERSHIP INTEGRATION (Week 2-3)
+#### 2.1 Polar Setup
+- Install @polar-sh/sdk package
+- Configure POLAR_API_KEY and POLAR_WEBHOOK_SECRET
+- Add database tables: user_subscriptions, subscription_events, membership_features
+
+#### 2.2 Subscription Management
+- Implement membership validation via Polar API
+- Set up 7-day free trial with tracking
+- Configure webhook handler for subscription events
+- Implement 3-day grace period for failed payments
+
+#### 2.3 User-Facing Features
+- Integrate Polar customer portal
+- Create upgrade/downgrade flows
+- Display membership status and billing info
+- Link payment method management
+
+### PHASE 3: USER EXPERIENCE (Week 3-4)
+#### 3.1 Mode-Specific Fixes
+- Study Mode: Implement immediate per-question feedback
+- Quiz Mode: Fix flag-for-review and mastery meter updates
+- Practice Test: Fix retake functionality and history
+
+#### 3.2 Placeholder Management
+- Add "Coming Soon" messaging for incomplete features
+- Properly disable inactive links with tooltips
+- Update study materials and groups with launch dates
+
+#### 3.3 Quiz Quality
+- Fix answer length bias issue
+- Implement proper difficulty distribution
+- Improve question randomization
+
+### PHASE 4: FEATURE ENHANCEMENTS (Week 4-6)
+#### 4.1 Gamification
+- Adjust achievement thresholds (High Achiever: 25+ sessions at 90%+)
+- Make thresholds configurable via admin panel
+- Add domain-specific and speed achievements
+
+#### 4.2 Content Framework
+- Create modular system for study materials
+- Build admin interface for content management
+- Implement progressive access based on membership
+
+#### 4.3 Personalization
+- Add profile customization (themes, pictures, display names)
+- Implement study preferences
+- Add notification settings
+
+### PHASE 5: ADVANCED FEATURES (Month 2-3)
+- Study Groups with chat and scheduling
+- Advanced analytics for premium tier
+- Enterprise features for business tier
+
+### Polar Subscription Tiers
+- **Free Trial**: 7 days, full access, credit card required
+- **Basic** ($19/month): Core features, 100 quizzes/month  
+- **Premium** ($39/month): Unlimited quizzes, advanced analytics, study groups
+- **Business** ($99/month): Team features, API access, white-label options

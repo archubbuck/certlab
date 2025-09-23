@@ -8,13 +8,37 @@ import { insertTenantSchema, insertCategorySchema, insertSubcategorySchema, inse
 const router = Router();
 
 // Middleware to check admin role
-const requireAdmin = (req: any, res: any, next: any) => {
-  // For now, assume user 10 is admin - in production, check session/JWT
-  const userId = req.session?.userId || 10;
-  if (!userId) {
-    return res.status(401).json({ error: "Authentication required" });
+const requireAdmin = async (req: any, res: any, next: any) => {
+  try {
+    // Get user ID from authenticated session
+    const userId = req.user?.id || req.user?.claims?.sub;
+    
+    if (!userId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Get the user from the database to check their role
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+    
+    if (user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required. You need administrator privileges to access this resource." });
+    }
+    
+    // Attach user to request for downstream use
+    req.adminUser = user;
+    next();
+  } catch (error) {
+    console.error("Admin auth check failed:", error);
+    return res.status(500).json({ error: "Failed to verify admin access" });
   }
-  next();
 };
 
 // Tenant Management Routes
@@ -234,7 +258,8 @@ router.get("/tenants/:tenantId/users", requireAdmin, async (req, res) => {
     const tenantUsers = await db
       .select({
         id: users.id,
-        username: users.username,
+        firstName: users.firstName,
+        lastName: users.lastName,
         email: users.email,
         role: users.role,
         createdAt: users.createdAt,
