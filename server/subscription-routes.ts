@@ -14,7 +14,7 @@ const cancelSubscriptionSchema = z.object({
   cancelAtPeriodEnd: z.boolean().optional().default(true),
 });
 
-export function registerSubscriptionRoutes(app: Express, storage: any) {
+export function registerSubscriptionRoutes(app: Express, storage: any, isAuthenticated: any) {
   // Helper function to check and reset daily quiz count
   const checkAndResetDailyQuizCount = async (userId: string): Promise<void> => {
     const user = await storage.getUserById(userId);

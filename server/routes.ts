@@ -1168,7 +1168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Register subscription routes (protected)
-  registerSubscriptionRoutes(app, storage);
+  registerSubscriptionRoutes(app, storage, isAuthenticated);
 
   // Mount admin routes
   app.use("/api/admin", adminRoutes);
