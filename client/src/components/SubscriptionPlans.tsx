@@ -32,8 +32,6 @@ interface Plan {
     categoriesAccess: string[];
     analyticsAccess: string;
   };
-  priceMonthly?: number;
-  priceYearly?: number;
 }
 
 interface PlansResponse {
@@ -122,26 +120,16 @@ export default function SubscriptionPlans() {
     if (plan.id === "free") return "Free";
     if (plan.id === "enterprise") return "Contact Sales";
     
-    const monthlyPrice = 20; // Default Pro price
-    const yearlyPrice = 200; // Default Pro yearly price with discount
-    
-    if (billingInterval === "yearly") {
-      return `$${yearlyPrice}/year`;
-    }
-    return `$${monthlyPrice}/month`;
+    // Prices are configured in Polar and shown during checkout
+    return "View pricing";
   };
 
   const getSavings = (plan: Plan) => {
     if (plan.id !== "pro") return null;
     if (billingInterval !== "yearly") return null;
     
-    const monthlyPrice = 20;
-    const yearlyPrice = 200;
-    const yearlyMonthlyEquivalent = monthlyPrice * 12;
-    const savings = yearlyMonthlyEquivalent - yearlyPrice;
-    const percentSaved = Math.round((savings / yearlyMonthlyEquivalent) * 100);
-    
-    return `Save ${percentSaved}%`;
+    // Annual billing typically offers savings
+    return "Best value";
   };
 
   return (
