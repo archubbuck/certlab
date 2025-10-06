@@ -169,15 +169,11 @@ export function registerSubscriptionRoutes(app: Express, storage: any) {
         });
       }
 
-      // Get the price ID based on billing interval
-      const priceId = billingInterval === 'yearly' 
-        ? (planConfig as any).priceYearly 
-        : (planConfig as any).priceMonthly;
-
-      if (!priceId) {
+      // Verify the product ID is configured
+      if (!planConfig.productId) {
         return res.status(400).json({ 
-          error: "Invalid billing interval", 
-          message: "The selected billing interval is not available for this plan" 
+          error: "Product not configured", 
+          message: "The selected plan is not properly configured. Please contact support." 
         });
       }
 
@@ -192,18 +188,17 @@ export function registerSubscriptionRoutes(app: Express, storage: any) {
         polarCustomerId: customer.id,
       });
 
-      // Create checkout session
+      // Create checkout session with product ID only
       const baseUrl = process.env.APP_URL || `https://${req.get('host')}`;
       const session = await polarClient.createCheckoutSession({
         productId: planConfig.productId,
-        priceId: priceId,
         successUrl: `${baseUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${baseUrl}/subscription/cancel`,
         customerEmail: user.email,
         metadata: {
           userId: user.id,
           plan: plan,
-          billingInterval: billingInterval,
+          billingInterval: billingInterval || 'month',
         },
       });
 

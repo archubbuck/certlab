@@ -173,10 +173,9 @@ class PolarClient {
     });
   }
 
-  // Checkout Sessions API
+  // Checkout Sessions API - Simplified to use product ID only
   async createCheckoutSession(params: {
     productId: string;
-    priceId: string;
     successUrl: string;
     cancelUrl?: string;
     customerEmail?: string;
@@ -185,7 +184,11 @@ class PolarClient {
     return this.request<PolarCheckoutSession>('/checkout/sessions', {
       method: 'POST',
       body: JSON.stringify({
-        ...params,
+        product_id: params.productId,
+        success_url: params.successUrl,
+        cancel_url: params.cancelUrl,
+        customer_email: params.customerEmail,
+        metadata: params.metadata,
         organization_id: this.organizationId,
       }),
     });
@@ -293,8 +296,6 @@ export const SUBSCRIPTION_PLANS = {
   pro: {
     name: 'Pro',
     productId: process.env.POLAR_PRO_PRODUCT_ID || '',
-    priceMonthly: process.env.POLAR_PRO_PRICE_MONTHLY_ID || '',
-    priceYearly: process.env.POLAR_PRO_PRICE_YEARLY_ID || '',
     features: [
       'Access to all certifications',
       'Unlimited quizzes',
