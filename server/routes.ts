@@ -571,15 +571,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.params.userId;
       
-      // Initialize game stats if they don't exist
-      await storage.initializeUserGameStats(userId);
+      // Get game stats and user badges in parallel for better performance
+      const [gameStats, userBadges, allBadges] = await Promise.all([
+        storage.getUserGameStats(userId),
+        storage.getUserBadges(userId),
+        storage.getAllBadges()
+      ]);
       
-      // Check for new achievements
-      const newBadges = await storage.checkAndAwardAchievements(userId);
+      // Initialize game stats only if they don't exist
+      if (!gameStats) {
+        await storage.initializeUserGameStats(userId);
+      }
       
-      // Get all user badges with badge details
-      const userBadges = await storage.getUserBadges(userId);
-      const allBadges = await storage.getAllBadges();
+      // Skip checking for new achievements on every request to improve performance
+      // This check should only happen after meaningful events (quiz completion, etc.)
+      // It can be triggered separately via the /achievements/check endpoint
       
       // Combine badge data with user progress
       const badgeData = userBadges.map(userBadge => {
@@ -590,13 +596,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
       
-      // Get game stats
-      const gameStats = await storage.getUserGameStats(userId);
-      
       res.json({
         badges: badgeData,
-        gameStats,
-        newBadges: newBadges.length
+        gameStats: gameStats || await storage.getUserGameStats(userId),
+        newBadges: 0  // Will be updated via separate check endpoint
       });
     } catch (error) {
       console.error('Error fetching user achievements:', error);
