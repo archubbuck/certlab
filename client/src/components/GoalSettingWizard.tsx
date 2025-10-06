@@ -486,7 +486,7 @@ export default function GoalSettingWizard({ isOpen, onComplete }: GoalSettingWiz
   const isLastStep = currentStep === wizardSteps.length;
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={onComplete}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center">
