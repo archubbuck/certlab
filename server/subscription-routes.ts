@@ -119,8 +119,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any) {
       name: plan.name,
       features: plan.features,
       limits: plan.limits,
-      priceMonthly: key === 'free' ? 0 : undefined, // Hide actual prices
-      priceYearly: key === 'free' ? 0 : undefined,
+      // Prices are handled by Polar, not exposed directly
     }));
 
     res.json({ plans });
