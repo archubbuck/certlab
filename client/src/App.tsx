@@ -23,6 +23,8 @@ import UIStructurePage from "@/pages/ui-structure";
 import ChallengesPage from "@/pages/challenges";
 import SubscriptionPlansPage from "@/pages/subscription-plans";
 import SubscriptionManagePage from "@/pages/subscription-manage";
+import SubscriptionSuccessPage from "@/pages/subscription-success";
+import SubscriptionCancelPage from "@/pages/subscription-cancel";
 import { useEffect } from "react";
 
 // Global unhandled rejection handler
@@ -79,6 +81,8 @@ function Router() {
           <Route path="/challenges" component={ChallengesPage} />
           <Route path="/subscription/plans" component={SubscriptionPlansPage} />
           <Route path="/subscription/manage" component={SubscriptionManagePage} />
+          <Route path="/subscription/success" component={SubscriptionSuccessPage} />
+          <Route path="/subscription/cancel" component={SubscriptionCancelPage} />
           {isAdmin && <Route path="/ui-structure" component={UIStructurePage} />}
           {isAdmin && <Route path="/admin" component={AdminDashboard} />}
         </>
