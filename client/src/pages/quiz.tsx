@@ -4,9 +4,9 @@ import QuizInterface from "@/components/QuizInterface";
 
 export default function Quiz() {
   const [, params] = useRoute("/quiz/:id");
-  const quizId = parseInt(params?.id || "0");
+  const quizId = params?.id ? parseInt(params.id) : 0;
 
-  if (!quizId) {
+  if (!quizId || isNaN(quizId)) {
     return (
       <div className="min-h-screen bg-background">
         <Header />

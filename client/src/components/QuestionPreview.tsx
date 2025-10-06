@@ -81,8 +81,8 @@ export default function QuestionPreview({ question, onSelect, isSelected = false
       </CardHeader>
       <CardContent className="pt-0">
         <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-          {question.text.substring(0, 120)}
-          {question.text.length > 120 && '...'}
+          {question.text ? question.text.substring(0, 120) : ''}
+          {question.text && question.text.length > 120 && '...'}
         </p>
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
