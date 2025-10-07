@@ -8,8 +8,8 @@ const verbose = args.includes('--verbose') || args.includes('-v');
 
 // Create and run analyzer
 const analyzer = new UIStructureAnalyzer({
-  rootDir: './client/src',
-  outputPath: './ui-structure-map.yaml',
+  rootDir: '../../client/src',
+  outputPath: '../../ui-structure-map.yaml',
   watch,
   debounceMs: 500,
   include: ['**/*.tsx', '**/*.jsx'],

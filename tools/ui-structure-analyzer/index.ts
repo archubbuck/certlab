@@ -15,7 +15,7 @@ import type { UIStructureConfig, UIStructureMap } from './types';
 export class UIStructureAnalyzer {
   private config: UIStructureConfig;
   private cache: Map<string, any> = new Map();
-  private watcher: chokidar.FSWatcher | null = null;
+  private watcher: any | null = null;
   private plugins: Array<any> = [];
   private outputPath: string;
   private debounceTimer: NodeJS.Timeout | null = null;

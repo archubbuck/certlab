@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Automatic UI structure analyzer for React applications",
   "main": "index.ts",
-  "type": "module",
   "scripts": {
     "analyze": "tsx run.ts",
     "analyze:watch": "tsx run.ts --watch"
