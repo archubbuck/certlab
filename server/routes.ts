@@ -91,6 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { 
+        email,
         firstName, 
         lastName, 
         certificationGoals, 
@@ -99,6 +100,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } = req.body;
       
       const updates: any = {};
+      
+      // Validate and include email if provided
+      if (email !== undefined) {
+        // Allow empty email (to clear it) or validate non-empty email
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          return res.status(400).json({ message: "Invalid email format" });
+        }
+        updates.email = email;
+      }
       
       // Only include fields that were provided
       if (firstName !== undefined) updates.firstName = firstName;

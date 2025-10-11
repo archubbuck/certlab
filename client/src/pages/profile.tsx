@@ -80,6 +80,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   const [profileData, setProfileData] = useState<Partial<UserProfile>>({
+    email: "",
     firstName: "",
     lastName: "",
     certificationGoals: [],
@@ -98,6 +99,12 @@ export default function ProfilePage() {
       motivations: [],
     },
   });
+
+  // Email validation helper
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   // Fetch user profile
   const { data: userProfile, isLoading } = useQuery<UserProfile>({
@@ -149,6 +156,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (userProfile) {
       setProfileData({
+        email: userProfile.email || "",
         firstName: userProfile.firstName || "",
         lastName: userProfile.lastName || "",
         certificationGoals: userProfile.certificationGoals || [],
@@ -171,6 +179,15 @@ export default function ProfilePage() {
   }, [userProfile]);
 
   const handleSave = () => {
+    // Validate email if provided
+    if (profileData.email && !isValidEmail(profileData.email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
     updateProfileMutation.mutate(profileData);
   };
 
@@ -310,15 +327,31 @@ export default function ProfilePage() {
                 <Label htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
-                  value={userProfile?.email || ""}
-                  disabled
-                  className="bg-muted"
+                  type="email"
+                  value={profileData.email || ""}
+                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                  placeholder="Enter your email address"
+                  className={profileData.email && !isValidEmail(profileData.email) ? "border-red-500" : ""}
                   data-testid="input-email"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Email is managed through your Replit account
+                  {userProfile?.email ? 
+                    "You can update your email address if needed for subscriptions" : 
+                    "Please provide an email address to enable subscription features"}
                 </p>
+                {profileData.email && !isValidEmail(profileData.email) && (
+                  <p className="text-xs text-red-500">Please enter a valid email address</p>
+                )}
               </div>
+
+              {!userProfile?.email && !profileData.email && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Email Required for Subscriptions:</strong> Please add your email address to enable subscription features and access premium content.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
