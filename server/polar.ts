@@ -54,17 +54,41 @@ interface PolarCheckoutSession {
 }
 
 class PolarClient {
-  private apiKey: string;
+  private _apiKey?: string;
   private baseUrl = 'https://api.polar.sh/v1';
-  private organizationId?: string;
+  private _organizationId?: string;
+  private _webhookSecret?: string;
 
-  constructor(config: PolarConfig) {
-    this.apiKey = config.apiKey;
-    this.organizationId = config.organizationId;
-    
-    if (!this.apiKey) {
-      console.warn('Polar API key not configured. Subscription features will be disabled.');
+  constructor(config?: Partial<PolarConfig>) {
+    // Store config if provided, but allow dynamic reading
+    this._apiKey = config?.apiKey;
+    this._organizationId = config?.organizationId;
+    this._webhookSecret = config?.webhookSecret;
+  }
+
+  // Getter for API key that reads from env vars dynamically
+  private get apiKey(): string {
+    const key = this._apiKey || process.env.POLAR_API_KEY || '';
+    if (!key) {
+      console.log('[Polar] API key not configured (checked at runtime)');
+    } else {
+      console.log('[Polar] API key found:', key.substring(0, 8) + '...');
     }
+    return key;
+  }
+
+  // Getter for organization ID that reads from env vars dynamically
+  private get organizationId(): string | undefined {
+    const orgId = this._organizationId || process.env.POLAR_ORGANIZATION_ID;
+    if (orgId) {
+      console.log('[Polar] Organization ID found:', orgId.substring(0, 8) + '...');
+    }
+    return orgId;
+  }
+
+  // Getter for webhook secret that reads from env vars dynamically
+  get webhookSecret(): string | undefined {
+    return this._webhookSecret || process.env.POLAR_WEBHOOK_SECRET;
   }
 
   private async request<T>(
@@ -194,6 +218,12 @@ class PolarClient {
     customerEmail?: string;
     metadata?: Record<string, any>;
   }): Promise<PolarCheckoutSession> {
+    console.log('[Polar] Creating checkout session with product ID:', params.productId ? params.productId.substring(0, 8) + '...' : '(empty)');
+    console.log('[Polar] Environment check at checkout time:');
+    console.log('  - POLAR_API_KEY:', process.env.POLAR_API_KEY ? 'Set' : 'Not set');
+    console.log('  - POLAR_PRO_PRODUCT_ID:', process.env.POLAR_PRO_PRODUCT_ID ? 'Set' : 'Not set');
+    console.log('  - POLAR_ENTERPRISE_PRODUCT_ID:', process.env.POLAR_ENTERPRISE_PRODUCT_ID ? 'Set' : 'Not set');
+    
     return this.request<PolarCheckoutSession>('/checkout/sessions', {
       method: 'POST',
       body: JSON.stringify({
@@ -212,7 +242,17 @@ class PolarClient {
   }
 
   // Webhook verification
-  verifyWebhook(payload: string, signature: string, secret: string): boolean {
+  verifyWebhook(payload: string, signature: string): boolean {
+    // Use dynamic webhook secret
+    const secret = this.webhookSecret;
+    
+    if (!secret) {
+      console.log('[Polar] Webhook secret not configured');
+      return false;
+    }
+    
+    console.log('[Polar] Verifying webhook with secret:', secret.substring(0, 8) + '...');
+    
     // Implement webhook signature verification
     // This is a placeholder - actual implementation depends on Polar's webhook signature format
     const crypto = require('crypto');
@@ -291,18 +331,12 @@ class PolarClient {
   }
 }
 
-// Export singleton instance
-const polarApiKey = process.env.POLAR_API_KEY || '';
-const polarOrganizationId = process.env.POLAR_ORGANIZATION_ID;
-const polarWebhookSecret = process.env.POLAR_WEBHOOK_SECRET;
+// Export singleton instance that reads environment variables dynamically
+// Don't pass any config to constructor so it will use the getters
+console.log('[Polar] Initializing Polar client with dynamic environment variable reading');
+export const polarClient = new PolarClient();
 
-export const polarClient = new PolarClient({
-  apiKey: polarApiKey,
-  organizationId: polarOrganizationId,
-  webhookSecret: polarWebhookSecret,
-});
-
-// Subscription plans configuration
+// Subscription plans configuration with dynamic environment variable reading
 export const SUBSCRIPTION_PLANS = {
   free: {
     name: 'Free',
@@ -320,7 +354,12 @@ export const SUBSCRIPTION_PLANS = {
   },
   pro: {
     name: 'Pro',
-    productId: process.env.POLAR_PRO_PRODUCT_ID || '',
+    // Use getter to read environment variable dynamically
+    get productId() {
+      const productId = process.env.POLAR_PRO_PRODUCT_ID || '';
+      console.log('[Polar] Getting Pro Product ID:', productId ? `${productId.substring(0, 8)}...` : '(empty)');
+      return productId;
+    },
     features: [
       'Access to all certifications',
       'Unlimited quizzes',
@@ -337,7 +376,12 @@ export const SUBSCRIPTION_PLANS = {
   },
   enterprise: {
     name: 'Enterprise',
-    productId: process.env.POLAR_ENTERPRISE_PRODUCT_ID || '',
+    // Use getter to read environment variable dynamically
+    get productId() {
+      const productId = process.env.POLAR_ENTERPRISE_PRODUCT_ID || '';
+      console.log('[Polar] Getting Enterprise Product ID:', productId ? `${productId.substring(0, 8)}...` : '(empty)');
+      return productId;
+    },
     features: [
       'Everything in Pro',
       'Team management',

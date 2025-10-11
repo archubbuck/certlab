@@ -506,15 +506,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         return res.status(400).json({ error: "Missing webhook signature" });
       }
 
-      const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
-      if (!webhookSecret) {
-        console.error("Webhook secret not configured");
-        return res.status(503).json({ error: "Webhook not configured" });
-      }
-
-      // Verify webhook signature
+      // Verify webhook signature - webhook secret is now read dynamically by polarClient
       const payload = JSON.stringify(req.body);
-      const isValid = polarClient.verifyWebhook(payload, signature, webhookSecret);
+      const isValid = polarClient.verifyWebhook(payload, signature);
       
       if (!isValid) {
         return res.status(401).json({ error: "Invalid webhook signature" });
