@@ -224,7 +224,8 @@ class PolarClient {
     console.log('  - POLAR_PRO_PRODUCT_ID:', process.env.POLAR_PRO_PRODUCT_ID ? 'Set' : 'Not set');
     console.log('  - POLAR_ENTERPRISE_PRODUCT_ID:', process.env.POLAR_ENTERPRISE_PRODUCT_ID ? 'Set' : 'Not set');
     
-    return this.request<PolarCheckoutSession>('/checkout/sessions', {
+    // Try using 'checkouts' endpoint instead of 'checkout/sessions'
+    return this.request<PolarCheckoutSession>('/checkouts', {
       method: 'POST',
       body: JSON.stringify({
         product_id: params.productId,
@@ -238,7 +239,8 @@ class PolarClient {
   }
 
   async getCheckoutSession(sessionId: string): Promise<PolarCheckoutSession> {
-    return this.request<PolarCheckoutSession>(`/checkout/sessions/${sessionId}`);
+    // Update to match the checkouts endpoint
+    return this.request<PolarCheckoutSession>(`/checkouts/${sessionId}`);
   }
 
   // Webhook verification
