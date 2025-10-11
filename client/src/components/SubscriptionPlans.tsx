@@ -54,7 +54,18 @@ export default function SubscriptionPlans() {
         method: "POST",
         data,
       });
-      return response.json();
+      const result = await response.json();
+      
+      // Check if response is not ok and handle errors
+      if (!response.ok) {
+        // Handle Polar product not configured error specially
+        if (result.error === "Polar product not configured") {
+          throw new Error("Subscription setup required. The Polar integration needs to be configured with product IDs from your Polar dashboard.");
+        }
+        throw new Error(result.message || "Failed to create checkout session");
+      }
+      
+      return result;
     },
     onSuccess: (data) => {
       if (data.checkoutUrl) {
@@ -66,6 +77,7 @@ export default function SubscriptionPlans() {
         title: "Error",
         description: error.message || "Failed to create checkout session",
         variant: "destructive",
+        duration: error.message?.includes("Subscription setup required") ? 8000 : 5000,
       });
     },
   });

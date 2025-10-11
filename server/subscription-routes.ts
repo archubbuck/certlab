@@ -227,6 +227,20 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       });
     } catch (error: any) {
       console.error("Error creating checkout session:", error);
+      
+      // Provide helpful error message for product not found
+      if (error.message?.includes('Not Found')) {
+        res.status(500).json({ 
+          error: "Polar product not configured",
+          message: "The subscription products are not yet configured in your Polar account. Please create products in Polar and update the product IDs in the application configuration.",
+          details: {
+            attempted_plan: req.body?.plan,
+            instruction: "Visit your Polar dashboard to create subscription products, then update the POLAR_PRODUCT_IDS environment variables with the actual product IDs."
+          }
+        });
+        return;
+      }
+      
       res.status(500).json({ 
         error: "Failed to create checkout session",
         message: error.message 

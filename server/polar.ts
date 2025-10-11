@@ -171,7 +171,10 @@ class PolarClient {
     // Don't send organization_id when using organization token
     
     console.log('Searching for customer with email:', email);
-    const customers = await this.request<PolarCustomer[]>(`/customers?${params}`);
+    const response = await this.request<any>(`/customers?${params}`);
+    
+    // Handle paginated response from Polar API
+    const customers = response.items || response || [];
     console.log('Found customers:', customers.length);
     return customers.length > 0 ? customers[0] : null;
   }
