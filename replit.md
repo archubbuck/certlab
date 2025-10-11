@@ -7,7 +7,7 @@ Cert Lab is an AI-powered certification learning platform featuring Helen, an in
 Preferred communication style: Simple, everyday language.
 
 ## Recent Updates (October 2025)
-- **Fixed subscription email issue**: Users can now set/update their email address in the profile page to enable subscription functionality
+- **Fixed subscription email issue**: Resolved session data caching - subscription system now fetches fresh user data from database to recognize email updates immediately
 - **Simplified dashboard**: Reduced clutter on /app with focused layout showing only essential information
 - **Enhanced routing**: Separated marketing landing page (/) from authenticated dashboard (/app)
 
