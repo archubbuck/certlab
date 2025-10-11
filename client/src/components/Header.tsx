@@ -31,7 +31,8 @@ import {
   ArrowLeft,
   ChevronDown,
   Accessibility,
-  Users
+  Users,
+  User
 } from "lucide-react";
 import MobileNavigationEnhanced from "@/components/MobileNavigationEnhanced";
 
@@ -292,11 +293,11 @@ export default function Header() {
                     <span className="font-medium">My Achievements</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    disabled
-                    className="cursor-not-allowed opacity-60 rounded-md py-2.5 px-3"
+                    onClick={() => setLocation("/app/profile")}
+                    className="cursor-pointer rounded-md py-2.5 px-3"
                   >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Account Settings (Coming Soon)
+                    <User className="w-4 h-4 mr-3 text-primary" />
+                    <span className="font-medium">My Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 

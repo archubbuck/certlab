@@ -79,6 +79,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update user goals" });
     }
   });
+  
+  // Update user profile (protected)
+  app.patch("/api/user/:id/profile", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.params.id;
+      
+      // Verify the user is updating their own profile
+      if (userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Unauthorized to update this profile" });
+      }
+      
+      const { 
+        firstName, 
+        lastName, 
+        certificationGoals, 
+        studyPreferences, 
+        skillsAssessment 
+      } = req.body;
+      
+      const updates: any = {};
+      
+      // Only include fields that were provided
+      if (firstName !== undefined) updates.firstName = firstName;
+      if (lastName !== undefined) updates.lastName = lastName;
+      if (certificationGoals !== undefined) updates.certificationGoals = certificationGoals;
+      if (studyPreferences !== undefined) updates.studyPreferences = studyPreferences;
+      if (skillsAssessment !== undefined) updates.skillsAssessment = skillsAssessment;
+      
+      const updatedUser = await storage.updateUser(userId, updates);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
 
   // Get categories
   app.get("/api/categories", async (req, res) => {

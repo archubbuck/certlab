@@ -25,6 +25,7 @@ import SubscriptionPlansPage from "@/pages/subscription-plans";
 import SubscriptionManagePage from "@/pages/subscription-manage";
 import SubscriptionSuccessPage from "@/pages/subscription-success";
 import SubscriptionCancelPage from "@/pages/subscription-cancel";
+import ProfilePage from "@/pages/profile";
 import { useEffect } from "react";
 
 // Global unhandled rejection handler
@@ -62,6 +63,7 @@ function Router() {
           <>
             <Route path="/" component={Dashboard} />
             <Route path="/app" component={Dashboard} />
+            <Route path="/app/profile" component={ProfilePage} />
             <Route path="/app/quiz/:id" component={Quiz} />
             <Route path="/app/results/:id" component={Results} />
             <Route path="/app/review/:id" component={Review} />
