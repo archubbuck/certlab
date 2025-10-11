@@ -26,8 +26,9 @@ Preferred communication style: Simple, everyday language.
 ### Key Features and Components
 - **AI-Powered Learning**: Helen provides adaptive assessments, personalized study paths, intelligent feedback, and AI-generated lecture notes based on quiz performance (integrated with OpenAI GPT-3.5-turbo).
 - **Quiz System**: Features authentic certification questions, real-time feedback, and a comprehensive review system. Supports adaptive question adjustment based on user performance.
-- **Dashboard**: Offers a personalized overview with study plan recommendations, weekly progress tracking, and quick actions for focused practice.
-- **Navigation**: Enhanced navigation with a mega menu, breadcrumb navigation, and contextual quick actions.
+- **Simplified Dashboard**: Clean, focused dashboard at /app with welcome section, primary actions, key stats, and recent activity. Removed clutter for improved user experience.
+- **Dual-Path Navigation**: Separate marketing landing page (/) accessible to all users, with authenticated app experience under /app/* routes.
+- **User Profile Management**: Comprehensive profile page with personal information, learning preferences, skills assessment, and subscription management in one location.
 - **Multi-Tenant Admin System**: Comprehensive platform for managing tenants (organizations), categories, questions, and users, supporting tenant isolation.
 - **Gamification**: Includes a learning streak feature with visual progression, a robust achievement system with 90+ badges, and XP/level progression.
 - **Accessibility**: Built-in accessibility color contrast analyzer for WCAG compliance.
