@@ -67,7 +67,7 @@ export const SUBSCRIPTION_PLANS = {
   },
   pro: {
     name: 'Pro',
-    productId: 'prod_mock_pro_001',
+    productId: 'be33a4b3-f8a5-4369-89cf-7a1956dca722',
     priceId: 'price_mock_pro_monthly',
     amount: 1999, // $19.99
     features: [
@@ -86,7 +86,7 @@ export const SUBSCRIPTION_PLANS = {
   },
   enterprise: {
     name: 'Enterprise',
-    productId: 'prod_mock_enterprise_001',
+    productId: '753f19d6-7b38-47f5-8163-3c37c1c5e9f8',
     priceId: 'price_mock_enterprise_monthly',
     amount: 4999, // $49.99
     features: [
@@ -429,9 +429,50 @@ export class MockPolarClient {
     }
 
     const sessionId = this.generateId('checkout');
+    
+    // In dev mode, immediately create a subscription for the customer
+    if (params.customerEmail) {
+      const customer = await this.getCustomerByEmail(params.customerEmail);
+      if (customer) {
+        console.log('[MockPolar] Immediately creating subscription for customer:', customer.id);
+        
+        // Check for existing subscriptions first
+        const existingSubscriptions = await this.getSubscriptions(customer.id);
+        const activeSubscription = existingSubscriptions.find(sub => 
+          sub.status === 'active' || sub.status === 'trialing'
+        );
+        
+        if (activeSubscription) {
+          // Cancel existing subscription
+          console.log('[MockPolar] Canceling existing subscription:', activeSubscription.id);
+          activeSubscription.status = 'canceled';
+          activeSubscription.canceledAt = new Date();
+        }
+        
+        // Create new subscription immediately
+        const subscriptionId = this.generateId('subscription');
+        const newSubscription: PolarSubscription = {
+          id: subscriptionId,
+          customerId: customer.id,
+          productId: params.productId,
+          priceId: product.prices[0].id,
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        };
+        
+        this.subscriptions.set(subscriptionId, newSubscription);
+        console.log('[MockPolar] Created subscription:', subscriptionId, 'for product:', product.name);
+      }
+    }
+    
+    // Replace {CHECKOUT_SESSION_ID} placeholder in successUrl with actual session ID
+    const successUrlWithSessionId = params.successUrl.replace('{CHECKOUT_SESSION_ID}', sessionId);
+    
+    // Return the success URL directly as the checkout URL (simulating instant checkout)
     const checkoutSession: PolarCheckoutSession = {
       id: sessionId,
-      url: `https://mock-checkout.polar.sh/session/${sessionId}`,
+      url: successUrlWithSessionId, // Use the success URL instead of external mock URL
       successUrl: params.successUrl,
       cancelUrl: params.cancelUrl,
       productId: params.productId,
@@ -448,6 +489,7 @@ export class MockPolarClient {
 
     this.checkoutSessions.set(sessionId, checkoutSession);
     console.log('[MockPolar] Created checkout session:', sessionId);
+    console.log('[MockPolar] Redirecting to:', successUrlWithSessionId);
     
     return checkoutSession;
   }

@@ -170,10 +170,11 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
       try {
         await storage.upsertUser({
           id: testUserId,
-          email: 'test@example.com',
+          email: 'adam.chubbuck@gmail.com',
           firstName: 'Test',
           lastName: 'User',
           profileImageUrl: null,
+          role: 'admin', // Give test user admin role for development
         });
         testUser = await storage.getUser(testUserId);
         

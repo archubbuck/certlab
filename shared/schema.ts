@@ -298,6 +298,7 @@ export const upsertUserSchema = z.object({
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
   profileImageUrl: z.string().nullable(),
+  role: z.enum(["user", "admin"]).optional(),
 });
 
 // Quiz creation schema
