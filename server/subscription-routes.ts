@@ -1,7 +1,7 @@
 import { Express, Request, Response } from "express";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
-import polarClient, { SUBSCRIPTION_PLANS } from "./polar";
+import { getPolarClient, SUBSCRIPTION_PLANS, clearDevModeCache } from "./polar";
 import type { User } from "@shared/schema";
 
 // Request/Response schemas
@@ -80,6 +80,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // If Polar is configured and user has email, sync with Polar (but skip for test user)
       if (process.env.POLAR_API_KEY && user.email && !isTestUser) {
         try {
+          const polarClient = await getPolarClient(userId);
           const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
           
           // Check if Polar data is newer than cached data
@@ -239,6 +240,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
       }
 
+      // Get the appropriate Polar client for this user
+      const polarClient = await getPolarClient(userId);
+      
       // Create or get customer in Polar
       const customer = await polarClient.createOrGetCustomerForUser(
         user.email,
@@ -385,6 +389,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         return res.status(401).json({ error: "User not found" });
       }
 
+      // Get the appropriate Polar client for this user
+      const polarClient = await getPolarClient(userId);
+      
       // Verify the checkout session
       const session = await polarClient.getCheckoutSession(session_id);
       
@@ -488,6 +495,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
       }
 
+      // Get the appropriate Polar client for this user
+      const polarClient = await getPolarClient(userId);
+      
       // Get current subscription from Polar
       let subscriptionId: string | undefined;
       try {
@@ -573,6 +583,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
       }
 
+      // Get the appropriate Polar client for this user
+      const polarClient = await getPolarClient(userId);
+      
       // Find canceled subscription in Polar
       let subscriptionId: string | undefined;
       try {
@@ -680,6 +693,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
       }
 
+      // Get the appropriate Polar client for this user
+      const polarClient = await getPolarClient(user.id);
+      
       // Get current subscription from Polar
       const subscriptions = await polarClient.getSubscriptions(userData.polarCustomerId);
       const currentSubscription = subscriptions.find(sub => 
@@ -810,6 +826,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       }
 
       try {
+        // Get the appropriate Polar client for this user
+        const polarClient = await getPolarClient(user.id);
+        
         // Get the checkout session from Polar
         const session = await polarClient.getCheckoutSession(session_id);
         
@@ -880,13 +899,16 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       console.log("Received Polar webhook:", type);
 
       // Verify webhook signature if secret is configured
+      // For webhooks, we use the real client by default since we don't have user context yet
+      const defaultPolarClient = await getPolarClient();
+      
       if (process.env.POLAR_WEBHOOK_SECRET) {
         const signature = req.headers['polar-webhook-signature'] as string;
         if (!signature) {
           return res.status(401).json({ error: "Missing webhook signature" });
         }
 
-        const isValid = polarClient.verifyWebhook(
+        const isValid = defaultPolarClient.verifyWebhook(
           JSON.stringify(req.body),
           signature
         );
@@ -913,9 +935,12 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
           const user = users[0];
 
+          // Get the appropriate client for this user
+          const userPolarClient = await getPolarClient(user.id);
+          
           // Sync benefits from Polar
           if (user.email) {
-            const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
+            const polarData = await userPolarClient.syncUserSubscriptionBenefits(user.email);
             await storage.updateUser(user.id, {
               subscriptionBenefits: polarData.benefits,
             });

@@ -5,6 +5,7 @@ import adminRoutes from "./admin-routes";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { registerSubscriptionRoutes } from "./subscription-routes";
 import { isCategoryAccessible } from "@shared/categoryAccess";
+import { clearDevModeCache } from "./polar";
 import { 
   insertUserSchema, 
   createQuizSchema, 
@@ -157,6 +158,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.updateUserDevMode(userId, devMode);
+      
+      // Clear the Polar client cache for this user to ensure immediate switching
+      clearDevModeCache(userId);
+      console.log(`Dev mode updated for user ${userId}: ${devMode}. Polar client cache cleared.`);
+      
       res.json({ devMode });
     } catch (error) {
       console.error("Error updating dev mode status:", error);
