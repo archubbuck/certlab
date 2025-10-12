@@ -179,6 +179,36 @@ class PolarClient {
     });
   }
 
+  // Update subscription to switch plans
+  async switchSubscriptionPlan(params: {
+    subscriptionId: string;
+    newProductId: string;
+    priceId?: string;
+    switchAtPeriodEnd?: boolean;
+  }): Promise<PolarSubscription> {
+    console.log('[Polar] Switching subscription plan:', {
+      subscriptionId: params.subscriptionId,
+      newProductId: params.newProductId ? params.newProductId.substring(0, 8) + '...' : '(empty)',
+      switchAtPeriodEnd: params.switchAtPeriodEnd
+    });
+
+    return this.request<PolarSubscription>(`/subscriptions/${params.subscriptionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        product_id: params.newProductId,
+        price_id: params.priceId,
+        // If switching immediately, Polar will handle proration
+        switch_at_period_end: params.switchAtPeriodEnd || false,
+      }),
+    });
+  }
+
+  // Get available prices for a product (useful for monthly/yearly selection)
+  async getProductPrices(productId: string): Promise<PolarPrice[]> {
+    const product = await this.getProduct(productId);
+    return product.prices || [];
+  }
+
   // Customers API
   async createCustomer(customer: Partial<PolarCustomer>): Promise<PolarCustomer> {
     return this.request<PolarCustomer>('/customers', {
