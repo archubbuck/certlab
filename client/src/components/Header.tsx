@@ -108,7 +108,7 @@ export default function Header() {
                   dailyQuizCount={subscription.dailyQuizCount}
                   quizLimit={subscription.limits?.quizzesPerDay}
                   interactive
-                  onClick={() => setLocation('/subscription/plans')}
+                  onClick={() => setLocation('/app/subscription-plans')}
                   className="ml-2"
                 />
               )}
@@ -349,7 +349,7 @@ export default function Header() {
                               <div className="flex items-center gap-1.5 text-xs">
                                 <Crown className="w-3 h-3 text-purple-500" />
                                 <button 
-                                  onClick={() => setLocation('/subscription/plans')}
+                                  onClick={() => setLocation('/app/subscription-plans')}
                                   className="text-purple-600 hover:underline"
                                 >
                                   Upgrade for unlimited access

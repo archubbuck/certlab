@@ -206,7 +206,7 @@ export default function MobileNavigationEnhanced() {
                       interactive
                       onClick={() => {
                         setIsOpen(false);
-                        setLocation('/subscription/plans');
+                        setLocation('/app/subscription-plans');
                       }}
                       className="w-full"
                     />
@@ -218,7 +218,7 @@ export default function MobileNavigationEnhanced() {
                         className="w-full mt-2"
                         onClick={() => {
                           setIsOpen(false);
-                          setLocation('/subscription/plans');
+                          setLocation('/app/subscription-plans');
                         }}
                       >
                         <Crown className="w-3 h-3 mr-1" />

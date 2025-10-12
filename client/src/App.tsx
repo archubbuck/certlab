@@ -78,7 +78,7 @@ function Router() {
             <Route path="/app/practice-tests" component={PracticeTests} />
             <Route path="/app/challenges" component={ChallengesPage} />
             {isAdmin && <Route path="/app/ui-structure" component={UIStructurePage} />}
-            <Route path="/subscription/plans" component={SubscriptionPlansPage} />
+            <Route path="/app/subscription-plans" component={SubscriptionPlansPage} />
             <Route path="/subscription/manage" component={SubscriptionManagePage} />
             <Route path="/subscription/success" component={SubscriptionSuccessPage} />
             <Route path="/subscription/cancel" component={SubscriptionCancelPage} />

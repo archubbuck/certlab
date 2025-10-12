@@ -171,7 +171,7 @@ export default function SubscriptionStatus() {
           {/* Action Buttons */}
           <div className="pt-3 space-y-2">
             {!subscription.isSubscribed && (
-              <Link href="/subscription/plans">
+              <Link href="/app/subscription-plans">
                 <Button className="w-full" size="sm" data-testid="upgrade-button">
                   <Crown className="w-4 h-4 mr-2" />
                   Upgrade to Pro

@@ -80,7 +80,7 @@ export default function LearningModeSelector() {
         action: (
           <Button 
             size="sm" 
-            onClick={() => setLocation('/subscription/plans')}
+            onClick={() => setLocation('/app/subscription-plans')}
             className="bg-purple-600 text-white hover:bg-purple-700"
           >
             <Crown className="w-3 h-3 mr-1" />
