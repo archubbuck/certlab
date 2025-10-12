@@ -16,8 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import BreadcrumbNavigation from "@/components/BreadcrumbNavigation";
 import {
-  ArrowLeft,
   CreditCard,
   Calendar,
   AlertCircle,
@@ -217,16 +217,10 @@ export default function SubscriptionManagePage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-4xl mx-auto py-8 px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" data-testid="back-button">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
-        </div>
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation />
 
+        {/* Header */}
         <h1 className="text-3xl font-bold mb-8">Manage Subscription</h1>
 
         {/* Subscription Details */}

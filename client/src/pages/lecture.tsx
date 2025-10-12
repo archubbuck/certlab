@@ -2,7 +2,8 @@ import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { BookOpen } from "lucide-react";
+import BreadcrumbNavigation from "@/components/BreadcrumbNavigation";
 
 export default function LecturePage() {
   const { id } = useParams<{ id: string }>();
@@ -47,9 +48,8 @@ export default function LecturePage() {
               <p className="text-gray-600 mb-4">
                 The study guide you're looking for could not be found or may have been removed.
               </p>
-              <Button onClick={() => window.history.back()}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Go Back
+              <Button onClick={() => window.location.href = '/app/dashboard'}>
+                Back to Dashboard
               </Button>
             </CardContent>
           </Card>
@@ -61,16 +61,11 @@ export default function LecturePage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation />
+
         {/* Header */}
         <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => window.history.back()}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 rounded-lg">
               <BookOpen className="h-6 w-6 text-purple-600" />
