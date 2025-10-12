@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +42,7 @@ export default function SubscriptionPlans() {
   const { toast } = useToast();
   const [selectedPlan, setSelectedPlan] = useState<string>("");
   const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
+  const isNavigatingRef = useRef(false); // Track if we're already navigating to checkout
 
   const { data: plansData, isLoading } = useQuery<PlansResponse>({
     queryKey: ["/api/subscription/plans"],
@@ -68,11 +69,15 @@ export default function SubscriptionPlans() {
       return result;
     },
     onSuccess: (data) => {
-      if (data.checkoutUrl) {
+      // Prevent double navigation
+      if (data.checkoutUrl && !isNavigatingRef.current) {
+        isNavigatingRef.current = true;
         window.location.href = data.checkoutUrl;
       }
     },
     onError: (error: any) => {
+      // Reset navigation flag on error
+      isNavigatingRef.current = false;
       toast({
         title: "Error",
         description: error.message || "Failed to create checkout session",
@@ -105,6 +110,11 @@ export default function SubscriptionPlans() {
   };
 
   const handleSubscribe = (planId: string) => {
+    // Prevent double-clicks or rapid calls
+    if (createCheckoutMutation.isPending || isNavigatingRef.current) {
+      return;
+    }
+
     if (planId === "free") {
       toast({
         title: "Free Plan",
