@@ -51,10 +51,10 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       }
 
       // Check and reset daily quiz count if needed
-      await checkAndResetDailyQuizCount(user.id);
+      await checkAndResetDailyQuizCount(userId);
 
       // Get updated user data for quiz count
-      const updatedUser = await storage.getUserById(user.id);
+      const updatedUser = await storage.getUserById(userId);
 
       // Default to free tier benefits
       let benefits = {
@@ -92,7 +92,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
             // Update local cache with Polar data
             benefits = polarData.benefits;
             
-            await storage.updateUser(user.id, {
+            await storage.updateUser(userId, {
               polarCustomerId: polarData.customerId,
               subscriptionBenefits: benefits,
             });
@@ -263,7 +263,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       );
 
       // Store Polar customer ID
-      await storage.updateUser(user.id, {
+      await storage.updateUser(userId, {
         polarCustomerId: customer.id,
       });
 
@@ -303,7 +303,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
               lastSyncedAt: new Date().toISOString(),
             };
             
-            await storage.updateUser(user.id, {
+            await storage.updateUser(userId, {
               subscriptionBenefits: subscriptionBenefits,
             });
             
@@ -311,7 +311,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           } else {
             // For regular users, sync from Polar
             const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
-            await storage.updateUser(user.id, {
+            await storage.updateUser(userId, {
               subscriptionBenefits: polarData.benefits,
             });
           }
@@ -370,7 +370,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         cancelUrl: `${baseUrl}/subscription/cancel`,
         customerEmail: user.email,
         metadata: {
-          userId: user.id,
+          userId: userId,
           plan: plan,
           billingInterval: billingInterval || 'month',
         },
@@ -392,7 +392,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         };
         
         // Update user in database
-        await storage.updateUser(user.id, {
+        await storage.updateUser(userId, {
           subscriptionBenefits: subscriptionBenefits,
         });
         
@@ -474,7 +474,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           lastSyncedAt: new Date().toISOString(),
         };
         
-        await storage.updateUser(user.id, {
+        await storage.updateUser(userId, {
           subscriptionBenefits: subscriptionBenefits,
         });
         
@@ -496,7 +496,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         
         if (polarData.benefits.plan !== 'free') {
           // Update user subscription benefits in database
-          await storage.updateUser(user.id, {
+          await storage.updateUser(userId, {
             polarCustomerId: polarData.customerId,
             subscriptionBenefits: polarData.benefits,
           });
@@ -837,8 +837,8 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
   // Switch subscription plan - NEW ENDPOINT
   app.post("/api/subscription/switch", isAuthenticated, async (req: Request, res: Response) => {
-    const user = req.user as User;
-    if (!user) {
+    const sessionUser = req.user as any;
+    if (!sessionUser) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -852,9 +852,104 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Validate request body
       const { newPlan, billingInterval, switchAtPeriodEnd } = switchPlanSchema.parse(req.body);
 
-      // Get user data
-      const userData = await storage.getUserById(user.id);
+      // Extract user ID consistently with other endpoints
+      const userId = sessionUser.claims?.sub || sessionUser.id;
       
+      // Get user data
+      const userData = await storage.getUserById(userId);
+      
+      // Special handling for test user in development mode
+      const isTestUser = process.env.NODE_ENV === 'development' && userId === '999999';
+      
+      if (isTestUser) {
+        console.log('Test user plan switch request:', { newPlan, billingInterval, switchAtPeriodEnd });
+        
+        // Get current benefits for comparison
+        const currentBenefits = userData?.subscriptionBenefits as any || {};
+        const currentPlan = currentBenefits.plan || 'free';
+        
+        // Check if switching to the same plan
+        if (currentPlan === newPlan) {
+          return res.status(400).json({ 
+            error: "Already on this plan",
+            message: `You are already subscribed to the ${newPlan} plan.`
+          });
+        }
+        
+        // Determine the effective date
+        const effectiveDate = switchAtPeriodEnd 
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Mock 30 days from now
+          : new Date();
+        
+        // If switching at period end, don't update benefits immediately
+        if (switchAtPeriodEnd) {
+          // Just mark the scheduled switch in benefits
+          const scheduledBenefits = {
+            ...currentBenefits,
+            scheduledPlan: newPlan,
+            scheduledSwitchDate: effectiveDate.toISOString(),
+            lastSyncedAt: new Date().toISOString(),
+          };
+          
+          await storage.updateUser(userId, {
+            subscriptionBenefits: scheduledBenefits,
+          });
+          
+          const isUpgrade = newPlan === 'enterprise' || (newPlan === 'pro' && currentPlan === 'free');
+          
+          return res.json({
+            success: true,
+            message: `Plan ${isUpgrade ? 'upgrade' : 'downgrade'} scheduled for the end of your current billing period (test mode)`,
+            newPlan,
+            billingInterval,
+            switchAtPeriodEnd: true,
+            effectiveDate: effectiveDate.toISOString(),
+            subscription: {
+              id: 'test-subscription-' + Date.now(),
+              status: 'active',
+              currentPeriodEnd: effectiveDate.toISOString(),
+            },
+          });
+        }
+        
+        // Immediate switch - update benefits now
+        const subscriptionBenefits = {
+          plan: newPlan,
+          quizzesPerDay: newPlan === 'pro' || newPlan === 'enterprise' ? null : 5, // null means unlimited
+          categoriesAccess: newPlan === 'pro' || newPlan === 'enterprise' ? ['all'] : ['basic'],
+          analyticsAccess: newPlan === 'pro' || newPlan === 'enterprise' ? 'advanced' : 'basic',
+          teamMembers: newPlan === 'enterprise' ? 50 : undefined,
+          lastSyncedAt: new Date().toISOString(),
+        };
+        
+        // Clear any scheduled switch if switching immediately
+        delete (subscriptionBenefits as any).scheduledPlan;
+        delete (subscriptionBenefits as any).scheduledSwitchDate;
+        
+        await storage.updateUser(userId, {
+          subscriptionBenefits: subscriptionBenefits,
+        });
+        
+        console.log('Test user subscription benefits updated to', newPlan, ':', subscriptionBenefits);
+        
+        const isUpgrade = newPlan === 'enterprise' || (newPlan === 'pro' && currentPlan === 'free');
+        
+        return res.json({
+          success: true,
+          message: `Successfully ${isUpgrade ? 'upgraded' : 'downgraded'} to ${newPlan} plan (test mode)`,
+          newPlan,
+          billingInterval,
+          switchAtPeriodEnd: false,
+          effectiveDate: effectiveDate.toISOString(),
+          subscription: {
+            id: 'test-subscription-' + Date.now(),
+            status: 'active',
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+        });
+      }
+      
+      // Regular flow for non-test users - check for Polar customer ID
       if (!userData?.polarCustomerId) {
         return res.status(400).json({ 
           error: "No customer account found", 
@@ -871,7 +966,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       }
 
       // Get the appropriate Polar client for this user
-      const polarClient = await getPolarClient(user.id);
+      const polarClient = await getPolarClient(userId);
       
       // Get current subscription from Polar
       const subscriptions = await polarClient.getSubscriptions(userData.polarCustomerId);
@@ -983,6 +1078,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     try {
       const { session_id } = req.query;
       const user = req.user as User;
+      const userId = (user as any).claims?.sub || (user as any).id;
 
       if (!session_id || typeof session_id !== 'string') {
         return res.status(400).json({ 
@@ -1004,7 +1100,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
       try {
         // Get the appropriate Polar client for this user
-        const polarClient = await getPolarClient(user.id);
+        const polarClient = await getPolarClient(userId);
         
         // Get the checkout session from Polar
         const session = await polarClient.getCheckoutSession(session_id);
@@ -1021,10 +1117,10 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         const billingInterval = session.metadata?.billingInterval || 'month';
 
         // Sync subscription benefits from Polar
-        const userData = await storage.getUserById(user.id);
+        const userData = await storage.getUserById(userId);
         if (userData?.email) {
           const polarData = await polarClient.syncUserSubscriptionBenefits(userData.email);
-          await storage.updateUser(user.id, {
+          await storage.updateUser(userId, {
             polarCustomerId: polarData.customerId,
             subscriptionBenefits: polarData.benefits,
           });
@@ -1048,7 +1144,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           lastSyncedAt: new Date().toISOString(),
         };
         
-        await storage.updateUser(user.id, {
+        await storage.updateUser(userId, {
           subscriptionBenefits: proBenefits,
         });
 
