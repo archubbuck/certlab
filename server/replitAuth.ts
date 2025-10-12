@@ -164,7 +164,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     const testUserId = '999999'; // Use numeric string ID for compatibility
     
-    // Ensure test user exists in database
+    // Ensure test user exists in database with proper subscription data
     let testUser = await storage.getUser(testUserId);
     if (!testUser) {
       try {
@@ -176,10 +176,38 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
           profileImageUrl: null,
         });
         testUser = await storage.getUser(testUserId);
-        console.log('Development: Created test user for automatic authentication');
+        
+        // Set test user subscription data for development
+        // This ensures the test user has actual subscription data in the database
+        await storage.updateUser(testUserId, {
+          subscriptionPlan: 'pro', // Give test user pro plan for testing
+          subscriptionStatus: 'active',
+          subscriptionFeatures: {
+            quizzesPerDay: -1, // Unlimited for testing
+            categoriesAccess: ['all'],
+            analyticsAccess: 'advanced',
+          },
+          // Set expiry far in the future for development
+          subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+        });
+        
+        console.log('Development: Created test user with Pro subscription for automatic authentication');
       } catch (error) {
         console.error('Failed to create test user:', error);
       }
+    } else if (!testUser.subscriptionFeatures) {
+      // If test user exists but has no subscription data, add it
+      await storage.updateUser(testUserId, {
+        subscriptionPlan: 'pro',
+        subscriptionStatus: 'active',
+        subscriptionFeatures: {
+          quizzesPerDay: -1,
+          categoriesAccess: ['all'],
+          analyticsAccess: 'advanced',
+        },
+        subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      });
+      console.log('Development: Updated test user with Pro subscription');
     }
 
     // Mock user session for development

@@ -56,53 +56,124 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Get updated user data for quiz count
       const updatedUser = await storage.getUserById(user.id);
 
-      // Check if Polar is configured
-      if (!process.env.POLAR_API_KEY) {
-        // Return default free plan if Polar is not configured
-        return res.json({
-          isConfigured: false,
-          plan: 'free',
-          status: 'inactive',
-          features: SUBSCRIPTION_PLANS.free.features,
-          limits: SUBSCRIPTION_PLANS.free.limits,
-          dailyQuizCount: updatedUser?.dailyQuizCount || 0,
-        });
-      }
-
-      // Get subscription status from Polar if user has email
-      let polarStatus = null;
-      if (user.email) {
-        polarStatus = await polarClient.getUserSubscriptionStatus(user.email);
-      }
-
-      // Update user subscription status in database
-      if (polarStatus?.isSubscribed && polarStatus.subscription) {
-        const planName = polarStatus.plan?.toLowerCase() || 'free';
+      // FIRST: Check database for existing subscription data
+      // This ensures we use actual stored subscription data when available
+      const hasDbSubscription = updatedUser?.subscriptionPlan && 
+                                updatedUser.subscriptionPlan !== 'free' &&
+                                updatedUser.subscriptionStatus !== 'inactive';
+      
+      // If user has subscription data in database, use it as primary source
+      if (hasDbSubscription && updatedUser?.subscriptionFeatures) {
+        const planName = updatedUser.subscriptionPlan || 'free';
         const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
         
-        await storage.updateUser(user.id, {
-          subscriptionPlan: planName,
-          subscriptionStatus: polarStatus.subscription.status,
-          subscriptionId: polarStatus.subscription.id,
-          subscriptionExpiresAt: polarStatus.expiresAt,
-          subscriptionFeatures: plan.limits,
-        });
-
+        // Check if subscription is still valid based on expiry date
+        const isExpired = updatedUser.subscriptionExpiresAt && 
+                         new Date(updatedUser.subscriptionExpiresAt) < new Date();
+        
+        // If expired, update status but keep using database data
+        if (isExpired && updatedUser.subscriptionStatus !== 'expired') {
+          await storage.updateUser(user.id, {
+            subscriptionStatus: 'expired',
+          });
+        }
+        
+        // If Polar is configured, sync with it in the background (non-blocking)
+        if (process.env.POLAR_API_KEY && user.email) {
+          // Don't await - let it run in background to avoid blocking the response
+          polarClient.getUserSubscriptionStatus(user.email)
+            .then(polarStatus => {
+              if (polarStatus?.isSubscribed && polarStatus.subscription) {
+                const polarPlanName = polarStatus.plan?.toLowerCase() || 'free';
+                const polarPlan = SUBSCRIPTION_PLANS[polarPlanName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
+                
+                // Update database with latest from Polar
+                storage.updateUser(user.id, {
+                  subscriptionPlan: polarPlanName,
+                  subscriptionStatus: polarStatus.subscription.status,
+                  subscriptionId: polarStatus.subscription.id,
+                  subscriptionExpiresAt: polarStatus.expiresAt,
+                  subscriptionFeatures: polarPlan.limits,
+                });
+              } else if (!polarStatus?.isSubscribed && updatedUser.subscriptionStatus === 'active') {
+                // Subscription cancelled in Polar, update database
+                storage.updateUser(user.id, {
+                  subscriptionStatus: 'canceled',
+                });
+              }
+            })
+            .catch(err => console.error("Background Polar sync error:", err));
+        }
+        
+        // Return subscription data from database
         return res.json({
-          isConfigured: true,
-          isSubscribed: true,
+          isConfigured: !!process.env.POLAR_API_KEY,
+          isSubscribed: !isExpired && updatedUser.subscriptionStatus === 'active',
           plan: planName,
-          status: polarStatus.subscription.status,
-          expiresAt: polarStatus.expiresAt,
+          status: isExpired ? 'expired' : updatedUser.subscriptionStatus,
+          expiresAt: updatedUser.subscriptionExpiresAt,
           features: plan.features,
-          limits: plan.limits,
+          limits: updatedUser.subscriptionFeatures || plan.limits,
           dailyQuizCount: updatedUser?.dailyQuizCount || 0,
         });
       }
 
-      // User is not subscribed - return free plan
+      // SECOND: If no database subscription data, check Polar if configured
+      if (process.env.POLAR_API_KEY && user.email) {
+        try {
+          const polarStatus = await polarClient.getUserSubscriptionStatus(user.email);
+          
+          if (polarStatus?.isSubscribed && polarStatus.subscription) {
+            const planName = polarStatus.plan?.toLowerCase() || 'free';
+            const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
+            
+            // Store subscription data in database for future use
+            await storage.updateUser(user.id, {
+              subscriptionPlan: planName,
+              subscriptionStatus: polarStatus.subscription.status,
+              subscriptionId: polarStatus.subscription.id,
+              subscriptionExpiresAt: polarStatus.expiresAt,
+              subscriptionFeatures: plan.limits,
+            });
+
+            return res.json({
+              isConfigured: true,
+              isSubscribed: true,
+              plan: planName,
+              status: polarStatus.subscription.status,
+              expiresAt: polarStatus.expiresAt,
+              features: plan.features,
+              limits: plan.limits,
+              dailyQuizCount: updatedUser?.dailyQuizCount || 0,
+            });
+          }
+        } catch (polarError) {
+          console.error("Error checking Polar subscription:", polarError);
+          // Fall through to use database data or defaults
+        }
+      }
+
+      // THIRD: Check if user has any subscription data in database (even if 'free' plan)
+      // This handles cases where user explicitly has 'free' plan set
+      if (updatedUser?.subscriptionFeatures) {
+        const planName = updatedUser.subscriptionPlan || 'free';
+        const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
+        
+        return res.json({
+          isConfigured: !!process.env.POLAR_API_KEY,
+          isSubscribed: false,
+          plan: planName,
+          status: updatedUser.subscriptionStatus || 'inactive',
+          features: plan.features,
+          limits: updatedUser.subscriptionFeatures,
+          dailyQuizCount: updatedUser?.dailyQuizCount || 0,
+        });
+      }
+
+      // LAST RESORT: No subscription data anywhere, return defaults
+      // Only use hardcoded defaults when user truly has no subscription data
       return res.json({
-        isConfigured: true,
+        isConfigured: !!process.env.POLAR_API_KEY,
         isSubscribed: false,
         plan: 'free',
         status: 'inactive',
