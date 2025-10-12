@@ -167,13 +167,44 @@ class PolarClient {
     return this.request<PolarSubscription>(`/subscriptions/${subscriptionId}`);
   }
 
-  async cancelSubscription(subscriptionId: string, cancelAtPeriodEnd = true): Promise<PolarSubscription> {
-    return this.request<PolarSubscription>(`/subscriptions/${subscriptionId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        cancel_at_period_end: cancelAtPeriodEnd,
-      }),
-    });
+  async cancelSubscription(
+    subscriptionId: string, 
+    options: { 
+      immediate?: boolean;
+      cancelAtPeriodEnd?: boolean;
+    } = {}
+  ): Promise<{
+    subscription: PolarSubscription;
+    refundAmount?: number;
+  }> {
+    const { immediate = false, cancelAtPeriodEnd = true } = options;
+    
+    if (immediate) {
+      // Immediate cancellation - Polar API should handle refund calculation
+      // Using the DELETE method for immediate cancellation with refund
+      const response = await this.request<any>(`/subscriptions/${subscriptionId}`, {
+        method: 'DELETE',
+      });
+      
+      // Polar API should return refund information with immediate cancellation
+      return {
+        subscription: response.subscription || response,
+        refundAmount: response.refund_amount || response.refundAmount
+      };
+    } else {
+      // Schedule cancellation at period end
+      const subscription = await this.request<PolarSubscription>(`/subscriptions/${subscriptionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          cancel_at_period_end: cancelAtPeriodEnd,
+        }),
+      });
+      
+      return {
+        subscription,
+        refundAmount: undefined
+      };
+    }
   }
 
   async resumeSubscription(subscriptionId: string): Promise<PolarSubscription> {

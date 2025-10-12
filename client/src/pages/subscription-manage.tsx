@@ -56,27 +56,36 @@ export default function SubscriptionManagePage() {
   const [switchPlan, setSwitchPlan] = useState<"pro" | "enterprise" | null>(null);
   const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
   const [switchAtPeriodEnd, setSwitchAtPeriodEnd] = useState(false);
+  const [selectedCancelOption, setSelectedCancelOption] = useState<"immediate" | "end-of-period" | null>(null);
 
   const { data: subscription, isLoading, error } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
   });
 
   const cancelMutation = useMutation({
-    mutationFn: async (cancelAtPeriodEnd: boolean) => {
+    mutationFn: async (immediate: boolean) => {
       const response = await apiRequest({
         endpoint: "/api/subscription/cancel",
         method: "POST",
-        data: { cancelAtPeriodEnd },
+        data: { immediate },
       });
       return response.json();
     },
     onSuccess: (data) => {
+      const title = data.refundAmount 
+        ? "Subscription Canceled Immediately" 
+        : "Subscription Scheduled for Cancellation";
+      const description = data.refundAmount 
+        ? `${data.message} Refund amount: $${(data.refundAmount / 100).toFixed(2)}`
+        : data.message;
+      
       toast({
-        title: "Subscription Canceled",
-        description: data.message,
+        title,
+        description,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
       setShowCancelDialog(false);
+      setSelectedCancelOption(null);
     },
     onError: (error: any) => {
       toast({
@@ -114,7 +123,7 @@ export default function SubscriptionManagePage() {
           description: error.message,
           variant: "destructive",
           action: (
-            <Link href="/subscription/plans">
+            <Link href="/app/subscription-plans">
               <Button variant="secondary" size="sm">
                 View Plans
               </Button>
@@ -365,7 +374,7 @@ export default function SubscriptionManagePage() {
               )}
 
               {subscription.plan === 'free' && (
-                <Link href="/subscription/plans">
+                <Link href="/app/subscription-plans">
                   <Button className="w-full sm:w-auto" data-testid="upgrade-plan">
                     <CreditCard className="w-4 h-4 mr-2" />
                     Upgrade to Pro
@@ -397,26 +406,104 @@ export default function SubscriptionManagePage() {
         )}
 
         {/* Cancel Subscription Dialog */}
-        <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-          <DialogContent>
+        <Dialog 
+          open={showCancelDialog} 
+          onOpenChange={(open) => {
+            setShowCancelDialog(open);
+            if (!open) setSelectedCancelOption(null);
+          }}
+        >
+          <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Cancel Subscription</DialogTitle>
+              <DialogTitle>Choose Cancellation Option</DialogTitle>
               <DialogDescription>
-                Are you sure you want to cancel your subscription? You can choose to cancel immediately or at the end of your billing period.
+                Select how you'd like to cancel your subscription. Both options are available to you.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  If you cancel at the end of the period, you'll keep access to Pro features until {subscription.expiresAt && format(new Date(subscription.expiresAt), 'MMMM dd, yyyy')}.
-                </AlertDescription>
-              </Alert>
-            </div>
+            
+            <RadioGroup 
+              value={selectedCancelOption || ""}
+              onValueChange={(value) => setSelectedCancelOption(value as "immediate" | "end-of-period")}
+              className="space-y-4 py-4"
+            >
+              {/* Cancel Immediately Option */}
+              <div 
+                className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                  selectedCancelOption === 'immediate' 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:border-primary/50'
+                }`}
+                onClick={() => setSelectedCancelOption('immediate')}
+                data-testid="cancel-immediately-option"
+              >
+                <div className="flex items-start space-x-3">
+                  <RadioGroupItem 
+                    value="immediate" 
+                    id="immediate"
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-2 flex-1">
+                    <label htmlFor="immediate" className="cursor-pointer">
+                      <h4 className="font-semibold">Cancel Immediately</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Cancel now and receive a prorated refund for unused time
+                      </p>
+                    </label>
+                    <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900">
+                      <RefreshCw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <AlertDescription className="text-blue-700 dark:text-blue-300">
+                        • Access ends immediately<br/>
+                        • Prorated refund will be processed to your original payment method<br/>
+                        • Refund typically appears within 5-10 business days
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cancel at Period End Option */}
+              <div 
+                className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                  selectedCancelOption === 'end-of-period' 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:border-primary/50'
+                }`}
+                onClick={() => setSelectedCancelOption('end-of-period')}
+                data-testid="cancel-end-period-option"
+              >
+                <div className="flex items-start space-x-3">
+                  <RadioGroupItem 
+                    value="end-of-period" 
+                    id="end-of-period"
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-2 flex-1">
+                    <label htmlFor="end-of-period" className="cursor-pointer">
+                      <h4 className="font-semibold">Cancel at Period End</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Keep access until {subscription.expiresAt && format(new Date(subscription.expiresAt), 'MMMM dd, yyyy')} then cancel automatically
+                      </p>
+                    </label>
+                    <Alert className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900">
+                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <AlertDescription className="text-green-700 dark:text-green-300">
+                        • Keep all {subscription.plan} features until the end date<br/>
+                        • No charges after {subscription.expiresAt && format(new Date(subscription.expiresAt), 'MMM dd, yyyy')}<br/>
+                        • You can resume anytime before the end date
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                </div>
+              </div>
+            </RadioGroup>
+
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
-                onClick={() => setShowCancelDialog(false)}
+                onClick={() => {
+                  setShowCancelDialog(false);
+                  setSelectedCancelOption(null);
+                }}
                 disabled={cancelMutation.isPending}
                 data-testid="cancel-dialog-close"
               >
@@ -424,17 +511,27 @@ export default function SubscriptionManagePage() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => cancelMutation.mutate(true)}
-                disabled={cancelMutation.isPending}
-                data-testid="cancel-end-period"
+                onClick={() => {
+                  if (selectedCancelOption === 'immediate') {
+                    cancelMutation.mutate(true);
+                  } else if (selectedCancelOption === 'end-of-period') {
+                    cancelMutation.mutate(false);
+                  }
+                }}
+                disabled={!selectedCancelOption || cancelMutation.isPending}
+                data-testid="confirm-cancellation"
               >
                 {cancelMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Canceling...
+                    Processing...
                   </>
                 ) : (
-                  'Cancel at Period End'
+                  selectedCancelOption === 'immediate' 
+                    ? 'Cancel Immediately' 
+                    : selectedCancelOption === 'end-of-period' 
+                    ? 'Cancel at Period End'
+                    : 'Select Option'
                 )}
               </Button>
             </DialogFooter>

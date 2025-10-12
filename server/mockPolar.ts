@@ -280,23 +280,74 @@ export class MockPolarClient {
     return subscription;
   }
 
-  async cancelSubscription(subscriptionId: string, cancelAtPeriodEnd = true): Promise<PolarSubscription> {
-    console.log('[MockPolar] Canceling subscription:', subscriptionId, 'at period end:', cancelAtPeriodEnd);
+  async cancelSubscription(
+    subscriptionId: string, 
+    options: { 
+      immediate?: boolean;
+      cancelAtPeriodEnd?: boolean;
+    } = {}
+  ): Promise<{
+    subscription: PolarSubscription;
+    refundAmount?: number;
+  }> {
+    const { immediate = false, cancelAtPeriodEnd = true } = options;
+    console.log('[MockPolar] Canceling subscription:', subscriptionId, 'immediate:', immediate, 'at period end:', cancelAtPeriodEnd);
     
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
       throw new Error(`Subscription ${subscriptionId} not found`);
     }
 
-    if (cancelAtPeriodEnd) {
+    let refundAmount: number | undefined;
+
+    if (immediate) {
+      // Immediate cancellation with refund calculation
+      subscription.status = 'canceled';
+      subscription.canceledAt = new Date();
+      subscription.cancelAtPeriodEnd = false;
+      
+      // Calculate prorated refund based on usage
+      const now = new Date();
+      const periodStart = new Date(subscription.currentPeriodStart);
+      const periodEnd = new Date(subscription.currentPeriodEnd);
+      
+      // Calculate percentage of billing period used
+      const totalPeriodMs = periodEnd.getTime() - periodStart.getTime();
+      const usedPeriodMs = now.getTime() - periodStart.getTime();
+      const unusedPercentage = Math.max(0, 1 - (usedPeriodMs / totalPeriodMs));
+      
+      // Get the price for refund calculation
+      const product = this.products.get(subscription.productId);
+      const price = product?.prices.find(p => p.id === subscription.priceId);
+      
+      if (price) {
+        // Calculate refund amount (price is in cents)
+        refundAmount = Math.round(price.amount * unusedPercentage);
+        console.log('[MockPolar] Calculated refund:', {
+          periodStart,
+          periodEnd,
+          now,
+          unusedPercentage: (unusedPercentage * 100).toFixed(2) + '%',
+          originalAmount: price.amount,
+          refundAmount
+        });
+      }
+    } else if (cancelAtPeriodEnd) {
+      // Schedule cancellation at period end
       subscription.cancelAtPeriodEnd = true;
+      subscription.canceledAt = new Date();  // Set canceledAt timestamp for scheduled cancellations
+      // Status remains active until period end
     } else {
+      // Backward compatibility: immediate cancellation without refund calculation
       subscription.status = 'canceled';
       subscription.canceledAt = new Date();
     }
 
     this.subscriptions.set(subscriptionId, subscription);
-    return subscription;
+    return {
+      subscription,
+      refundAmount
+    };
   }
 
   async resumeSubscription(subscriptionId: string): Promise<PolarSubscription> {

@@ -11,7 +11,7 @@ const createCheckoutSchema = z.object({
 });
 
 const cancelSubscriptionSchema = z.object({
-  cancelAtPeriodEnd: z.boolean().optional().default(true),
+  immediate: z.boolean().optional().default(false),
 });
 
 export function registerSubscriptionRoutes(app: Express, storage: any, isAuthenticated: any) {
@@ -134,6 +134,15 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         }
       }
 
+      // Check if subscription is scheduled for cancellation
+      const cancelAtPeriodEnd = (benefits as any).cancelAtPeriodEnd || false;
+      const canceledAt = (benefits as any).canceledAt;
+      
+      // Adjust status if subscription is scheduled for cancellation
+      if (cancelAtPeriodEnd && isSubscribed) {
+        status = 'canceling';
+      }
+
       // Get the plan configuration for features list
       const planName = benefits.plan || 'free';
       const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
@@ -143,6 +152,8 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           plan: planName,
           isSubscribed,
           status,
+          cancelAtPeriodEnd,
+          canceledAt,
           limits: {
             quizzesPerDay: benefits.quizzesPerDay,
             categoriesAccess: benefits.categoriesAccess,
@@ -156,7 +167,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         isSubscribed,
         plan: planName,
         status,
-        expiresAt,
+        cancelAtPeriodEnd,
+        canceledAt,
+        expiresAt: expiresAt || (cancelAtPeriodEnd ? (benefits as any).currentPeriodEnd : undefined),
         features: plan.features,
         limits: {
           quizzesPerDay: benefits.quizzesPerDay,
@@ -534,7 +547,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
       }
 
-      const { cancelAtPeriodEnd } = result.data;
+      const { immediate } = result.data;
 
       // Special handling for test user in development mode
       const isTestUser = process.env.NODE_ENV === 'development' && userId === '999999';
@@ -547,26 +560,54 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         console.log('Test user cancellation in development mode - simulating cancellation');
         
         // Simulate cancellation for test user
-        const updatedBenefits = {
-          plan: 'free',
-          quizzesPerDay: 5,
-          categoriesAccess: ['basic'],
-          analyticsAccess: 'basic',
-          lastSyncedAt: new Date().toISOString(),
-        };
-        
-        await storage.updateUser(userId, {
-          subscriptionBenefits: updatedBenefits,
-        });
-        
-        return res.json({
-          success: true,
-          message: cancelAtPeriodEnd 
-            ? "Subscription will be canceled at the end of the current period (test mode)"
-            : "Subscription canceled immediately (test mode)",
-          canceledAt: new Date().toISOString(),
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-        });
+        if (immediate) {
+          // Immediate cancellation: revert to free plan immediately
+          const updatedBenefits = {
+            plan: 'free',
+            quizzesPerDay: 5,
+            categoriesAccess: ['basic'],
+            analyticsAccess: 'basic',
+            lastSyncedAt: new Date().toISOString(),
+          };
+          
+          await storage.updateUser(userId, {
+            subscriptionBenefits: updatedBenefits,
+          });
+          
+          // Calculate mock refund amount (assuming 30 day period, 15 days left = 50% refund)
+          const mockRefundAmount = 999; // $9.99 in cents
+          
+          return res.json({
+            success: true,
+            message: "Subscription canceled immediately and refund will be processed",
+            refundAmount: mockRefundAmount,
+            canceledAt: new Date().toISOString(),
+          });
+        } else {
+          // Schedule cancellation at period end - keep benefits but mark as canceling
+          const currentBenefits = userData?.subscriptionBenefits as any || {};
+          const periodEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          
+          const updatedBenefits = {
+            ...currentBenefits,
+            cancelAtPeriodEnd: true,
+            canceledAt: new Date().toISOString(),
+            currentPeriodEnd: periodEndDate.toISOString(),
+            lastSyncedAt: new Date().toISOString(),
+          };
+          
+          await storage.updateUser(userId, {
+            subscriptionBenefits: updatedBenefits,
+          });
+          
+          return res.json({
+            success: true,
+            message: "Subscription will be canceled at the end of the current period (test mode)",
+            cancelAtPeriodEnd: true,
+            canceledAt: updatedBenefits.canceledAt,
+            endsAt: periodEndDate.toISOString(),
+          });
+        }
       }
       
       // Regular flow for non-test users
@@ -604,21 +645,31 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
       }
 
-      // Cancel subscription in Polar
-      const canceledSubscription = await polarClient.cancelSubscription(
+      // Cancel subscription in Polar with the new options
+      const cancellationResult = await polarClient.cancelSubscription(
         subscriptionId,
-        cancelAtPeriodEnd
+        {
+          immediate: immediate,
+          cancelAtPeriodEnd: !immediate
+        }
       );
 
       // Update user subscription benefits
       const updatedBenefits = userData.subscriptionBenefits as any || {};
-      if (!cancelAtPeriodEnd) {
+      if (immediate) {
         // Immediate cancellation - revert to free tier
         updatedBenefits.plan = 'free';
         updatedBenefits.quizzesPerDay = SUBSCRIPTION_PLANS.free.limits.quizzesPerDay;
         updatedBenefits.categoriesAccess = SUBSCRIPTION_PLANS.free.limits.categoriesAccess;
         updatedBenefits.analyticsAccess = SUBSCRIPTION_PLANS.free.limits.analyticsAccess;
+        updatedBenefits.cancelAtPeriodEnd = false;
         delete updatedBenefits.teamMembers;
+        delete updatedBenefits.canceledAt;
+      } else {
+        // For scheduled cancellation, keep current benefits but mark as canceling
+        updatedBenefits.cancelAtPeriodEnd = true;
+        updatedBenefits.canceledAt = new Date().toISOString();
+        updatedBenefits.currentPeriodEnd = cancellationResult.subscription.currentPeriodEnd;
       }
       updatedBenefits.lastSyncedAt = new Date().toISOString();
 
@@ -626,14 +677,23 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         subscriptionBenefits: updatedBenefits,
       });
 
-      res.json({
-        success: true,
-        message: cancelAtPeriodEnd 
-          ? "Subscription will be canceled at the end of the current period"
-          : "Subscription canceled immediately",
-        canceledAt: canceledSubscription.canceledAt,
-        expiresAt: canceledSubscription.currentPeriodEnd,
-      });
+      // Return appropriate response based on cancellation type
+      if (immediate) {
+        res.json({
+          success: true,
+          message: "Subscription canceled immediately. A prorated refund will be processed to your original payment method.",
+          refundAmount: cancellationResult.refundAmount,
+          canceledAt: cancellationResult.subscription.canceledAt,
+        });
+      } else {
+        res.json({
+          success: true,
+          message: "Your subscription will be canceled at the end of the current billing period. You'll keep access until then.",
+          cancelAtPeriodEnd: true,
+          canceledAt: updatedBenefits.canceledAt,
+          endsAt: cancellationResult.subscription.currentPeriodEnd,
+        });
+      }
     } catch (error: any) {
       console.error("Error canceling subscription:", error);
       res.status(500).json({ 
@@ -657,6 +717,34 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     const userData = await storage.getUserById(userId);
     
     try {
+      // Handle test user in development mode
+      const isTestUser = process.env.NODE_ENV === 'development' && userId === '999999';
+      if (isTestUser) {
+        const currentBenefits = userData?.subscriptionBenefits as any || {};
+        
+        // Check if there's a scheduled cancellation to resume
+        if (currentBenefits.cancelAtPeriodEnd) {
+          // Clear the cancellation flags
+          delete currentBenefits.cancelAtPeriodEnd;
+          delete currentBenefits.canceledAt;
+          currentBenefits.lastSyncedAt = new Date().toISOString();
+          
+          await storage.updateUser(userId, {
+            subscriptionBenefits: currentBenefits,
+          });
+          
+          return res.json({
+            success: true,
+            message: "Subscription resumed successfully (test mode)",
+            status: 'active',
+          });
+        } else {
+          return res.status(400).json({
+            error: "No scheduled cancellation",
+            message: "Your subscription is not scheduled for cancellation."
+          });
+        }
+      }
       
       if (!userData?.polarCustomerId) {
         return res.status(400).json({ 
@@ -695,11 +783,18 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Resume subscription in Polar
       const resumedSubscription = await polarClient.resumeSubscription(subscriptionId);
 
-      // Sync updated benefits from Polar
+      // Sync updated benefits from Polar and clear cancellation flags
       if (userData.email) {
         const polarData = await polarClient.syncUserSubscriptionBenefits(userData.email);
+        // Ensure cancellation flags are cleared when resuming
+        const updatedBenefits = {
+          ...polarData.benefits,
+          cancelAtPeriodEnd: false,
+        };
+        delete (updatedBenefits as any).canceledAt;
+        
         await storage.updateUser(userId, {
-          subscriptionBenefits: polarData.benefits,
+          subscriptionBenefits: updatedBenefits,
         });
       }
 
