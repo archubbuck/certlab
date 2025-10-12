@@ -423,14 +423,15 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
   // Resume canceled subscription - REFACTORED
   app.post("/api/subscription/resume", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const user = req.user as User;
-      if (!user) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
+    const user = req.user as User;
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
-      // Get user data
-      const userData = await storage.getUserById(user.id);
+    // Get user data
+    const userData = await storage.getUserById(user.id);
+    
+    try {
       
       if (!userData?.polarCustomerId) {
         return res.status(400).json({ 
@@ -494,7 +495,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           lastSyncedAt: new Date().toISOString(),
         };
         
-        await storage.updateUser(user.id, {
+        await storage.updateUser(userData.id, {
           subscriptionBenefits: freeBenefits,
         });
         
@@ -507,6 +508,146 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       res.status(500).json({ 
         error: "Failed to resume subscription",
         message: error.message 
+      });
+    }
+  });
+
+  // Switch subscription plan - NEW ENDPOINT
+  app.post("/api/subscription/switch", isAuthenticated, async (req: Request, res: Response) => {
+    const user = req.user as User;
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const switchPlanSchema = z.object({
+      newPlan: z.enum(['pro', 'enterprise']),
+      billingInterval: z.enum(['monthly', 'yearly']).optional().default('monthly'),
+      switchAtPeriodEnd: z.boolean().optional().default(false),
+    });
+
+    try {
+      // Validate request body
+      const { newPlan, billingInterval, switchAtPeriodEnd } = switchPlanSchema.parse(req.body);
+
+      // Get user data
+      const userData = await storage.getUserById(user.id);
+      
+      if (!userData?.polarCustomerId) {
+        return res.status(400).json({ 
+          error: "No customer account found", 
+          message: "You need to have an active or past subscription to switch plans." 
+        });
+      }
+
+      // Check if Polar is configured
+      if (!process.env.POLAR_API_KEY) {
+        return res.status(503).json({ 
+          error: "Subscription service not configured",
+          message: "Subscription switching is currently unavailable. Please contact support."
+        });
+      }
+
+      // Get current subscription from Polar
+      const subscriptions = await polarClient.getSubscriptions(userData.polarCustomerId);
+      const currentSubscription = subscriptions.find(sub => 
+        sub.status === 'active' || sub.status === 'trialing'
+      );
+
+      if (!currentSubscription) {
+        return res.status(400).json({ 
+          error: "No active subscription", 
+          message: "You don't have an active subscription to switch. Please start a new subscription instead." 
+        });
+      }
+
+      // Get the product ID for the new plan
+      const newProductId = SUBSCRIPTION_PLANS[newPlan].productId;
+      if (!newProductId) {
+        return res.status(400).json({ 
+          error: "Invalid plan",
+          message: `The ${newPlan} plan is not properly configured. Please contact support.`
+        });
+      }
+
+      // Check if switching to the same plan
+      if (currentSubscription.productId === newProductId) {
+        return res.status(400).json({ 
+          error: "Already on this plan",
+          message: `You are already subscribed to the ${newPlan} plan.`
+        });
+      }
+
+      // Get available prices for the new product to find the right price ID
+      // This helps select monthly vs yearly pricing
+      let priceId: string | undefined;
+      try {
+        const prices = await polarClient.getProductPrices(newProductId);
+        
+        // Find matching price based on billing interval
+        const targetInterval = billingInterval === 'yearly' ? 'year' : 'month';
+        const matchingPrice = prices.find(price => 
+          price.interval === targetInterval && price.intervalCount === 1
+        );
+        
+        if (matchingPrice) {
+          priceId = matchingPrice.id;
+        }
+      } catch (error) {
+        console.error("Error fetching product prices:", error);
+        // Continue without price ID - Polar will use default pricing
+      }
+
+      // Switch the subscription plan
+      const updatedSubscription = await polarClient.switchSubscriptionPlan({
+        subscriptionId: currentSubscription.id,
+        newProductId,
+        priceId,
+        switchAtPeriodEnd,
+      });
+
+      // Sync updated benefits from Polar
+      if (userData.email) {
+        const polarData = await polarClient.syncUserSubscriptionBenefits(userData.email);
+        await storage.updateUser(userData.id, {
+          subscriptionBenefits: polarData.benefits,
+        });
+      }
+
+      // Determine if it's an upgrade or downgrade
+      const isUpgrade = newPlan === 'enterprise';
+
+      res.json({
+        success: true,
+        message: switchAtPeriodEnd 
+          ? `Plan ${isUpgrade ? 'upgrade' : 'downgrade'} scheduled for the end of your current billing period`
+          : `Successfully ${isUpgrade ? 'upgraded' : 'downgraded'} to ${newPlan} plan`,
+        newPlan,
+        billingInterval,
+        switchAtPeriodEnd,
+        effectiveDate: switchAtPeriodEnd 
+          ? updatedSubscription.currentPeriodEnd 
+          : new Date(),
+        subscription: {
+          id: updatedSubscription.id,
+          status: updatedSubscription.status,
+          currentPeriodEnd: updatedSubscription.currentPeriodEnd,
+        },
+      });
+
+    } catch (error: any) {
+      console.error("Error switching subscription:", error);
+      
+      if (error.name === 'ZodError') {
+        const validationError = fromError(error);
+        return res.status(400).json({ 
+          error: "Invalid request",
+          message: validationError.toString()
+        });
+      }
+
+      res.status(500).json({ 
+        error: "Failed to switch subscription",
+        message: error.message || "An unexpected error occurred while switching your subscription plan."
       });
     }
   });
