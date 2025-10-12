@@ -7,6 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatTime } from "@/lib/questions";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +37,12 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<number | undefined>();
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  
+  // Flagged questions review state
+  const [showFlaggedQuestionsDialog, setShowFlaggedQuestionsDialog] = useState(false);
+  const [isReviewingFlagged, setIsReviewingFlagged] = useState(false);
+  const [flaggedQuestionIndices, setFlaggedQuestionIndices] = useState<number[]>([]);
+  const [currentFlaggedIndex, setCurrentFlaggedIndex] = useState(0);
 
   const { data: quiz } = useQuery<Quiz>({
     queryKey: ['/api/quiz', quizId],
@@ -118,16 +134,47 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+    if (isReviewingFlagged) {
+      // In review mode, navigate only through flagged questions
+      if (currentFlaggedIndex < flaggedQuestionIndices.length - 1) {
+        const nextFlaggedIndex = currentFlaggedIndex + 1;
+        setCurrentFlaggedIndex(nextFlaggedIndex);
+        setCurrentQuestionIndex(flaggedQuestionIndices[nextFlaggedIndex]);
+      } else {
+        // Finished reviewing all flagged questions, auto-submit
+        setIsReviewingFlagged(false);
+        const quizAnswers = questions.map(question => {
+          const answer = answers[question.id];
+          return {
+            questionId: question.id,
+            answer: answer !== undefined ? answer : 0,
+          };
+        });
+        submitQuizMutation.mutate(quizAnswers);
+      }
     } else {
-      handleSubmitQuiz();
+      // Normal mode navigation
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+      } else {
+        handleSubmitQuiz();
+      }
     }
   };
 
   const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
+    if (isReviewingFlagged) {
+      // In review mode, navigate only through flagged questions
+      if (currentFlaggedIndex > 0) {
+        const prevFlaggedIndex = currentFlaggedIndex - 1;
+        setCurrentFlaggedIndex(prevFlaggedIndex);
+        setCurrentQuestionIndex(flaggedQuestionIndices[prevFlaggedIndex]);
+      }
+    } else {
+      // Normal mode navigation
+      if (currentQuestionIndex > 0) {
+        setCurrentQuestionIndex(prev => prev - 1);
+      }
     }
   };
 
@@ -146,6 +193,43 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
   };
 
   const handleSubmitQuiz = () => {
+    // Check if there are flagged questions
+    if (flaggedQuestions.size > 0 && !isReviewingFlagged) {
+      // Find indices of flagged questions
+      const flaggedIndices = questions
+        .map((q, index) => ({ question: q, index }))
+        .filter(item => flaggedQuestions.has(item.question.id))
+        .map(item => item.index);
+      
+      setFlaggedQuestionIndices(flaggedIndices);
+      setShowFlaggedQuestionsDialog(true);
+    } else {
+      // Submit the quiz directly
+      const quizAnswers = questions.map(question => {
+        const answer = answers[question.id];
+        return {
+          questionId: question.id,
+          answer: answer !== undefined ? answer : 0,
+        };
+      });
+
+      submitQuizMutation.mutate(quizAnswers);
+    }
+  };
+
+  const handleReviewFlaggedQuestions = () => {
+    setShowFlaggedQuestionsDialog(false);
+    setIsReviewingFlagged(true);
+    setCurrentFlaggedIndex(0);
+    // Navigate to the first flagged question
+    if (flaggedQuestionIndices.length > 0) {
+      setCurrentQuestionIndex(flaggedQuestionIndices[0]);
+    }
+  };
+
+  const handleSubmitWithoutReview = () => {
+    setShowFlaggedQuestionsDialog(false);
+    // Submit the quiz directly
     const quizAnswers = questions.map(question => {
       const answer = answers[question.id];
       return {
@@ -253,7 +337,17 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
           {/* Progress Bar */}
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs sm:text-sm text-muted-foreground">
-              Question {currentQuestionIndex + 1} of {questions.length}
+              {isReviewingFlagged ? (
+                <>
+                  <Badge variant="outline" className="mr-2 bg-accent/10 text-accent border-accent">
+                    <i className="fas fa-flag mr-1"></i>
+                    Reviewing Flagged
+                  </Badge>
+                  Question {currentFlaggedIndex + 1} of {flaggedQuestionIndices.length}
+                </>
+              ) : (
+                `Question ${currentQuestionIndex + 1} of ${questions.length}`
+              )}
             </span>
             <span className="text-xs sm:text-sm text-muted-foreground">{Math.round(progress)}%</span>
           </div>
@@ -377,7 +471,7 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
               <Button
                 variant="outline"
                 onClick={handlePreviousQuestion}
-                disabled={currentQuestionIndex === 0}
+                disabled={isReviewingFlagged ? currentFlaggedIndex === 0 : currentQuestionIndex === 0}
                 size="sm"
                 className="flex-1 sm:flex-initial"
               >
@@ -412,14 +506,26 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
               size="sm"
               className="w-full sm:w-auto bg-primary text-white hover:bg-primary/90"
             >
-              {currentQuestionIndex === questions.length - 1 ? (
-                submitQuizMutation.isPending ? 'Submitting...' : 'Submit Quiz'
+              {isReviewingFlagged ? (
+                currentFlaggedIndex === flaggedQuestionIndices.length - 1 ? (
+                  submitQuizMutation.isPending ? 'Submitting...' : 'Finish Review & Submit'
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Next Flagged</span>
+                    <span className="sm:hidden">Next</span>
+                    <i className="fas fa-chevron-right ml-1 sm:ml-2"></i>
+                  </>
+                )
               ) : (
-                <>
-                  <span className="hidden sm:inline">Next</span>
-                  <span className="sm:hidden">Next</span>
-                  <i className="fas fa-chevron-right ml-1 sm:ml-2"></i>
-                </>
+                currentQuestionIndex === questions.length - 1 ? (
+                  submitQuizMutation.isPending ? 'Submitting...' : 'Submit Quiz'
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Next</span>
+                    <span className="sm:hidden">Next</span>
+                    <i className="fas fa-chevron-right ml-1 sm:ml-2"></i>
+                  </>
+                )
               )}
             </Button>
           </div>
@@ -478,6 +584,30 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
           </div>
         </div>
       </Card>
+      
+      {/* Flagged Questions Review Dialog */}
+      <AlertDialog open={showFlaggedQuestionsDialog} onOpenChange={setShowFlaggedQuestionsDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              <i className="fas fa-flag text-accent mr-2"></i>
+              Review Flagged Questions?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have {flaggedQuestions.size} flagged question{flaggedQuestions.size !== 1 ? 's' : ''} for review.
+              Would you like to review {flaggedQuestions.size === 1 ? 'it' : 'them'} before submitting the quiz?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleSubmitWithoutReview}>
+              Submit Without Review
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleReviewFlaggedQuestions}>
+              Review Flagged Questions
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
