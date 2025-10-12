@@ -335,6 +335,127 @@ class PolarClient {
       return { isSubscribed: false };
     }
   }
+
+  // New method to get subscription details and determine benefits
+  async getSubscriptionBenefits(customerId: string): Promise<{
+    plan: string;
+    status: 'active' | 'inactive' | 'past_due' | 'canceled' | 'trialing';
+    benefits: {
+      plan: string;
+      quizzesPerDay: number;
+      categoriesAccess: string[];
+      analyticsAccess: string;
+      teamMembers?: number;
+    };
+    subscriptionId?: string;
+    expiresAt?: Date;
+  }> {
+    try {
+      const subscriptions = await this.getSubscriptions(customerId);
+      const activeSubscription = subscriptions.find(sub => 
+        sub.status === 'active' || sub.status === 'trialing' || sub.status === 'past_due'
+      );
+
+      if (activeSubscription) {
+        // Determine plan based on product ID
+        const planName = this.getPlanFromProductId(activeSubscription.productId);
+        const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS];
+        
+        return {
+          plan: planName,
+          status: activeSubscription.status as any,
+          benefits: {
+            plan: planName,
+            quizzesPerDay: plan.limits.quizzesPerDay,
+            categoriesAccess: plan.limits.categoriesAccess,
+            analyticsAccess: plan.limits.analyticsAccess,
+            teamMembers: (plan.limits as any).teamMembers,
+          },
+          subscriptionId: activeSubscription.id,
+          expiresAt: activeSubscription.currentPeriodEnd,
+        };
+      }
+
+      // Return free tier benefits if no active subscription
+      return {
+        plan: 'free',
+        status: 'inactive',
+        benefits: {
+          plan: 'free',
+          quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+          categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+          analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+        },
+      };
+    } catch (error) {
+      console.error('Error getting subscription benefits:', error);
+      // Return free tier benefits on error
+      return {
+        plan: 'free',
+        status: 'inactive',
+        benefits: {
+          plan: 'free',
+          quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+          categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+          analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+        },
+      };
+    }
+  }
+
+  // Helper method to determine plan from product ID
+  private getPlanFromProductId(productId: string): string {
+    if (productId === SUBSCRIPTION_PLANS.pro.productId) {
+      return 'pro';
+    }
+    if (productId === SUBSCRIPTION_PLANS.enterprise.productId) {
+      return 'enterprise';
+    }
+    return 'free';
+  }
+
+  // Method to fetch and sync subscription benefits for a user
+  async syncUserSubscriptionBenefits(email: string): Promise<{
+    customerId?: string;
+    benefits: any;
+  }> {
+    try {
+      const customer = await this.getCustomerByEmail(email);
+      if (!customer) {
+        // No customer in Polar, return free benefits
+        return {
+          benefits: {
+            plan: 'free',
+            quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+            categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+            analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+            lastSyncedAt: new Date().toISOString(),
+          },
+        };
+      }
+
+      const subscriptionData = await this.getSubscriptionBenefits(customer.id);
+      return {
+        customerId: customer.id,
+        benefits: {
+          ...subscriptionData.benefits,
+          lastSyncedAt: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      console.error('Error syncing subscription benefits:', error);
+      // Return free benefits on error
+      return {
+        benefits: {
+          plan: 'free',
+          quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+          categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+          analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+          lastSyncedAt: new Date().toISOString(),
+        },
+      };
+    }
+  }
 }
 
 // Export singleton instance that reads environment variables dynamically
