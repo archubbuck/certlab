@@ -5,6 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +24,11 @@ import {
   XCircle,
   CheckCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  Crown,
+  Star
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -45,6 +52,10 @@ interface SubscriptionStatus {
 export default function SubscriptionManagePage() {
   const { toast } = useToast();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showSwitchDialog, setShowSwitchDialog] = useState(false);
+  const [switchPlan, setSwitchPlan] = useState<"pro" | "enterprise" | null>(null);
+  const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
+  const [switchAtPeriodEnd, setSwitchAtPeriodEnd] = useState(false);
 
   const { data: subscription, isLoading, error } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
@@ -119,6 +130,41 @@ export default function SubscriptionManagePage() {
           variant: "destructive",
         });
       }
+    },
+  });
+
+  const switchMutation = useMutation({
+    mutationFn: async (data: {
+      newPlan: "pro" | "enterprise";
+      billingInterval: "monthly" | "yearly";
+      switchAtPeriodEnd: boolean;
+    }) => {
+      const response = await apiRequest({
+        endpoint: "/api/subscription/switch",
+        method: "POST",
+        data,
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to switch subscription");
+      }
+      return result;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Plan Changed Successfully",
+        description: data.message,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      setShowSwitchDialog(false);
+      setSwitchPlan(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to switch subscription plan",
+        variant: "destructive",
+      });
     },
   });
 
@@ -253,12 +299,38 @@ export default function SubscriptionManagePage() {
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
               {subscription.status === 'active' && subscription.plan !== 'free' && (
                 <>
-                  <Link href="/subscription/plans">
-                    <Button variant="outline" className="w-full sm:w-auto" data-testid="change-plan">
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Change Plan
+                  {/* Show upgrade to Enterprise if on Pro */}
+                  {subscription.plan === 'pro' && (
+                    <Button
+                      variant="default"
+                      className="w-full sm:w-auto"
+                      onClick={() => {
+                        setSwitchPlan('enterprise');
+                        setShowSwitchDialog(true);
+                      }}
+                      data-testid="upgrade-to-enterprise"
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Upgrade to Enterprise
                     </Button>
-                  </Link>
+                  )}
+                  
+                  {/* Show downgrade to Pro if on Enterprise */}
+                  {subscription.plan === 'enterprise' && (
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={() => {
+                        setSwitchPlan('pro');
+                        setShowSwitchDialog(true);
+                      }}
+                      data-testid="downgrade-to-pro"
+                    >
+                      <TrendingDown className="w-4 h-4 mr-2" />
+                      Downgrade to Pro
+                    </Button>
+                  )}
+
                   <Button
                     variant="destructive"
                     className="w-full sm:w-auto"
@@ -363,6 +435,127 @@ export default function SubscriptionManagePage() {
                   </>
                 ) : (
                   'Cancel at Period End'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Switch Plan Dialog */}
+        <Dialog open={showSwitchDialog} onOpenChange={setShowSwitchDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {switchPlan === 'enterprise' ? (
+                  <>
+                    <Star className="w-5 h-5 inline mr-2 text-amber-500" />
+                    Upgrade to Enterprise
+                  </>
+                ) : (
+                  <>
+                    <Crown className="w-5 h-5 inline mr-2 text-primary" />
+                    Switch to Pro
+                  </>
+                )}
+              </DialogTitle>
+              <DialogDescription>
+                {switchPlan === 'enterprise' 
+                  ? 'Get access to team management, custom certifications, API access, and dedicated support.'
+                  : 'Switch to Pro plan with unlimited quizzes and advanced analytics.'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Billing Interval Selection */}
+              <div className="space-y-3">
+                <Label>Billing Interval</Label>
+                <RadioGroup value={billingInterval} onValueChange={(value) => setBillingInterval(value as "monthly" | "yearly")}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="monthly" id="monthly" />
+                    <Label htmlFor="monthly" className="font-normal cursor-pointer">
+                      Monthly billing
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="yearly" id="yearly" />
+                    <Label htmlFor="yearly" className="font-normal cursor-pointer">
+                      Yearly billing <Badge className="ml-2 bg-green-100 text-green-700">Save 17%</Badge>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* Switch Timing */}
+              <div className="flex items-center space-x-2 py-2 px-3 bg-muted/50 rounded-lg">
+                <Switch
+                  id="switch-timing"
+                  checked={switchAtPeriodEnd}
+                  onCheckedChange={setSwitchAtPeriodEnd}
+                />
+                <Label htmlFor="switch-timing" className="text-sm cursor-pointer">
+                  {switchAtPeriodEnd 
+                    ? `Switch at end of billing period (${subscription.expiresAt && format(new Date(subscription.expiresAt), 'MMM dd, yyyy')})`
+                    : 'Switch immediately (prorated billing)'}
+                </Label>
+              </div>
+
+              {/* Info Alert */}
+              {switchPlan === 'enterprise' && (
+                <Alert>
+                  <TrendingUp className="h-4 w-4" />
+                  <AlertDescription>
+                    {switchAtPeriodEnd 
+                      ? 'You will retain Pro features until your current billing period ends, then automatically upgrade to Enterprise.'
+                      : 'You will be upgraded immediately and charged a prorated amount for the remaining days in your billing period.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {switchPlan === 'pro' && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {switchAtPeriodEnd 
+                      ? 'You will keep Enterprise features until your current billing period ends, then switch to Pro.'
+                      : 'You will be downgraded immediately. A prorated credit will be applied to your account.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowSwitchDialog(false);
+                  setSwitchPlan(null);
+                }}
+                disabled={switchMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (switchPlan) {
+                    switchMutation.mutate({
+                      newPlan: switchPlan,
+                      billingInterval,
+                      switchAtPeriodEnd,
+                    });
+                  }
+                }}
+                disabled={switchMutation.isPending || !switchPlan}
+                data-testid="confirm-switch"
+              >
+                {switchMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : switchPlan === 'enterprise' ? (
+                  'Upgrade Now'
+                ) : (
+                  'Switch Plan'
                 )}
               </Button>
             </DialogFooter>
