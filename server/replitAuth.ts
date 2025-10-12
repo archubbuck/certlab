@@ -195,28 +195,27 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
       }
     } 
     
-    // ALWAYS update the test user's subscription to Pro in development
-    // This ensures consistent pro benefits for testing
+    // Only set Pro subscription if test user has NO subscription benefits
+    // This allows testing of cancellation and downgrade flows
     if (testUser) {
       const currentBenefits = testUser.subscriptionBenefits as any;
       
-      // Always update to ensure test user has pro benefits
-      // This prevents any Polar sync or other process from overwriting them
-      if (!currentBenefits || 
-          currentBenefits.plan !== 'pro' || 
-          currentBenefits.quizzesPerDay !== -1 ||
-          currentBenefits.analyticsAccess !== 'advanced') {
-        
+      // Only set to Pro if the user has no subscription benefits at all
+      // This preserves any existing state (including 'free' after cancellation)
+      if (!currentBenefits || currentBenefits === null || currentBenefits === undefined) {
         await storage.updateUser(testUserId, {
           subscriptionBenefits: {
-            plan: 'pro', // Give test user pro plan for demo
+            plan: 'pro', // Give test user pro plan initially
             quizzesPerDay: -1, // Unlimited for testing
             categoriesAccess: ['all'],
             analyticsAccess: 'advanced',
             lastSyncedAt: new Date().toISOString(),
           },
         });
-        console.log('Development: Updated test user with Pro subscription benefits');
+        console.log('Development: Set initial Pro subscription for test user');
+      } else {
+        // Preserve existing subscription state (could be pro, free, or cancelled)
+        console.log(`Development: Test user has existing subscription state: ${currentBenefits.plan}`);
       }
     }
 

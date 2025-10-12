@@ -427,10 +427,14 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
   // Cancel subscription - REFACTORED
   app.post("/api/subscription/cancel", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const user = req.user as User;
-      if (!user) {
+      const sessionUser = req.user as any;
+      if (!sessionUser) {
         return res.status(401).json({ error: "Unauthorized" });
       }
+
+      // Fetch user ID consistently with other endpoints
+      const userId = sessionUser.claims?.sub || sessionUser.id;
+      console.log('Cancel subscription request for user:', userId, 'NODE_ENV:', process.env.NODE_ENV);
 
       // Validate request body
       const result = cancelSubscriptionSchema.safeParse(req.body);
@@ -443,8 +447,40 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
       const { cancelAtPeriodEnd } = result.data;
 
+      // Special handling for test user in development mode
+      const isTestUser = process.env.NODE_ENV === 'development' && userId === '999999';
+      console.log('Is test user?', isTestUser, 'User ID:', userId);
+
       // Get user data
-      const userData = await storage.getUserById(user.id);
+      const userData = await storage.getUserById(userId);
+      
+      if (isTestUser) {
+        console.log('Test user cancellation in development mode - simulating cancellation');
+        
+        // Simulate cancellation for test user
+        const updatedBenefits = {
+          plan: 'free',
+          quizzesPerDay: 5,
+          categoriesAccess: ['basic'],
+          analyticsAccess: 'basic',
+          lastSyncedAt: new Date().toISOString(),
+        };
+        
+        await storage.updateUser(userId, {
+          subscriptionBenefits: updatedBenefits,
+        });
+        
+        return res.json({
+          success: true,
+          message: cancelAtPeriodEnd 
+            ? "Subscription will be canceled at the end of the current period (test mode)"
+            : "Subscription canceled immediately (test mode)",
+          canceledAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        });
+      }
+      
+      // Regular flow for non-test users
       if (!userData?.polarCustomerId) {
         return res.status(400).json({ 
           error: "No active subscription", 
@@ -494,7 +530,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       }
       updatedBenefits.lastSyncedAt = new Date().toISOString();
 
-      await storage.updateUser(user.id, {
+      await storage.updateUser(userId, {
         subscriptionBenefits: updatedBenefits,
       });
 
@@ -517,13 +553,16 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
   // Resume canceled subscription - REFACTORED
   app.post("/api/subscription/resume", isAuthenticated, async (req: Request, res: Response) => {
-    const user = req.user as User;
-    if (!user) {
+    const sessionUser = req.user as any;
+    if (!sessionUser) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
+    // Fetch user ID consistently with other endpoints
+    const userId = sessionUser.claims?.sub || sessionUser.id;
+
     // Get user data
-    const userData = await storage.getUserById(user.id);
+    const userData = await storage.getUserById(userId);
     
     try {
       
@@ -564,7 +603,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Sync updated benefits from Polar
       if (userData.email) {
         const polarData = await polarClient.syncUserSubscriptionBenefits(userData.email);
-        await storage.updateUser(userData.id, {
+        await storage.updateUser(userId, {
           subscriptionBenefits: polarData.benefits,
         });
       }
