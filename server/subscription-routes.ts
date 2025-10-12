@@ -500,18 +500,41 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
   // Webhook endpoint for Polar events
   app.post("/api/subscription/webhook", async (req: Request, res: Response) => {
     try {
-      const signature = req.headers['x-polar-signature'] as string;
+      // Log all incoming headers for debugging
+      console.log('[Webhook] Incoming headers:', Object.keys(req.headers));
+      console.log('[Webhook] Looking for signature in headers:', {
+        'x-polar-signature': req.headers['x-polar-signature'],
+        'x-polar-webhook-signature': req.headers['x-polar-webhook-signature'],
+        'polar-signature': req.headers['polar-signature'],
+        'webhook-signature': req.headers['webhook-signature']
+      });
+      
+      // Try multiple possible header names
+      const signature = req.headers['x-polar-signature'] as string ||
+                       req.headers['x-polar-webhook-signature'] as string ||
+                       req.headers['polar-signature'] as string ||
+                       req.headers['webhook-signature'] as string;
       
       if (!signature) {
-        return res.status(400).json({ error: "Missing webhook signature" });
-      }
-
-      // Verify webhook signature - webhook secret is now read dynamically by polarClient
-      const payload = JSON.stringify(req.body);
-      const isValid = polarClient.verifyWebhook(payload, signature);
-      
-      if (!isValid) {
-        return res.status(401).json({ error: "Invalid webhook signature" });
+        console.error('[Webhook] No signature found in headers');
+        // For development, log the webhook body to help debug
+        console.log('[Webhook] Body received without signature:', JSON.stringify(req.body, null, 2));
+        
+        // In development mode, allow webhooks without signatures with a warning
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[Webhook] WARNING: Accepting webhook without signature in development mode');
+        } else {
+          return res.status(400).json({ error: "Missing webhook signature" });
+        }
+      } else {
+        // Verify webhook signature - webhook secret is now read dynamically by polarClient
+        const payload = JSON.stringify(req.body);
+        const isValid = polarClient.verifyWebhook(payload, signature);
+        
+        if (!isValid) {
+          console.error('[Webhook] Invalid signature received');
+          return res.status(401).json({ error: "Invalid webhook signature" });
+        }
       }
 
       // Handle webhook event
