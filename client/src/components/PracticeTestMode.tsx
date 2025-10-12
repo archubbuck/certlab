@@ -50,16 +50,23 @@ export default function PracticeTestMode() {
         method: "POST", 
         endpoint: `/api/practice-tests/${testId}/start`
       });
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to start practice test');
+      }
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       setLocation(`/app/quiz/${data.quiz.id}`);
     },
-    onError: () => {
+    onError: (error: any) => {
+      const message = error.message || "Failed to start practice test. Please try again.";
       toast({
-        title: "Error",
-        description: "Failed to start practice test. Please try again.",
+        title: "Cannot Start Practice Test",
+        description: message.includes("No questions") 
+          ? "This practice test doesn't have any questions available yet. Please try a different test." 
+          : message,
         variant: "destructive",
       });
     },

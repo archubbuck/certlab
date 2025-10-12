@@ -165,23 +165,39 @@ export class DatabaseStorage implements IStorage {
   private async seedData() {
     // Check if data already exists
     const existingCategories = await db.select().from(categories);
-    if (existingCategories.length > 0) return;
+    const existingQuestions = await db.select().from(questions).limit(1);
+    
+    // Only return if both categories AND questions exist
+    if (existingCategories.length > 0 && existingQuestions.length > 0) {
+      console.log("Database already seeded with categories and questions");
+      return;
+    }
+    
+    // If categories exist but questions don't, we need to continue seeding
+    if (existingCategories.length > 0 && existingQuestions.length === 0) {
+      console.log("Categories exist but no questions found. Seeding questions...");
+    }
 
     console.log("Initializing database with authentic certification structure...");
     console.log("Preparing to import 57,672 authentic certification questions from provided dataset");
     
-    // Seed categories based on authentic certification data structure
-    // Question counts from uploaded CSV: CC(8,375), CISSP(15,582), Cloud+(20,763), CISM(5,259), CGRC(6,153), CISA(1,540)
-    const cats = [
-      { tenantId: 1, name: "CC", description: "Certified in Cybersecurity", icon: "fas fa-shield-alt" },
-      { tenantId: 1, name: "CGRC", description: "Certified in Governance, Risk and Compliance", icon: "fas fa-balance-scale" },
-      { tenantId: 1, name: "CISA", description: "Certified Information Systems Auditor", icon: "fas fa-search" },
-      { tenantId: 1, name: "CISM", description: "Certified Information Security Manager", icon: "fas fa-cogs" },
-      { tenantId: 1, name: "CISSP", description: "Certified Information Systems Security Professional", icon: "fas fa-lock" },
-      { tenantId: 1, name: "Cloud+", description: "CompTIA Cloud+ Certification", icon: "fas fa-cloud" },
-    ];
+    // Get or create categories
+    let insertedCategories: any[] = existingCategories;
     
-    const insertedCategories = await db.insert(categories).values(cats).returning();
+    if (existingCategories.length === 0) {
+      // Seed categories based on authentic certification data structure
+      // Question counts from uploaded CSV: CC(8,375), CISSP(15,582), Cloud+(20,763), CISM(5,259), CGRC(6,153), CISA(1,540)
+      const cats = [
+        { tenantId: 1, name: "CC", description: "Certified in Cybersecurity", icon: "fas fa-shield-alt" },
+        { tenantId: 1, name: "CGRC", description: "Certified in Governance, Risk and Compliance", icon: "fas fa-balance-scale" },
+        { tenantId: 1, name: "CISA", description: "Certified Information Systems Auditor", icon: "fas fa-search" },
+        { tenantId: 1, name: "CISM", description: "Certified Information Security Manager", icon: "fas fa-cogs" },
+        { tenantId: 1, name: "CISSP", description: "Certified Information Systems Security Professional", icon: "fas fa-lock" },
+        { tenantId: 1, name: "Cloud+", description: "CompTIA Cloud+ Certification", icon: "fas fa-cloud" },
+      ];
+      
+      insertedCategories = await db.insert(categories).values(cats).returning();
+    }
 
     // Create subcategories mapping
     const subcategoriesData = [];
@@ -258,7 +274,15 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
-    const insertedSubcategories = await db.insert(subcategories).values(subcategoriesData).returning();
+    // Get or create subcategories
+    let insertedSubcategories: any[] = [];
+    const existingSubcategories = await db.select().from(subcategories);
+    
+    if (existingSubcategories.length === 0 && subcategoriesData.length > 0) {
+      insertedSubcategories = await db.insert(subcategories).values(subcategoriesData).returning();
+    } else {
+      insertedSubcategories = existingSubcategories;
+    }
 
     // Generate authentic-scale question database based on uploaded CSV with 57,672 questions
     // Authentic counts: CC(8,375), CISSP(15,582), Cloud+(20,763), CISM(5,259), CGRC(6,153), CISA(1,540)
@@ -3417,7 +3441,23 @@ ${recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')}
   }
 
   async startPracticeTest(testId: number, userId: string): Promise<PracticeTestAttempt> {
+    // Get the practice test to fetch its tenantId
+    const practiceTest = await this.getPracticeTest(testId);
+    let tenantId = practiceTest?.tenantId;
+    
+    // Fallback: Get tenantId from user if not found in practice test
+    if (!tenantId) {
+      const user = await this.getUser(userId);
+      tenantId = user?.tenantId;
+    }
+    
+    // Default to 1 if no other source available (for development)
+    if (!tenantId) {
+      tenantId = 1;
+    }
+    
     const [attempt] = await db.insert(practiceTestAttempts).values({
+      tenantId,
       testId,
       userId,
     }).returning();

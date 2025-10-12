@@ -32,7 +32,7 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
     queryKey: ['/api/quiz', quizId],
   });
 
-  const { data: questions = [] } = useQuery<Question[]>({
+  const { data: questions = [], isLoading: isLoadingQuestions, error: questionsError } = useQuery<Question[]>({
     queryKey: ['/api/quiz', quizId, 'questions'],
     enabled: !!quiz,
   });
@@ -171,7 +171,31 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
     return 'unanswered';
   };
 
-  if (!quiz || !currentQuestion) {
+  // Error handling for no questions
+  if (quiz && questions.length === 0 && !isLoadingQuestions) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <Card className="max-w-lg p-6">
+          <div className="text-center">
+            <i className="fas fa-exclamation-triangle text-4xl text-warning mb-4"></i>
+            <h2 className="text-xl font-semibold mb-2">No Questions Available</h2>
+            <p className="text-muted-foreground mb-4">
+              Unfortunately, there are no questions available for this quiz. This might be because the selected categories don't have any questions in the database yet.
+            </p>
+            <Button 
+              onClick={() => setLocation("/app/dashboard")}
+              className="w-full sm:w-auto"
+            >
+              Return to Dashboard
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (!quiz || !currentQuestion || isLoadingQuestions) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>

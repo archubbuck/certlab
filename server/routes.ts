@@ -978,15 +978,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Practice test not found' });
       }
       
+      // Get all subcategories for the selected categories
+      // This ensures we can fetch questions properly
+      const allSubcategories = await storage.getSubcategories();
+      const relevantSubcategoryIds = allSubcategories
+        .filter(sub => test.categoryIds.includes(sub.categoryId))
+        .map(sub => sub.id);
+      
+      // Check if questions are available for this test
+      const availableQuestions = await storage.getQuestionsByCategories(
+        test.categoryIds,
+        relevantSubcategoryIds
+      );
+      
+      if (availableQuestions.length === 0) {
+        return res.status(400).json({ 
+          message: 'No questions available for this practice test. Please try a different test or contact support.',
+          error: 'NO_QUESTIONS_AVAILABLE'
+        });
+      }
+      
+      // Adjust question count if fewer questions are available
+      const finalQuestionCount = Math.min(test.questionCount, availableQuestions.length);
+      
       // Create a quiz for this practice test
       const quiz = await storage.createQuiz({
         title: test.name,
         categoryIds: test.categoryIds,
-        subcategoryIds: [],
-        questionCount: test.questionCount,
+        subcategoryIds: relevantSubcategoryIds, // Pass all subcategories for the selected categories
+        questionCount: finalQuestionCount, // Use adjusted question count
         timeLimit: test.timeLimit,
         userId,
         mode: 'quiz',
+        difficultyLevel: test.difficulty === 'Easy' ? 1 : 
+                        test.difficulty === 'Medium' ? 2 : 
+                        test.difficulty === 'Hard' ? 3 : 
+                        test.difficulty === 'Expert' ? 4 : 1, // Default to 1 for Mixed
       });
       
       // Create practice test attempt

@@ -416,6 +416,7 @@ export const practiceTests = pgTable("practice_tests", {
 // Practice Test Attempts table
 export const practiceTestAttempts = pgTable("practice_test_attempts", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull(),
   testId: integer("test_id").notNull(),
   userId: varchar("user_id").notNull(),
   quizId: integer("quiz_id"), // Links to the actual quiz attempt

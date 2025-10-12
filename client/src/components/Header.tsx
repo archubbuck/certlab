@@ -32,7 +32,8 @@ import {
   ChevronDown,
   Accessibility,
   Users,
-  User
+  User,
+  FileText
 } from "lucide-react";
 import MobileNavigationEnhanced from "@/components/MobileNavigationEnhanced";
 
@@ -142,7 +143,7 @@ export default function Header() {
                             <BookOpen className="w-4 h-4" />
                             Learning Features
                           </h3>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-3 gap-3">
                             <NavigationMenuLink 
                               className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
                               onClick={() => setLocation("/achievements")}
@@ -158,7 +159,8 @@ export default function Header() {
                               </p>
                             </NavigationMenuLink>
                             <NavigationMenuLink 
-                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer opacity-60"
+                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                              onClick={() => setLocation("/app/study-groups")}
                             >
                               <div className="flex items-center text-sm font-medium leading-none text-foreground">
                                 <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center mr-2">
@@ -167,7 +169,21 @@ export default function Header() {
                                 Study Groups
                               </div>
                               <p className="text-xs leading-relaxed text-muted-foreground pl-8">
-                                Collaborate with other learners (Coming Soon)
+                                Collaborate with other learners
+                              </p>
+                            </NavigationMenuLink>
+                            <NavigationMenuLink 
+                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                              onClick={() => setLocation("/app/practice-tests")}
+                            >
+                              <div className="flex items-center text-sm font-medium leading-none text-foreground">
+                                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center mr-2">
+                                  <FileText className="w-3 h-3 text-primary" />
+                                </div>
+                                Practice Tests
+                              </div>
+                              <p className="text-xs leading-relaxed text-muted-foreground pl-8">
+                                Take full-length practice exams
                               </p>
                             </NavigationMenuLink>
                           </div>
