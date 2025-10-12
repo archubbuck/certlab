@@ -272,20 +272,11 @@ export default function Dashboard() {
           <div className="space-y-6">
             {/* Recent Activity */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <History className="h-5 w-5" />
                   Recent Activity
                 </CardTitle>
-                {completedQuizzes.length > 0 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setLocation('/app/review')}
-                  >
-                    View all
-                  </Button>
-                )}
               </CardHeader>
               <CardContent>
                 {completedQuizzes.length > 0 ? (
