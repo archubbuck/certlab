@@ -34,7 +34,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   };
 
-  // Get current subscription status
+  // Get current subscription status - REFACTORED to use Polar as source of truth
   app.get("/api/subscription/status", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const sessionUser = req.user as any;
@@ -56,129 +56,87 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Get updated user data for quiz count
       const updatedUser = await storage.getUserById(user.id);
 
-      // FIRST: Check database for existing subscription data
-      // This ensures we use actual stored subscription data when available
-      const hasDbSubscription = updatedUser?.subscriptionPlan && 
-                                updatedUser.subscriptionPlan !== 'free' &&
-                                updatedUser.subscriptionStatus !== 'inactive';
-      
-      // If user has subscription data in database, use it as primary source
-      if (hasDbSubscription && updatedUser?.subscriptionFeatures) {
-        const planName = updatedUser.subscriptionPlan || 'free';
-        const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
-        
-        // Check if subscription is still valid based on expiry date
-        const isExpired = updatedUser.subscriptionExpiresAt && 
-                         new Date(updatedUser.subscriptionExpiresAt) < new Date();
-        
-        // If expired, update status but keep using database data
-        if (isExpired && updatedUser.subscriptionStatus !== 'expired') {
-          await storage.updateUser(user.id, {
-            subscriptionStatus: 'expired',
-          });
-        }
-        
-        // If Polar is configured, sync with it in the background (non-blocking)
-        if (process.env.POLAR_API_KEY && user.email) {
-          // Don't await - let it run in background to avoid blocking the response
-          polarClient.getUserSubscriptionStatus(user.email)
-            .then(polarStatus => {
-              if (polarStatus?.isSubscribed && polarStatus.subscription) {
-                const polarPlanName = polarStatus.plan?.toLowerCase() || 'free';
-                const polarPlan = SUBSCRIPTION_PLANS[polarPlanName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
-                
-                // Update database with latest from Polar
-                storage.updateUser(user.id, {
-                  subscriptionPlan: polarPlanName,
-                  subscriptionStatus: polarStatus.subscription.status,
-                  subscriptionId: polarStatus.subscription.id,
-                  subscriptionExpiresAt: polarStatus.expiresAt,
-                  subscriptionFeatures: polarPlan.limits,
-                });
-              } else if (!polarStatus?.isSubscribed && updatedUser.subscriptionStatus === 'active') {
-                // Subscription cancelled in Polar, update database
-                storage.updateUser(user.id, {
-                  subscriptionStatus: 'canceled',
-                });
-              }
-            })
-            .catch(err => console.error("Background Polar sync error:", err));
-        }
-        
-        // Return subscription data from database
-        return res.json({
-          isConfigured: !!process.env.POLAR_API_KEY,
-          isSubscribed: !isExpired && updatedUser.subscriptionStatus === 'active',
-          plan: planName,
-          status: isExpired ? 'expired' : updatedUser.subscriptionStatus,
-          expiresAt: updatedUser.subscriptionExpiresAt,
-          features: plan.features,
-          limits: updatedUser.subscriptionFeatures || plan.limits,
-          dailyQuizCount: updatedUser?.dailyQuizCount || 0,
-        });
-      }
+      // Default to free tier benefits
+      let benefits = {
+        plan: 'free',
+        quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+        categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+        analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+        lastSyncedAt: new Date().toISOString(),
+      };
 
-      // SECOND: If no database subscription data, check Polar if configured
+      let isSubscribed = false;
+      let status = 'inactive';
+      let expiresAt = undefined;
+
+      // If Polar is configured and user has email, sync with Polar
       if (process.env.POLAR_API_KEY && user.email) {
         try {
-          const polarStatus = await polarClient.getUserSubscriptionStatus(user.email);
+          const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
           
-          if (polarStatus?.isSubscribed && polarStatus.subscription) {
-            const planName = polarStatus.plan?.toLowerCase() || 'free';
-            const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
+          // Check if Polar data is newer than cached data
+          const cachedBenefits = updatedUser?.subscriptionBenefits as any;
+          const polarSyncTime = new Date(polarData.benefits.lastSyncedAt);
+          const cachedSyncTime = cachedBenefits?.lastSyncedAt ? new Date(cachedBenefits.lastSyncedAt) : new Date(0);
+          
+          if (!cachedBenefits || polarSyncTime > cachedSyncTime) {
+            // Update local cache with Polar data
+            benefits = polarData.benefits;
             
-            // Store subscription data in database for future use
             await storage.updateUser(user.id, {
-              subscriptionPlan: planName,
-              subscriptionStatus: polarStatus.subscription.status,
-              subscriptionId: polarStatus.subscription.id,
-              subscriptionExpiresAt: polarStatus.expiresAt,
-              subscriptionFeatures: plan.limits,
+              polarCustomerId: polarData.customerId,
+              subscriptionBenefits: benefits,
             });
+          } else {
+            // Use cached benefits if they're more recent
+            benefits = cachedBenefits;
+          }
 
-            return res.json({
-              isConfigured: true,
-              isSubscribed: true,
-              plan: planName,
-              status: polarStatus.subscription.status,
-              expiresAt: polarStatus.expiresAt,
-              features: plan.features,
-              limits: plan.limits,
-              dailyQuizCount: updatedUser?.dailyQuizCount || 0,
-            });
+          // Determine subscription status from benefits
+          isSubscribed = benefits.plan !== 'free';
+          status = isSubscribed ? 'active' : 'inactive';
+
+          // If customer ID exists, get additional details
+          if (polarData.customerId) {
+            try {
+              const detailedBenefits = await polarClient.getSubscriptionBenefits(polarData.customerId);
+              status = detailedBenefits.status;
+              expiresAt = detailedBenefits.expiresAt;
+            } catch (err) {
+              console.error("Error getting detailed subscription status:", err);
+            }
           }
         } catch (polarError) {
-          console.error("Error checking Polar subscription:", polarError);
-          // Fall through to use database data or defaults
+          console.error("Error syncing with Polar:", polarError);
+          // Fall back to cached benefits if Polar sync fails
+          if (updatedUser?.subscriptionBenefits) {
+            benefits = updatedUser.subscriptionBenefits as any;
+            isSubscribed = benefits.plan !== 'free';
+          }
         }
+      } else if (updatedUser?.subscriptionBenefits) {
+        // No Polar configured, use cached benefits
+        benefits = updatedUser.subscriptionBenefits as any;
+        isSubscribed = benefits.plan !== 'free';
       }
 
-      // THIRD: Check if user has any subscription data in database (even if 'free' plan)
-      // This handles cases where user explicitly has 'free' plan set
-      if (updatedUser?.subscriptionFeatures) {
-        const planName = updatedUser.subscriptionPlan || 'free';
-        const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
-        
-        return res.json({
-          isConfigured: !!process.env.POLAR_API_KEY,
-          isSubscribed: false,
-          plan: planName,
-          status: updatedUser.subscriptionStatus || 'inactive',
-          features: plan.features,
-          limits: updatedUser.subscriptionFeatures,
-          dailyQuizCount: updatedUser?.dailyQuizCount || 0,
-        });
-      }
+      // Get the plan configuration for features list
+      const planName = benefits.plan || 'free';
+      const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
 
-      // LAST RESORT: No subscription data anywhere, return defaults
-      // Only use hardcoded defaults when user truly has no subscription data
       return res.json({
         isConfigured: !!process.env.POLAR_API_KEY,
-        isSubscribed: false,
-        plan: 'free',
-        status: 'inactive',
-        features: SUBSCRIPTION_PLANS.free.features,
-        limits: SUBSCRIPTION_PLANS.free.limits,
+        isSubscribed,
+        plan: planName,
+        status,
+        expiresAt,
+        features: plan.features,
+        limits: {
+          quizzesPerDay: benefits.quizzesPerDay,
+          categoriesAccess: benefits.categoriesAccess,
+          analyticsAccess: benefits.analyticsAccess,
+          teamMembers: (benefits as any).teamMembers,
+        },
         dailyQuizCount: updatedUser?.dailyQuizCount || 0,
       });
     } catch (error: any) {
@@ -204,7 +162,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     res.json({ plans });
   });
 
-  // Create checkout session for subscription
+  // Create checkout session for subscription - REFACTORED
   app.post("/api/subscription/checkout", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const sessionUser = req.user as any;
@@ -252,14 +210,6 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         return res.status(400).json({ 
           error: "Invalid plan", 
           message: "The selected plan is not available" 
-        });
-      }
-
-      // Verify the product ID is configured
-      if (!planConfig.productId) {
-        return res.status(400).json({ 
-          error: "Product not configured", 
-          message: "The selected plan is not properly configured. Please contact support." 
         });
       }
 
@@ -319,7 +269,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   });
 
-  // Handle successful checkout (callback from Polar)
+  // Handle successful checkout (callback from Polar) - REFACTORED
   app.get("/api/subscription/success", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { session_id } = req.query;
@@ -344,22 +294,19 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Verify the checkout session
       const session = await polarClient.getCheckoutSession(session_id);
       
-      // Get subscription details
+      // Sync subscription benefits from Polar
       if (user.email) {
-        const status = await polarClient.getUserSubscriptionStatus(user.email);
+        const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
         
-        if (status.isSubscribed && status.subscription) {
-          const planName = status.plan?.toLowerCase() || 'pro';
-          const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.pro;
-          
-          // Update user subscription in database
+        if (polarData.benefits.plan !== 'free') {
+          // Update user subscription benefits in database
           await storage.updateUser(user.id, {
-            subscriptionPlan: planName,
-            subscriptionStatus: status.subscription.status,
-            subscriptionId: status.subscription.id,
-            subscriptionExpiresAt: status.expiresAt,
-            subscriptionFeatures: plan.limits,
+            polarCustomerId: polarData.customerId,
+            subscriptionBenefits: polarData.benefits,
           });
+
+          const planName = polarData.benefits.plan;
+          const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.pro;
 
           return res.json({
             success: true,
@@ -383,7 +330,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   });
 
-  // Cancel subscription
+  // Cancel subscription - REFACTORED
   app.post("/api/subscription/cancel", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = req.user as User;
@@ -402,28 +349,59 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
       const { cancelAtPeriodEnd } = result.data;
 
-      // Get user's current subscription
+      // Get user data
       const userData = await storage.getUserById(user.id);
-      if (!userData?.subscriptionId) {
+      if (!userData?.polarCustomerId) {
         return res.status(400).json({ 
           error: "No active subscription", 
           message: "You don't have an active subscription to cancel" 
         });
       }
 
+      // Get current subscription from Polar
+      let subscriptionId: string | undefined;
+      try {
+        const subscriptions = await polarClient.getSubscriptions(userData.polarCustomerId);
+        const activeSubscription = subscriptions.find(sub => 
+          sub.status === 'active' || sub.status === 'trialing'
+        );
+        
+        if (!activeSubscription) {
+          return res.status(400).json({ 
+            error: "No active subscription", 
+            message: "You don't have an active subscription to cancel" 
+          });
+        }
+        
+        subscriptionId = activeSubscription.id;
+      } catch (error) {
+        console.error("Error finding subscription:", error);
+        return res.status(400).json({ 
+          error: "Subscription not found", 
+          message: "Unable to find your subscription. It may have already been canceled or expired." 
+        });
+      }
+
       // Cancel subscription in Polar
       const canceledSubscription = await polarClient.cancelSubscription(
-        userData.subscriptionId,
+        subscriptionId,
         cancelAtPeriodEnd
       );
 
-      // Update user subscription status
+      // Update user subscription benefits
+      const updatedBenefits = userData.subscriptionBenefits as any || {};
+      if (!cancelAtPeriodEnd) {
+        // Immediate cancellation - revert to free tier
+        updatedBenefits.plan = 'free';
+        updatedBenefits.quizzesPerDay = SUBSCRIPTION_PLANS.free.limits.quizzesPerDay;
+        updatedBenefits.categoriesAccess = SUBSCRIPTION_PLANS.free.limits.categoriesAccess;
+        updatedBenefits.analyticsAccess = SUBSCRIPTION_PLANS.free.limits.analyticsAccess;
+        delete updatedBenefits.teamMembers;
+      }
+      updatedBenefits.lastSyncedAt = new Date().toISOString();
+
       await storage.updateUser(user.id, {
-        subscriptionStatus: cancelAtPeriodEnd ? 'canceled' : 'inactive',
-        subscriptionPlan: cancelAtPeriodEnd ? userData.subscriptionPlan : 'free',
-        subscriptionFeatures: cancelAtPeriodEnd 
-          ? userData.subscriptionFeatures 
-          : SUBSCRIPTION_PLANS.free.limits,
+        subscriptionBenefits: updatedBenefits,
       });
 
       res.json({
@@ -443,7 +421,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   });
 
-  // Resume canceled subscription
+  // Resume canceled subscription - REFACTORED
   app.post("/api/subscription/resume", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = req.user as User;
@@ -451,58 +429,50 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      // Get user's current subscription
-      let userData = await storage.getUserById(user.id);
+      // Get user data
+      const userData = await storage.getUserById(user.id);
       
-      // Check if user has a canceled subscription without ID - try to sync from Polar
-      if (!userData?.subscriptionId && userData?.subscriptionStatus === 'canceled' && userData?.email) {
-        console.log("Attempting to sync subscription ID from Polar for user:", user.id);
-        
-        try {
-          // Try to find the subscription in Polar
-          const customer = await polarClient.getCustomerByEmail(userData.email);
-          if (customer) {
-            const subscriptions = await polarClient.getSubscriptions(customer.id);
-            const canceledSubscription = subscriptions.find(sub => 
-              sub.status === 'canceled' && 
-              sub.cancelAtPeriodEnd === true
-            );
-            
-            if (canceledSubscription) {
-              // Update the user's subscription ID
-              await storage.updateUser(user.id, {
-                subscriptionId: canceledSubscription.id,
-              });
-              userData.subscriptionId = canceledSubscription.id;
-              console.log("Successfully synced subscription ID from Polar:", canceledSubscription.id);
-            }
-          }
-        } catch (syncError) {
-          console.error("Failed to sync subscription from Polar:", syncError);
-        }
-      }
-      
-      if (!userData?.subscriptionId) {
+      if (!userData?.polarCustomerId) {
         return res.status(400).json({ 
           error: "No subscription found", 
-          message: "Unable to find a subscription to resume. Your subscription may have expired or been deleted. Please start a new subscription." 
+          message: "Unable to find a subscription to resume. Please start a new subscription." 
         });
       }
 
-      if (userData.subscriptionStatus !== 'canceled') {
+      // Find canceled subscription in Polar
+      let subscriptionId: string | undefined;
+      try {
+        const subscriptions = await polarClient.getSubscriptions(userData.polarCustomerId);
+        const canceledSubscription = subscriptions.find(sub => 
+          sub.status === 'canceled' && sub.cancelAtPeriodEnd === true
+        );
+        
+        if (!canceledSubscription) {
+          return res.status(400).json({ 
+            error: "No canceled subscription found", 
+            message: "Unable to find a canceled subscription to resume. Your subscription may have expired." 
+          });
+        }
+        
+        subscriptionId = canceledSubscription.id;
+      } catch (error) {
+        console.error("Error finding subscription:", error);
         return res.status(400).json({ 
-          error: "Invalid subscription state", 
-          message: "Only canceled subscriptions can be resumed" 
+          error: "Subscription not found", 
+          message: "Unable to find your subscription." 
         });
       }
 
       // Resume subscription in Polar
-      const resumedSubscription = await polarClient.resumeSubscription(userData.subscriptionId);
+      const resumedSubscription = await polarClient.resumeSubscription(subscriptionId);
 
-      // Update user subscription status
-      await storage.updateUser(user.id, {
-        subscriptionStatus: resumedSubscription.status,
-      });
+      // Sync updated benefits from Polar
+      if (userData.email) {
+        const polarData = await polarClient.syncUserSubscriptionBenefits(userData.email);
+        await storage.updateUser(userData.id, {
+          subscriptionBenefits: polarData.benefits,
+        });
+      }
 
       res.json({
         success: true,
@@ -515,12 +485,17 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       
       // Check if it's a Polar API error about subscription not existing
       if (error.message?.includes("not found") || error.message?.includes("does not exist")) {
-        const sessionUser = req.user as User;
-        // Clear invalid subscription data
-        await storage.updateUser(sessionUser.id, {
-          subscriptionId: null,
-          subscriptionStatus: 'expired',
-          subscriptionPlan: 'free',
+        // Update benefits to free tier if subscription doesn't exist
+        const freeBenefits = {
+          plan: 'free',
+          quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+          categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+          analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+          lastSyncedAt: new Date().toISOString(),
+        };
+        
+        await storage.updateUser(user.id, {
+          subscriptionBenefits: freeBenefits,
         });
         
         return res.status(400).json({ 
@@ -536,7 +511,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   });
 
-  // Confirm checkout session after successful payment
+  // Confirm checkout session after successful payment - REFACTORED
   app.get("/api/subscription/confirm", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { session_id } = req.query;
@@ -575,12 +550,15 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         const plan = session.metadata?.plan || 'pro';
         const billingInterval = session.metadata?.billingInterval || 'month';
 
-        // Update user's subscription plan in our database
-        await storage.updateUser(user.id, {
-          subscriptionPlan: plan,
-          subscriptionStatus: 'active',
-          subscriptionStartedAt: new Date(),
-        });
+        // Sync subscription benefits from Polar
+        const userData = await storage.getUserById(user.id);
+        if (userData?.email) {
+          const polarData = await polarClient.syncUserSubscriptionBenefits(userData.email);
+          await storage.updateUser(user.id, {
+            polarCustomerId: polarData.customerId,
+            subscriptionBenefits: polarData.benefits,
+          });
+        }
 
         return res.json({
           success: true,
@@ -592,10 +570,16 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         console.error('Error confirming Polar session:', polarError);
         
         // Even if Polar fails, update user to pro for demo purposes
+        const proBenefits = {
+          plan: 'pro',
+          quizzesPerDay: SUBSCRIPTION_PLANS.pro.limits.quizzesPerDay,
+          categoriesAccess: SUBSCRIPTION_PLANS.pro.limits.categoriesAccess,
+          analyticsAccess: SUBSCRIPTION_PLANS.pro.limits.analyticsAccess,
+          lastSyncedAt: new Date().toISOString(),
+        };
+        
         await storage.updateUser(user.id, {
-          subscriptionPlan: 'pro',
-          subscriptionStatus: 'active',
-          subscriptionStartedAt: new Date(),
+          subscriptionBenefits: proBenefits,
         });
 
         return res.json({
@@ -614,111 +598,106 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   });
 
-  // Webhook endpoint for Polar events
+  // Webhook endpoint for Polar events - REFACTORED
   app.post("/api/subscription/webhook", async (req: Request, res: Response) => {
     try {
-      // Log all incoming headers for debugging
-      console.log('[Webhook] Incoming headers:', Object.keys(req.headers));
-      console.log('[Webhook] Looking for signature in headers:', {
-        'x-polar-signature': req.headers['x-polar-signature'],
-        'x-polar-webhook-signature': req.headers['x-polar-webhook-signature'],
-        'polar-signature': req.headers['polar-signature'],
-        'webhook-signature': req.headers['webhook-signature']
-      });
-      
-      // Try multiple possible header names
-      const signature = req.headers['x-polar-signature'] as string ||
-                       req.headers['x-polar-webhook-signature'] as string ||
-                       req.headers['polar-signature'] as string ||
-                       req.headers['webhook-signature'] as string;
-      
-      // For now, always accept webhooks to ensure Polar integration works
-      // We'll add proper signature verification once the connection is stable
-      if (!signature) {
-        console.log('[Webhook] No signature found in headers - accepting anyway');
-        console.log('[Webhook] Body received:', JSON.stringify(req.body, null, 2).substring(0, 500));
-      } else {
-        console.log('[Webhook] Signature received:', signature.substring(0, 20) + '...');
-        
-        // Try to verify but don't reject if it fails
-        const payload = JSON.stringify(req.body);
-        const isValid = polarClient.verifyWebhook(payload, signature);
-        
+      const { type, data } = req.body;
+
+      console.log("Received Polar webhook:", type);
+
+      // Verify webhook signature if secret is configured
+      if (process.env.POLAR_WEBHOOK_SECRET) {
+        const signature = req.headers['polar-webhook-signature'] as string;
+        if (!signature) {
+          return res.status(401).json({ error: "Missing webhook signature" });
+        }
+
+        const isValid = polarClient.verifyWebhook(
+          JSON.stringify(req.body),
+          signature
+        );
+
         if (!isValid) {
-          console.warn('[Webhook] Signature verification failed, but accepting anyway for now');
-        } else {
-          console.log('[Webhook] Signature verified successfully');
+          return res.status(401).json({ error: "Invalid webhook signature" });
         }
       }
 
-      // Handle webhook event
-      const event = req.body;
-      console.log('[Webhook] Processing event type:', event.type);
-      
-      try {
-        switch (event.type) {
-          case 'subscription.created':
-          case 'subscription.updated':
-          case 'subscription.canceled':
-          case 'subscription.cancelled': // Alternative spelling
-          case 'subscription.resumed':
-            // Update user subscription status
-            const subscription = event.data;
-            console.log('[Webhook] Subscription data:', JSON.stringify(subscription).substring(0, 200));
-            
-            // Check if we have a customer ID
-            if (subscription.customer_id || subscription.customerId) {
-              const customerId = subscription.customer_id || subscription.customerId;
-              try {
-                const customer = await polarClient.getCustomer(customerId);
-                
-                if (customer?.email) {
-                  const user = await storage.getUserByEmail(customer.email);
-                  if (user) {
-                    const status = await polarClient.getUserSubscriptionStatus(customer.email);
-                    const planName = status.plan?.toLowerCase() || 'free';
-                    const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
-                    
-                    await storage.updateUser(user.id, {
-                      subscriptionPlan: status.isSubscribed ? planName : 'free',
-                      subscriptionStatus: subscription.status,
-                      subscriptionId: subscription.id,
-                      subscriptionExpiresAt: subscription.current_period_end || subscription.currentPeriodEnd,
-                      subscriptionFeatures: plan.limits,
-                    });
-                    
-                    console.log(`[Webhook] Updated user ${user.email} subscription to ${planName}`);
-                  }
-                }
-              } catch (error) {
-                console.error('[Webhook] Error fetching customer:', error);
-              }
-            } else {
-              console.log('[Webhook] No customer ID in subscription data');
-            }
-            break;
-            
-          case 'checkout.session.completed':
-            // Handle checkout completion
-            console.log('[Webhook] Checkout session completed');
-            break;
-            
-          default:
-            console.log(`[Webhook] Unhandled event type: ${event.type}`);
+      // Handle different webhook events
+      switch (type) {
+        case 'subscription.created':
+        case 'subscription.updated':
+        case 'subscription.resumed': {
+          const subscription = data.subscription;
+          const customerId = subscription.customer_id;
+
+          // Find user by customer ID
+          const users = await storage.getUserByPolarCustomerId(customerId);
+          if (!users || users.length === 0) {
+            console.log("No user found for customer ID:", customerId);
+            return res.status(200).json({ received: true });
+          }
+
+          const user = users[0];
+
+          // Sync benefits from Polar
+          if (user.email) {
+            const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
+            await storage.updateUser(user.id, {
+              subscriptionBenefits: polarData.benefits,
+            });
+          }
+
+          break;
         }
-      } catch (eventError) {
-        console.error('[Webhook] Error processing event:', eventError);
-        // Don't throw - we still want to acknowledge receipt
+
+        case 'subscription.canceled':
+        case 'subscription.expired': {
+          const subscription = data.subscription;
+          const customerId = subscription.customer_id;
+
+          // Find user by customer ID
+          const users = await storage.getUserByPolarCustomerId(customerId);
+          if (!users || users.length === 0) {
+            console.log("No user found for customer ID:", customerId);
+            return res.status(200).json({ received: true });
+          }
+
+          const user = users[0];
+
+          // Update to free tier benefits
+          const freeBenefits = {
+            plan: 'free',
+            quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+            categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+            analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+            lastSyncedAt: new Date().toISOString(),
+          };
+
+          await storage.updateUser(user.id, {
+            subscriptionBenefits: freeBenefits,
+          });
+
+          break;
+        }
+
+        case 'checkout.created':
+        case 'checkout.updated': {
+          // Log checkout events but don't process them
+          console.log("Checkout event received:", type);
+          break;
+        }
+
+        default:
+          console.log("Unhandled webhook event:", type);
       }
 
       res.json({ received: true });
     } catch (error: any) {
       console.error("Error processing webhook:", error);
       res.status(500).json({ 
-        error: "Failed to process webhook",
+        error: "Webhook processing failed",
         message: error.message 
       });
     }
   });
-
 }

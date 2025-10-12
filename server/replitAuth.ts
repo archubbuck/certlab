@@ -180,32 +180,29 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
         // Set test user subscription data for development
         // This ensures the test user has actual subscription data in the database
         await storage.updateUser(testUserId, {
-          subscriptionPlan: 'pro', // Give test user pro plan for testing
-          subscriptionStatus: 'active',
-          subscriptionFeatures: {
+          subscriptionBenefits: {
+            plan: 'pro', // Give test user pro plan for testing
             quizzesPerDay: -1, // Unlimited for testing
             categoriesAccess: ['all'],
             analyticsAccess: 'advanced',
+            lastSyncedAt: new Date().toISOString(),
           },
-          // Set expiry far in the future for development
-          subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
         });
         
         console.log('Development: Created test user with Pro subscription for automatic authentication');
       } catch (error) {
         console.error('Failed to create test user:', error);
       }
-    } else if (!testUser.subscriptionFeatures) {
+    } else if (!testUser.subscriptionBenefits) {
       // If test user exists but has no subscription data, add it
       await storage.updateUser(testUserId, {
-        subscriptionPlan: 'pro',
-        subscriptionStatus: 'active',
-        subscriptionFeatures: {
+        subscriptionBenefits: {
+          plan: 'pro',
           quizzesPerDay: -1,
           categoriesAccess: ['all'],
           analyticsAccess: 'advanced',
+          lastSyncedAt: new Date().toISOString(),
         },
-        subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       });
       console.log('Development: Updated test user with Pro subscription');
     }

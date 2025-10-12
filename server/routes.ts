@@ -176,15 +176,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           user.dailyQuizCount = 0;
         }
         
-        // Get subscription plan limits
-        const plan = user.subscriptionPlan || 'free';
-        const limits = {
-          free: { quizzesPerDay: 5 },
-          pro: { quizzesPerDay: -1 }, // Unlimited
-          enterprise: { quizzesPerDay: -1 }
-        };
-        
-        const quizLimit = limits[plan as keyof typeof limits]?.quizzesPerDay || 5;
+        // Get subscription plan limits from subscription benefits
+        const benefits = user.subscriptionBenefits as any || {};
+        const plan = benefits.plan || 'free';
+        const quizLimit = benefits.quizzesPerDay || 5;
         
         // Check if user has reached their daily limit
         if (quizLimit > 0 && (user.dailyQuizCount || 0) >= quizLimit) {

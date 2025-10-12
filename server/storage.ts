@@ -34,6 +34,7 @@ export interface IStorage {
     skillsAssessment: any;
   }): Promise<User | null>;
   getUsersByTenant(tenantId: number): Promise<User[]>;
+  getUserByPolarCustomerId(polarCustomerId: string): Promise<User[]>;
   
   // Categories and subcategories
   getCategories(tenantId?: number): Promise<Category[]>;
@@ -3024,6 +3025,10 @@ ${recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')}
 
   async getUsersByTenant(tenantId: number): Promise<User[]> {
     return await db.select().from(users).where(eq(users.tenantId, tenantId));
+  }
+
+  async getUserByPolarCustomerId(polarCustomerId: string): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.polarCustomerId, polarCustomerId));
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
