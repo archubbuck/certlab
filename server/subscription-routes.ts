@@ -274,11 +274,34 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
             switchAtPeriodEnd: false, // Switch immediately for upgrades
           });
 
-          // Sync the updated subscription benefits
-          const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
-          await storage.updateUser(user.id, {
-            subscriptionBenefits: polarData.benefits,
-          });
+          // Check if this is a test user
+          const isTestUser = process.env.NODE_ENV === 'development' && userId === '999999';
+          
+          if (isTestUser) {
+            console.log('Test user upgrade: Updating subscription benefits to', plan);
+            
+            // For test user, directly update benefits based on the new plan
+            const subscriptionBenefits = {
+              plan: plan,
+              quizzesPerDay: plan === 'pro' || plan === 'enterprise' ? null : 5, // null means unlimited
+              categoriesAccess: plan === 'pro' || plan === 'enterprise' ? ['all'] : ['basic'],
+              analyticsAccess: plan === 'pro' || plan === 'enterprise' ? 'advanced' : 'basic',
+              teamMembers: plan === 'enterprise' ? 50 : undefined,
+              lastSyncedAt: new Date().toISOString(),
+            };
+            
+            await storage.updateUser(user.id, {
+              subscriptionBenefits: subscriptionBenefits,
+            });
+            
+            console.log('Test user subscription benefits updated after upgrade:', subscriptionBenefits);
+          } else {
+            // For regular users, sync from Polar
+            const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
+            await storage.updateUser(user.id, {
+              subscriptionBenefits: polarData.benefits,
+            });
+          }
 
           // Return success response for immediate upgrade
           return res.json({
@@ -421,7 +444,40 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Verify the checkout session
       const session = await polarClient.getCheckoutSession(session_id);
       
-      // Sync subscription benefits from Polar
+      // Special handling for test user
+      if (isTestUser) {
+        console.log('Test user subscription success: Processing checkout completion');
+        
+        // Extract plan from session metadata if available
+        const planFromSession = (session as any).metadata?.plan || 'pro';
+        
+        // Update test user benefits directly
+        const subscriptionBenefits = {
+          plan: planFromSession,
+          quizzesPerDay: planFromSession === 'pro' || planFromSession === 'enterprise' ? null : 5,
+          categoriesAccess: planFromSession === 'pro' || planFromSession === 'enterprise' ? ['all'] : ['basic'],
+          analyticsAccess: planFromSession === 'pro' || planFromSession === 'enterprise' ? 'advanced' : 'basic',
+          teamMembers: planFromSession === 'enterprise' ? 50 : undefined,
+          lastSyncedAt: new Date().toISOString(),
+        };
+        
+        await storage.updateUser(user.id, {
+          subscriptionBenefits: subscriptionBenefits,
+        });
+        
+        console.log('Test user benefits updated on subscription success:', subscriptionBenefits);
+        
+        const plan = SUBSCRIPTION_PLANS[planFromSession as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.pro;
+        
+        return res.json({
+          success: true,
+          message: "Subscription activated successfully",
+          plan: planFromSession,
+          features: plan.features,
+        });
+      }
+      
+      // Regular flow for non-test users - sync from Polar
       if (user.email) {
         const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
         
