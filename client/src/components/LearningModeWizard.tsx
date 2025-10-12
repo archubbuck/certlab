@@ -70,6 +70,7 @@ export default function LearningModeWizard() {
     },
     onSuccess: (quiz) => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
       
       if (quiz.adaptiveInfo && quiz.adaptiveInfo.increasePercentage > 0) {
         toast({

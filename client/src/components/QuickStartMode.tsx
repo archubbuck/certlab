@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscriptionQuizSizes } from "@/hooks/useSubscriptionQuizSizes";
 import { 
   Play, 
   RotateCcw, 
@@ -24,6 +25,7 @@ export default function QuickStartMode({ onToggleMode }: QuickStartModeProps) {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const quizSizes = useSubscriptionQuizSizes();
 
   const { data: recentQuizzes = [] } = useQuery<Quiz[]>({
     queryKey: ['/api/user', currentUser?.id, 'quizzes'],
@@ -50,6 +52,7 @@ export default function QuickStartMode({ onToggleMode }: QuickStartModeProps) {
     },
     onSuccess: (quiz) => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
       setLocation(`/app/quiz/${quiz.id}`);
     },
     onError: () => {
@@ -95,6 +98,15 @@ export default function QuickStartMode({ onToggleMode }: QuickStartModeProps) {
   };
 
   const handleContinueLastSession = () => {
+    if (!quizSizes.canCreateQuiz) {
+      toast({
+        title: "Daily Limit Reached",
+        description: `You've reached your daily quiz limit. ${quizSizes.subscription?.plan === 'free' ? 'Upgrade to Pro for unlimited quizzes!' : 'Try again tomorrow.'}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const lastQuiz = recentQuizzes
       .filter(quiz => quiz.completedAt)
       .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
@@ -102,25 +114,43 @@ export default function QuickStartMode({ onToggleMode }: QuickStartModeProps) {
     if (lastQuiz && currentUser?.id) {
       createQuizMutation.mutate({
         categoryIds: lastQuiz.categoryIds,
-        questionCount: lastQuiz.questionCount || 15,
+        questionCount: lastQuiz.questionCount || quizSizes.quickMode, // Use dynamic quick mode size
         title: `Continue Session - ${new Date().toLocaleDateString()}`,
       });
     }
   };
 
   const handleRepeatSuccessfulFormat = () => {
+    if (!quizSizes.canCreateQuiz) {
+      toast({
+        title: "Daily Limit Reached",
+        description: `You've reached your daily quiz limit. ${quizSizes.subscription?.plan === 'free' ? 'Upgrade to Pro for unlimited quizzes!' : 'Try again tomorrow.'}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const successfulQuiz = getLastSuccessfulQuiz();
     
     if (successfulQuiz && currentUser?.id) {
       createQuizMutation.mutate({
         categoryIds: successfulQuiz.categoryIds,
-        questionCount: successfulQuiz.questionCount || 15,
+        questionCount: successfulQuiz.questionCount || quizSizes.quickMode, // Use dynamic quick mode size
         title: `Repeat Success - ${new Date().toLocaleDateString()}`,
       });
     }
   };
 
   const handleHelensRecommendation = () => {
+    if (!quizSizes.canCreateQuiz) {
+      toast({
+        title: "Daily Limit Reached",
+        description: `You've reached your daily quiz limit. ${quizSizes.subscription?.plan === 'free' ? 'Upgrade to Pro for unlimited quizzes!' : 'Try again tomorrow.'}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const bestCategories = getBestPerformingCategories();
     const categoryIds = bestCategories.length > 0 
       ? bestCategories 
@@ -129,7 +159,7 @@ export default function QuickStartMode({ onToggleMode }: QuickStartModeProps) {
     if (currentUser?.id) {
       createQuizMutation.mutate({
         categoryIds,
-        questionCount: 15,
+        questionCount: quizSizes.quickMode, // Use dynamic quick mode size based on subscription
         title: `Helen's Pick - ${new Date().toLocaleDateString()}`,
       });
     }
@@ -264,7 +294,7 @@ export default function QuickStartMode({ onToggleMode }: QuickStartModeProps) {
                   </Badge>
                   <Badge variant="outline" className="text-xs">
                     <BookOpen className="w-3 h-3 mr-1" />
-                    15 Questions
+                    {quizSizes.quickMode} Questions
                   </Badge>
                 </div>
                 <Button

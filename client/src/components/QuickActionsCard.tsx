@@ -36,6 +36,7 @@ export default function QuickActionsCard() {
     },
     onSuccess: (quiz) => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
       setLocation(`/app/quiz/${quiz.id}`);
     },
     onError: () => {

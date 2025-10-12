@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscriptionQuizSizes } from "@/hooks/useSubscriptionQuizSizes";
 import type { Category, Subcategory } from "@shared/schema";
 
 export default function QuizCreator() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const quizSizes = useSubscriptionQuizSizes();
   
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
@@ -36,6 +38,7 @@ export default function QuizCreator() {
     },
     onSuccess: (quiz) => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
       
       // Show adaptive learning feedback if applicable
       if (quiz.adaptiveInfo && quiz.adaptiveInfo.increasePercentage > 0) {
@@ -101,11 +104,21 @@ export default function QuizCreator() {
       return;
     }
 
+    // Check if user can create more quizzes today
+    if (!quizSizes.canCreateQuiz) {
+      toast({
+        title: "Daily Limit Reached",
+        description: `You've reached your daily quiz limit. ${quizSizes.subscription?.plan === 'free' ? 'Upgrade to Pro for unlimited quizzes!' : 'Try again tomorrow.'}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const quizData = {
       title: `${categories.filter(c => selectedCategories.includes(c.id)).map(c => c.name).join(", ")} Learning Session`,
       categoryIds: selectedCategories,
       subcategoryIds: selectedSubcategories.length > 0 ? selectedSubcategories : undefined,
-      questionCount: 10, // Default continuous learning session size
+      questionCount: quizSizes.studyMode, // Use dynamic study mode size based on subscription
       timeLimit: timeLimit === "0" ? undefined : parseInt(timeLimit),
     };
 
@@ -198,9 +211,64 @@ export default function QuizCreator() {
               <li><i className="fas fa-check text-green-500 mr-2"></i>Immediate feedback with explanations</li>
               <li><i className="fas fa-check text-green-500 mr-2"></i>Progress tracking across all areas</li>
               <li><i className="fas fa-check text-green-500 mr-2"></i>Mastery score updates in real-time</li>
+              <li>
+                <i className="fas fa-chart-line text-blue-500 mr-2"></i>
+                <span className="font-medium">
+                  {quizSizes.isLoading 
+                    ? "Loading quiz settings..." 
+                    : `${quizSizes.studyMode} questions per session`
+                  }
+                </span>
+                {quizSizes.subscription?.plan && (
+                  <span className="text-xs text-gray-500 ml-1">
+                    ({quizSizes.subscription.plan.charAt(0).toUpperCase() + quizSizes.subscription.plan.slice(1)} plan)
+                  </span>
+                )}
+              </li>
             </ul>
           </div>
         </div>
+
+        {/* Subscription Status Indicator */}
+        {quizSizes.remainingQuizzes !== null && (
+          <div className={`mb-6 p-4 rounded-lg border ${
+            quizSizes.canCreateQuiz 
+              ? 'bg-green-50 border-green-200' 
+              : 'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <i className={`fas ${
+                  quizSizes.canCreateQuiz 
+                    ? 'fa-check-circle text-green-600' 
+                    : 'fa-exclamation-circle text-red-600'
+                }`}></i>
+                <span className={`text-sm font-medium ${
+                  quizSizes.canCreateQuiz 
+                    ? 'text-green-700' 
+                    : 'text-red-700'
+                }`}>
+                  {quizSizes.canCreateQuiz 
+                    ? `${quizSizes.remainingQuizzes} quizzes remaining today`
+                    : 'Daily quiz limit reached'
+                  }
+                </span>
+              </div>
+              {!quizSizes.canCreateQuiz && quizSizes.subscription?.plan === 'free' && (
+                <a
+                  href="/subscription/plans"
+                  className="text-xs text-blue-600 hover:text-blue-700 underline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setLocation('/subscription/plans');
+                  }}
+                >
+                  Upgrade to Pro
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
 
 
