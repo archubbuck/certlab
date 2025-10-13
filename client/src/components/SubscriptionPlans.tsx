@@ -80,19 +80,41 @@ export default function SubscriptionPlans() {
       
       // Check if response is not ok and handle errors
       if (!response.ok) {
-        // Handle Polar product not configured error specially
+        // Handle specific error scenarios with user-friendly messages
         if (result.error === "Polar product not configured") {
-          throw new Error("Subscription setup required. The Polar integration needs to be configured with product IDs from your Polar dashboard.");
+          throw new Error("The subscription service is being set up. Please try again later or contact support if this issue persists.");
         }
-        throw new Error(result.message || "Failed to create checkout session");
+        
+        if (result.error?.includes("already subscribed") || result.message?.includes("already on")) {
+          throw new Error("You're already on this plan! Visit your subscription management page to make changes.");
+        }
+        
+        if (result.error?.includes("payment") || result.error?.includes("card")) {
+          throw new Error("Payment processing failed. Please check your payment method and try again.");
+        }
+        
+        if (result.error?.includes("limit") || result.error?.includes("quota")) {
+          throw new Error("Subscription limit reached. Please contact support for assistance.");
+        }
+        
+        // Default error message with suggestion
+        throw new Error(result.message || "We couldn't process your subscription. Please try again or contact support at support@certlab.ai");
       }
       
       return result;
     },
     onSuccess: (data) => {
       if (data.checkoutUrl) {
+        // Show loading toast before redirecting
+        toast({
+          title: "Redirecting to payment...",
+          description: "You'll be taken to our secure payment provider.",
+          duration: 2000,
+        });
         // Simple direct navigation to checkout
-        window.location.href = data.checkoutUrl;
+        setTimeout(() => {
+          window.location.href = data.checkoutUrl;
+        }, 500);
       } else if (data.upgraded) {
         // Handle instant upgrade - show success message and stay on page
         toast({
@@ -112,11 +134,25 @@ export default function SubscriptionPlans() {
       }
     },
     onError: (error: any) => {
+      // Provide actionable error messages
+      const isSetupError = error.message?.includes("subscription service");
+      const isAlreadySubscribed = error.message?.includes("already on");
+      const isPaymentError = error.message?.includes("payment");
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to create checkout session",
+        title: isPaymentError ? "Payment Failed" : isAlreadySubscribed ? "Already Subscribed" : "Subscription Error",
+        description: error.message || "We couldn't process your subscription. Please try again or contact support.",
         variant: "destructive",  
-        duration: error.message?.includes("Subscription setup required") ? 8000 : 5000,
+        duration: isSetupError ? 8000 : 6000,
+        action: isAlreadySubscribed ? (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setLocation("/subscription/manage")}
+          >
+            Manage Subscription
+          </Button>
+        ) : undefined,
       });
     },
   });
@@ -149,14 +185,27 @@ export default function SubscriptionPlans() {
   const handleSubscribe = (planId: string) => {
     // Prevent double-clicks or rapid calls
     if (createCheckoutMutation.isPending) {
+      toast({
+        title: "Processing...",
+        description: "Please wait while we process your request.",
+      });
       return;
     }
 
     // Check if clicking on current plan
     if (planId === currentPlan) {
       toast({
-        title: "Current Plan",
-        description: `You're already on the ${planId} plan!`,
+        title: "You're on this plan!",
+        description: `You're already enjoying the ${planId} plan. Visit subscription management to make changes.`,
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setLocation("/subscription/manage")}
+          >
+            Manage Plan
+          </Button>
+        ),
       });
       return;
     }
@@ -164,14 +213,15 @@ export default function SubscriptionPlans() {
     // Handle downgrade from pro/enterprise to free
     if (planId === "free" && currentPlan !== "free") {
       // Show confirmation dialog for downgrade
-      if (!confirm("Are you sure you want to downgrade to the Free plan? You will lose access to premium features.")) {
+      if (!confirm("Are you sure you want to downgrade to the Free plan? You will lose access to premium features including unlimited quizzes and advanced analytics.")) {
         return;
       }
-      toast({
-        title: "Downgrade to Free",
-        description: "Processing your plan downgrade. This will take effect at the end of your current billing period.",
+      
+      // Process the downgrade through the checkout mutation
+      createCheckoutMutation.mutate({
+        plan: planId,
+        billingInterval: "monthly", // Free plan doesn't have billing intervals
       });
-      // TODO: Implement downgrade API call when backend supports it
       return;
     }
 
@@ -179,13 +229,37 @@ export default function SubscriptionPlans() {
     if (planId === "enterprise") {
       toast({
         title: "Enterprise Plan",
-        description: "Please contact our sales team for enterprise pricing.",
+        description: "Get custom pricing and features tailored to your team's needs.",
+        duration: 6000,
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.href = "mailto:sales@certlab.ai?subject=Enterprise Plan Inquiry"}
+          >
+            Contact Sales
+          </Button>
+        ),
       });
-      // Could redirect to a contact form
+      return;
+    }
+
+    // Validate subscription status is loaded
+    if (!subscriptionStatus) {
+      toast({
+        title: "Loading subscription data...",
+        description: "Please wait a moment while we load your subscription information.",
+        variant: "destructive",
+      });
       return;
     }
 
     // Handle upgrades
+    toast({
+      title: "Starting checkout...",
+      description: "Preparing your subscription upgrade.",
+    });
+    
     createCheckoutMutation.mutate({
       plan: planId,
       billingInterval,

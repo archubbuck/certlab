@@ -68,19 +68,34 @@ export default function SubscriptionManagePage() {
         method: "POST",
         data: { immediate },
       });
-      return response.json();
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "Failed to cancel subscription");
+      }
+      
+      return data;
     },
     onSuccess: (data) => {
       const title = data.refundAmount 
-        ? "Subscription Canceled Immediately" 
-        : "Subscription Scheduled for Cancellation";
+        ? "Subscription Canceled Successfully ✓" 
+        : "Cancellation Scheduled";
       const description = data.refundAmount 
-        ? `${data.message} Refund amount: $${(data.refundAmount / 100).toFixed(2)}`
-        : data.message;
+        ? `Your subscription has been canceled. Refund of $${(data.refundAmount / 100).toFixed(2)} will be processed within 5-10 business days.`
+        : `Your subscription will remain active until ${subscription?.expiresAt ? format(new Date(subscription.expiresAt), 'MMMM dd, yyyy') : 'the end of your billing period'}.`;
       
       toast({
         title,
         description,
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.href = "mailto:support@certlab.ai"}
+          >
+            Contact Support
+          </Button>
+        ),
       });
       // Invalidate both subscription status and user queries for immediate UI update
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
@@ -90,10 +105,28 @@ export default function SubscriptionManagePage() {
       setSelectedCancelOption(null);
     },
     onError: (error: any) => {
+      // Handle specific error cases
+      const errorMessage = error.message || "";
+      const isAlreadyCanceled = errorMessage.includes("already canceled") || errorMessage.includes("not active");
+      const isPaymentError = errorMessage.includes("payment") || errorMessage.includes("refund");
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to cancel subscription",
-        variant: "destructive",
+        title: isAlreadyCanceled ? "Already Canceled" : isPaymentError ? "Cancellation Issue" : "Unable to Cancel",
+        description: isAlreadyCanceled 
+          ? "Your subscription is already canceled. No action needed." 
+          : isPaymentError
+          ? "There was an issue processing your refund. Please contact support for assistance."
+          : "We couldn't cancel your subscription at this time. Please try again or contact support.",
+        variant: isAlreadyCanceled ? "default" : "destructive",
+        action: !isAlreadyCanceled ? (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.href = "mailto:support@certlab.ai?subject=Subscription Cancellation Issue"}
+          >
+            Get Help
+          </Button>
+        ) : undefined,
       });
     },
   });
@@ -106,14 +139,23 @@ export default function SubscriptionManagePage() {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Failed to resume subscription");
+        throw new Error(data.message || data.error || "Failed to resume subscription");
       }
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Subscription Resumed",
-        description: "Your subscription has been reactivated successfully.",
+        title: "Subscription Resumed! 🎉",
+        description: `Your ${subscription?.plan} subscription is active again. All features have been restored.`,
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.reload()}
+          >
+            Refresh Page
+          </Button>
+        ),
       });
       // Invalidate both subscription status and user queries for immediate UI update
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
@@ -121,12 +163,20 @@ export default function SubscriptionManagePage() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
     onError: (error: any) => {
-      // Check if it's a "subscription not found" error
-      if (error.message?.includes("expired") || error.message?.includes("not found")) {
+      const errorMessage = error.message || "";
+      const isExpired = errorMessage.includes("expired");
+      const isNotFound = errorMessage.includes("not found") || errorMessage.includes("no subscription");
+      const isAlreadyActive = errorMessage.includes("already active") || errorMessage.includes("not canceled");
+      
+      // Handle different error scenarios
+      if (isExpired || isNotFound) {
         toast({
-          title: "Subscription Cannot Be Resumed",
-          description: error.message,
+          title: isExpired ? "Subscription Expired" : "No Subscription Found",
+          description: isExpired 
+            ? "Your subscription has expired and cannot be resumed. Please start a new subscription."
+            : "We couldn't find a subscription to resume. Choose a plan to get started.",
           variant: "destructive",
+          duration: 8000,
           action: (
             <Link href="/app/subscription-plans">
               <Button variant="secondary" size="sm">
@@ -135,17 +185,41 @@ export default function SubscriptionManagePage() {
             </Link>
           ),
         });
-        // Refresh subscription status and user data to clear invalid state
-        queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      } else if (isAlreadyActive) {
+        toast({
+          title: "Already Active",
+          description: "Your subscription is already active. No action needed!",
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.location.reload()}
+            >
+              Refresh
+            </Button>
+          ),
+        });
       } else {
         toast({
-          title: "Error",
-          description: error.message || "Failed to resume subscription",
+          title: "Unable to Resume",
+          description: "We couldn't resume your subscription. Please try again or contact support for assistance.",
           variant: "destructive",
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.location.href = "mailto:support@certlab.ai?subject=Resume Subscription Issue"}
+            >
+              Contact Support
+            </Button>
+          ),
         });
       }
+      
+      // Always refresh subscription data on error to ensure UI is in sync
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
   });
 
@@ -162,14 +236,20 @@ export default function SubscriptionManagePage() {
       });
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Failed to switch subscription");
+        throw new Error(result.message || result.error || "Failed to switch subscription");
       }
       return result;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      const isUpgrade = variables.newPlan === 'enterprise';
+      const isImmediate = !variables.switchAtPeriodEnd;
+      
       toast({
-        title: "Plan Changed Successfully",
-        description: data.message,
+        title: isUpgrade ? "Upgrade Successful! 🚀" : "Plan Changed",
+        description: isImmediate 
+          ? `You've been ${isUpgrade ? 'upgraded' : 'switched'} to ${variables.newPlan} immediately. Your new features are now active!`
+          : `Your plan change to ${variables.newPlan} is scheduled for ${subscription?.expiresAt ? format(new Date(subscription.expiresAt), 'MMMM dd, yyyy') : 'the end of your billing period'}.`,
+        duration: 6000,
       });
       // Invalidate both subscription status and user queries for immediate UI update
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
@@ -178,33 +258,134 @@ export default function SubscriptionManagePage() {
       setShowSwitchDialog(false);
       setSwitchPlan(null);
     },
-    onError: (error: any) => {
+    onError: (error: any, variables) => {
+      const errorMessage = error.message || "";
+      const isAlreadyOnPlan = errorMessage.includes("already on") || errorMessage.includes("same plan");
+      const isPaymentError = errorMessage.includes("payment") || errorMessage.includes("card") || errorMessage.includes("billing");
+      const isLimitError = errorMessage.includes("limit") || errorMessage.includes("quota");
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to switch subscription plan",
-        variant: "destructive",
+        title: isAlreadyOnPlan ? "Already on This Plan" 
+          : isPaymentError ? "Payment Issue" 
+          : isLimitError ? "Plan Limit Reached"
+          : "Unable to Switch Plans",
+        description: isAlreadyOnPlan 
+          ? `You're already on the ${variables.newPlan} plan. No changes needed.`
+          : isPaymentError
+          ? "There was an issue with your payment method. Please update your billing information and try again."
+          : isLimitError
+          ? "This plan has reached its subscription limit. Please contact support for assistance."
+          : "We couldn't process your plan change. Please try again or contact support.",
+        variant: isAlreadyOnPlan ? "default" : "destructive",
+        duration: isPaymentError ? 8000 : 6000,
+        action: isPaymentError ? (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.href = "mailto:support@certlab.ai?subject=Payment Issue"}
+          >
+            Update Payment
+          </Button>
+        ) : !isAlreadyOnPlan ? (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.href = "mailto:support@certlab.ai?subject=Plan Switch Issue"}
+          >
+            Get Help
+          </Button>
+        ) : undefined,
       });
+      
+      // Close dialog on "already on plan" error
+      if (isAlreadyOnPlan) {
+        setShowSwitchDialog(false);
+        setSwitchPlan(null);
+      }
     },
   });
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+          <div>
+            <p className="text-lg font-medium">Loading Subscription</p>
+            <p className="text-sm text-muted-foreground">Please wait while we fetch your subscription details...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || !subscription) {
+    const errorMessage = (error as any)?.message || "";
+    const isNetworkError = errorMessage.includes("network") || errorMessage.includes("fetch");
+    const isAuthError = errorMessage.includes("unauthorized") || errorMessage.includes("401");
+    
     return (
-      <div className="container mx-auto py-8">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            Unable to load subscription information. Please try again later.
-          </AlertDescription>
-        </Alert>
+      <div className="container max-w-2xl mx-auto py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              Unable to Load Subscription
+            </CardTitle>
+            <CardDescription>
+              We're having trouble accessing your subscription information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>
+                {isNetworkError ? "Connection Issue" : isAuthError ? "Authentication Required" : "Loading Error"}
+              </AlertTitle>
+              <AlertDescription>
+                {isNetworkError
+                  ? "Please check your internet connection and try again."
+                  : isAuthError
+                  ? "Your session may have expired. Please log in again."
+                  : "We couldn't load your subscription details. Please try again or contact support if the issue persists."}
+              </AlertDescription>
+            </Alert>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                onClick={() => window.location.reload()}
+                data-testid="retry-loading"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+              {isAuthError && (
+                <Link href="/login">
+                  <Button variant="outline">
+                    Log In Again
+                  </Button>
+                </Link>
+              )}
+              <Link href="/app">
+                <Button variant="ghost">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            </div>
+            
+            <Alert className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+              <AlertDescription>
+                Need help? Contact support at{" "}
+                <a 
+                  href="mailto:support@certlab.ai?subject=Subscription Loading Issue" 
+                  className="font-medium underline text-blue-600 hover:text-blue-700"
+                >
+                  support@certlab.ai
+                </a>
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
       </div>
     );
   }

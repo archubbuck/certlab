@@ -2,39 +2,54 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, Loader2, AlertCircle, RefreshCw, Mail, HelpCircle } from "lucide-react";
 import { Link, useSearch } from "wouter";
 import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface ConfirmationResponse {
   success: boolean;
   plan?: string;
   billingInterval?: string;
   message?: string;
+  error?: string;
 }
 
 export default function SubscriptionSuccess() {
   const searchParams = useSearch();
   const sessionId = new URLSearchParams(searchParams).get("session_id");
   const [processing, setProcessing] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const { toast } = useToast();
 
-  const { data, error, isLoading } = useQuery<ConfirmationResponse>({
+  const { data, error, isLoading, refetch } = useQuery<ConfirmationResponse>({
     queryKey: ["/api/subscription/confirm", sessionId],
     enabled: !!sessionId,
     retry: 3,
-    retryDelay: 1000,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    onError: (err: any) => {
+      setRetryCount(prev => prev + 1);
+      // Show toast for retries
+      if (retryCount < 3) {
+        toast({
+          title: "Verifying subscription...",
+          description: `Please wait, we're confirming your payment (attempt ${retryCount + 1}/3)`,
+        });
+      }
+    },
   });
 
   useEffect(() => {
-    if (data || error) {
+    if (data || (error && retryCount >= 3)) {
       setProcessing(false);
       // Invalidate subscription status and user queries to refresh all related data
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     }
-  }, [data, error]);
+  }, [data, error, retryCount]);
 
   if (!sessionId) {
     return (
@@ -42,17 +57,48 @@ export default function SubscriptionSuccess() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-600" />
-              Invalid Session
+              <HelpCircle className="h-5 w-5 text-yellow-600" />
+              Session Not Found
             </CardTitle>
+            <CardDescription>
+              We couldn't find your checkout session
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              No checkout session found. Please try subscribing again.
-            </p>
-            <Link href="/subscription/plans">
-              <Button>View Plans</Button>
-            </Link>
+          <CardContent className="space-y-4">
+            <Alert className="border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertTitle>What might have happened?</AlertTitle>
+              <AlertDescription className="space-y-2 mt-2">
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>You may have already completed this checkout</li>
+                  <li>The session link may have expired</li>
+                  <li>You accessed this page directly without completing checkout</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+            
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h3 className="font-medium mb-2">What to do next:</h3>
+              <ol className="space-y-2 text-sm text-muted-foreground">
+                <li>1. Check your email for a confirmation message</li>
+                <li>2. Visit subscription management to see your current plan</li>
+                <li>3. If you haven't subscribed yet, view our plans</li>
+              </ol>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Link href="/subscription/manage">
+                <Button className="w-full sm:w-auto" data-testid="check-subscription-button">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Check My Subscription
+                </Button>
+              </Link>
+              <Link href="/subscription/plans">
+                <Button variant="outline" className="w-full sm:w-auto" data-testid="view-plans-button">
+                  View Plans
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -80,30 +126,112 @@ export default function SubscriptionSuccess() {
   }
 
   if (error) {
+    // Determine error type for better messaging
+    const errorMessage = (error as any)?.message || "";
+    const isNetworkError = errorMessage.includes("network") || errorMessage.includes("fetch");
+    const isVerificationError = errorMessage.includes("verify") || errorMessage.includes("confirm");
+    const isTimeoutError = errorMessage.includes("timeout");
+    
     return (
       <div className="container max-w-2xl mx-auto p-8">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-red-600" />
-              Subscription Error
+              Unable to Confirm Subscription
             </CardTitle>
+            <CardDescription>
+              We encountered an issue while verifying your subscription
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>
-                There was an issue processing your subscription. Your payment may still have been processed.
-                Please check your email or contact support.
+          <CardContent className="space-y-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>
+                {isNetworkError 
+                  ? "Connection Issue" 
+                  : isTimeoutError 
+                  ? "Verification Timeout" 
+                  : "Verification Failed"}
+              </AlertTitle>
+              <AlertDescription className="mt-2 space-y-2">
+                <p>
+                  {isNetworkError
+                    ? "We couldn't connect to our servers. Please check your internet connection and try again."
+                    : isTimeoutError
+                    ? "The verification process took too long. Your payment may still have been processed."
+                    : "We couldn't verify your subscription status. Your payment may still have been processed."}
+                </p>
+                <p className="text-sm font-medium mt-2">
+                  Don't worry - if your payment went through, you'll receive an email confirmation shortly.
+                </p>
               </AlertDescription>
             </Alert>
-            <div className="flex gap-4">
-              <Link href="/app">
-                <Button>Go to Dashboard</Button>
-              </Link>
+            
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h3 className="font-medium mb-2 flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Next Steps
+              </h3>
+              <ol className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold text-foreground">1.</span>
+                  <span>Check your email for a payment confirmation from Polar</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold text-foreground">2.</span>
+                  <span>Wait a few minutes and check your subscription status</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold text-foreground">3.</span>
+                  <span>If issues persist, contact support with your session ID: <code className="bg-muted px-1 rounded">{sessionId}</code></span>
+                </li>
+              </ol>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button 
+                onClick={() => refetch()}
+                className="w-full sm:w-auto"
+                data-testid="retry-verification-button"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
               <Link href="/subscription/manage">
-                <Button variant="outline">Check Subscription Status</Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full sm:w-auto"
+                  data-testid="check-status-button"
+                >
+                  Check Subscription Status
+                </Button>
+              </Link>
+              <Link href="/app">
+                <Button 
+                  variant="ghost" 
+                  className="w-full sm:w-auto"
+                  data-testid="dashboard-button-error"
+                >
+                  Go to Dashboard
+                </Button>
               </Link>
             </div>
+            
+            {/* Support Contact */}
+            <Alert className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+              <HelpCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription>
+                Need help? Contact our support team at{" "}
+                <a 
+                  href="mailto:support@certlab.ai?subject=Subscription Confirmation Issue" 
+                  className="font-medium underline text-blue-600 hover:text-blue-700"
+                >
+                  support@certlab.ai
+                </a>{" "}
+                with your session ID for immediate assistance.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
       </div>
