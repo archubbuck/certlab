@@ -32,6 +32,8 @@ import {
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { invalidateSubscriptionQueries } from "@/lib/subscriptionCache";
+import { normalizePlanName, formatPlanNameForDisplay } from "@shared/subscriptionUtils";
 
 interface SubscriptionStatus {
   isConfigured: boolean;
@@ -76,7 +78,7 @@ export default function SubscriptionManagePage() {
       
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       const title = data.refundAmount 
         ? "Subscription Canceled Successfully ✓" 
         : "Cancellation Scheduled";
@@ -98,9 +100,7 @@ export default function SubscriptionManagePage() {
         ),
       });
       // Invalidate both subscription status and user queries for immediate UI update
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await invalidateSubscriptionQueries(queryClient);
       setShowCancelDialog(false);
       setSelectedCancelOption(null);
     },
@@ -143,7 +143,7 @@ export default function SubscriptionManagePage() {
       }
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast({
         title: "Subscription Resumed! 🎉",
         description: `Your ${subscription?.plan} subscription is active again. All features have been restored.`,
@@ -158,9 +158,7 @@ export default function SubscriptionManagePage() {
         ),
       });
       // Invalidate both subscription status and user queries for immediate UI update
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await invalidateSubscriptionQueries(queryClient);
     },
     onError: (error: any) => {
       const errorMessage = error.message || "";
@@ -217,9 +215,7 @@ export default function SubscriptionManagePage() {
       }
       
       // Always refresh subscription data on error to ensure UI is in sync
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      invalidateSubscriptionQueries(queryClient);
     },
   });
 
@@ -240,7 +236,7 @@ export default function SubscriptionManagePage() {
       }
       return result;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       const isUpgrade = variables.newPlan === 'enterprise';
       const isImmediate = !variables.switchAtPeriodEnd;
       
@@ -252,9 +248,7 @@ export default function SubscriptionManagePage() {
         duration: 6000,
       });
       // Invalidate both subscription status and user queries for immediate UI update
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await invalidateSubscriptionQueries(queryClient);
       setShowSwitchDialog(false);
       setSwitchPlan(null);
     },
