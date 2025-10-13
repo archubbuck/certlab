@@ -40,6 +40,7 @@ import {
 import MobileNavigationEnhanced from "@/components/MobileNavigationEnhanced";
 import SubscriptionBadge from "@/components/SubscriptionBadge";
 import { useQuery } from "@tanstack/react-query";
+import { normalizePlanName, type SubscriptionPlan } from "@shared/subscriptionUtils";
 
 export default function Header() {
   const [location, setLocation] = useLocation();
@@ -105,9 +106,9 @@ export default function Header() {
               {/* Subscription Badge */}
               {subscription && currentUser && (
                 <SubscriptionBadge 
-                  plan={subscription.plan?.toLowerCase() as 'free' | 'pro' | 'enterprise' || 'free'}
+                  plan={normalizePlanName(subscription.plan)}
                   size="small"
-                  showQuizCount={subscription.plan?.toLowerCase() === 'free'}
+                  showQuizCount={normalizePlanName(subscription.plan) === 'free'}
                   dailyQuizCount={subscription.dailyQuizCount}
                   quizLimit={subscription.limits?.quizzesPerDay}
                   interactive
@@ -325,7 +326,7 @@ export default function Header() {
                       {subscription && (
                         <div className="mt-1">
                           <SubscriptionBadge 
-                            plan={subscription.plan?.toLowerCase() as 'free' | 'pro' | 'enterprise' || 'free'}
+                            plan={normalizePlanName(subscription.plan)}
                             size="small"
                             showQuizCount={false}
                           />
@@ -340,7 +341,7 @@ export default function Header() {
                       <div className="px-3 py-2">
                         <p className="text-xs font-medium text-muted-foreground mb-1">Your Benefits:</p>
                         <div className="space-y-1">
-                          {subscription.plan?.toLowerCase() === 'free' ? (
+                          {normalizePlanName(subscription.plan) === 'free' ? (
                             <>
                               <div className="flex items-center gap-1.5 text-xs">
                                 <Sparkles className="w-3 h-3 text-muted-foreground" />

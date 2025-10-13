@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { normalizePlanName } from "@shared/subscriptionUtils";
 
 interface SubscriptionStatusResponse {
   isConfigured: boolean;
@@ -90,7 +91,7 @@ export function useSubscriptionQuizSizes(): QuizSizeConfig {
   }
 
   // Get the appropriate config based on subscription plan
-  const plan = subscription.plan.toLowerCase() as keyof typeof QUIZ_SIZE_CONFIGS;
+  const plan = normalizePlanName(subscription.plan) as keyof typeof QUIZ_SIZE_CONFIGS;
   const config = QUIZ_SIZE_CONFIGS[plan] || QUIZ_SIZE_CONFIGS.free;
 
   // Check if user can create more quizzes
@@ -119,7 +120,7 @@ export function getQuizSize(
   }
 
   // Get plan config
-  const plan = subscription?.plan?.toLowerCase() || 'default';
+  const plan = normalizePlanName(subscription?.plan) || 'default';
   const config = QUIZ_SIZE_CONFIGS[plan as keyof typeof QUIZ_SIZE_CONFIGS] || QUIZ_SIZE_CONFIGS.default;
 
   // Map mode to config key
@@ -129,7 +130,7 @@ export function getQuizSize(
 
 // Helper function to get max allowed quiz size for a plan
 export function getMaxQuizSize(subscription?: SubscriptionStatusResponse): number {
-  const plan = subscription?.plan?.toLowerCase() || 'free';
+  const plan = normalizePlanName(subscription?.plan);
   
   switch (plan) {
     case 'enterprise':

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { fromError } from "zod-validation-error";
 import { getPolarClient, SUBSCRIPTION_PLANS, clearDevModeCache } from "./polar";
 import type { User } from "@shared/schema";
+import { normalizePlanName, getPlanFeatures, isPaidPlan, type SubscriptionPlan } from "../shared/subscriptionUtils";
 
 // Request/Response schemas
 const createCheckoutSchema = z.object({
@@ -233,16 +234,18 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       const isTestUser = process.env.NODE_ENV === 'development' && userId === '999999';
       
       if (isTestUser) {
-        const currentPlan = (user.subscriptionBenefits as any)?.plan || 'free';
-        console.log(`Test user (${userId}) changing subscription from ${currentPlan} to ${plan}`);
+        const currentPlan = normalizePlanName((user.subscriptionBenefits as any)?.plan);
+        const normalizedPlan = normalizePlanName(plan);
+        console.log(`Test user (${userId}) changing subscription from ${currentPlan} to ${normalizedPlan}`);
         
         // Handle test user subscription changes directly without Polar
+        const planFeatures = getPlanFeatures(normalizedPlan);
         const subscriptionBenefits = {
-          plan: plan,
-          quizzesPerDay: plan === 'pro' || plan === 'enterprise' ? null : 5, // null means unlimited
-          categoriesAccess: plan === 'pro' || plan === 'enterprise' ? ['all'] : ['basic'],
-          analyticsAccess: plan === 'pro' || plan === 'enterprise' ? 'advanced' : 'basic',
-          teamMembers: plan === 'enterprise' ? 50 : undefined,
+          plan: normalizedPlan,
+          quizzesPerDay: planFeatures.quizzesPerDay === -1 ? null : planFeatures.quizzesPerDay, // null means unlimited
+          categoriesAccess: planFeatures.categoriesAccess,
+          analyticsAccess: planFeatures.analyticsAccess,
+          teamMembers: normalizedPlan === 'enterprise' ? 50 : undefined,
           lastSyncedAt: new Date().toISOString(),
           // Clear any cancellation state when changing plans
           cancelAtPeriodEnd: false,
