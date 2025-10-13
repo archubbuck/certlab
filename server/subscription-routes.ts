@@ -4,6 +4,7 @@ import { fromError } from "zod-validation-error";
 import { getPolarClient, SUBSCRIPTION_PLANS, clearDevModeCache } from "./polar";
 import type { User } from "@shared/schema";
 import { normalizePlanName, getPlanFeatures, isPaidPlan, validateSubscriptionState, mergeSubscriptionState, type SubscriptionPlan } from "../shared/subscriptionUtils";
+import { subscriptionLockManager } from "./subscriptionLock";
 
 // Request/Response schemas
 const createCheckoutSchema = z.object({
@@ -587,8 +588,10 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   });
 
-  // Cancel subscription - REFACTORED
+  // Cancel subscription - REFACTORED with race condition prevention
   app.post("/api/subscription/cancel", isAuthenticated, async (req: Request, res: Response) => {
+    let releaseLock: (() => void) | undefined;
+    
     try {
       const sessionUser = req.user as any;
       if (!sessionUser) {
@@ -598,6 +601,20 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Fetch user ID consistently with other endpoints
       const userId = sessionUser.claims?.sub || sessionUser.id;
       console.log('Cancel subscription request for user:', userId, 'NODE_ENV:', process.env.NODE_ENV);
+
+      // Acquire lock to prevent race conditions
+      try {
+        releaseLock = await subscriptionLockManager.acquireLock(
+          userId,
+          'cancel-subscription',
+          15000 // 15 second timeout
+        );
+      } catch (lockError: any) {
+        return res.status(409).json({
+          error: "Operation in progress",
+          message: "Another subscription operation is in progress. Please try again shortly."
+        });
+      }
 
       // Validate request body
       const result = cancelSubscriptionSchema.safeParse(req.body);
@@ -761,6 +778,11 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         error: "Failed to cancel subscription",
         message: error.message 
       });
+    } finally {
+      // Always release the lock
+      if (releaseLock) {
+        releaseLock();
+      }
     }
   });
 
@@ -896,8 +918,10 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   });
 
-  // Switch subscription plan - NEW ENDPOINT
+  // Switch subscription plan - NEW ENDPOINT with race condition prevention
   app.post("/api/subscription/switch", isAuthenticated, async (req: Request, res: Response) => {
+    let releaseLock: (() => void) | undefined;
+    
     const sessionUser = req.user as any;
     if (!sessionUser) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -915,6 +939,20 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
       // Extract user ID consistently with other endpoints
       const userId = sessionUser.claims?.sub || sessionUser.id;
+      
+      // Acquire lock to prevent race conditions
+      try {
+        releaseLock = await subscriptionLockManager.acquireLock(
+          userId,
+          'switch-subscription',
+          15000 // 15 second timeout
+        );
+      } catch (lockError: any) {
+        return res.status(409).json({
+          error: "Operation in progress",
+          message: "Another subscription operation is in progress. Please try again shortly."
+        });
+      }
       
       // Get user data
       const userData = await storage.getUserById(userId);
@@ -1135,6 +1173,11 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         error: "Failed to switch subscription",
         message: error.message || "An unexpected error occurred while switching your subscription plan."
       });
+    } finally {
+      // Always release the lock
+      if (releaseLock) {
+        releaseLock();
+      }
     }
   });
 
