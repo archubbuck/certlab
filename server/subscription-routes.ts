@@ -1003,12 +1003,13 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   });
 
-  // Webhook endpoint for Polar events - REFACTORED
+  // Webhook endpoint for Polar events - ENHANCED WITH FULL SUBSCRIPTION DATA PERSISTENCE
   app.post("/api/subscription/webhook", async (req: Request, res: Response) => {
     try {
       const { type, data } = req.body;
 
-      console.log("Received Polar webhook:", type);
+      console.log(`[Webhook] Received Polar event: ${type}`);
+      console.log(`[Webhook] Event data:`, JSON.stringify(data, null, 2));
 
       // Verify webhook signature if secret is configured
       // For webhooks, we use the real client by default since we don't have user context yet
@@ -1017,7 +1018,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       if (process.env.POLAR_WEBHOOK_SECRET) {
         const signature = req.headers['polar-webhook-signature'] as string;
         if (!signature) {
-          return res.status(401).json({ error: "Missing webhook signature" });
+          console.error("[Webhook] Missing webhook signature");
+          // Return 200 to prevent retries even on signature failure
+          return res.status(200).json({ received: true, error: "Missing webhook signature" });
         }
 
         const isValid = defaultPolarClient.verifyWebhook(
@@ -1026,7 +1029,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         );
 
         if (!isValid) {
-          return res.status(401).json({ error: "Invalid webhook signature" });
+          console.error("[Webhook] Invalid webhook signature");
+          // Return 200 to prevent retries even on signature failure
+          return res.status(200).json({ received: true, error: "Invalid webhook signature" });
         }
       }
 
@@ -1038,24 +1043,111 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           const subscription = data.subscription;
           const customerId = subscription.customer_id;
 
+          console.log(`[Webhook] Processing ${type} for customer ID: ${customerId}`);
+          console.log(`[Webhook] Subscription ID: ${subscription.id}`);
+          console.log(`[Webhook] Product ID: ${subscription.product_id}`);
+          console.log(`[Webhook] Status: ${subscription.status}`);
+
           // Find user by customer ID
           const users = await storage.getUserByPolarCustomerId(customerId);
           if (!users || users.length === 0) {
-            console.log("No user found for customer ID:", customerId);
+            console.warn(`[Webhook] No user found for customer ID: ${customerId}`);
             return res.status(200).json({ received: true });
           }
 
           const user = users[0];
+          console.log(`[Webhook] Found user: ${user.id} (${user.email})`);
 
-          // Get the appropriate client for this user
-          const userPolarClient = await getPolarClient(user.id);
-          
-          // Sync benefits from Polar
-          if (user.email) {
-            const polarData = await userPolarClient.syncUserSubscriptionBenefits(user.email);
+          // Update user's Polar customer ID if not set
+          if (!user.polarCustomerId) {
+            console.log(`[Webhook] Updating user's Polar customer ID`);
             await storage.updateUser(user.id, {
-              subscriptionBenefits: polarData.benefits,
+              polarCustomerId: customerId,
             });
+          }
+
+          try {
+            // Check if subscription exists in database
+            const existingSubscription = await storage.getSubscriptionByPolarId(subscription.id);
+            
+            // Determine plan from product ID
+            let planName = 'free';
+            if (subscription.product_id === SUBSCRIPTION_PLANS.pro.productId) {
+              planName = 'pro';
+            } else if (subscription.product_id === SUBSCRIPTION_PLANS.enterprise.productId) {
+              planName = 'enterprise';
+            }
+
+            const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS];
+
+            // Prepare subscription data
+            const subscriptionData = {
+              userId: user.id,
+              polarSubscriptionId: subscription.id,
+              polarCustomerId: customerId,
+              productId: subscription.product_id,
+              priceId: subscription.price_id,
+              status: subscription.status,
+              plan: planName,
+              billingInterval: subscription.recurring_interval || 'month',
+              currentPeriodStart: subscription.current_period_start ? new Date(subscription.current_period_start) : new Date(),
+              currentPeriodEnd: subscription.current_period_end ? new Date(subscription.current_period_end) : new Date(),
+              trialEndsAt: subscription.trial_ends_at ? new Date(subscription.trial_ends_at) : undefined,
+              cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+              canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at) : undefined,
+              endedAt: subscription.ended_at ? new Date(subscription.ended_at) : undefined,
+              metadata: {
+                productName: subscription.product?.name,
+                priceAmount: subscription.price?.amount,
+                priceCurrency: subscription.price?.currency,
+                customerEmail: subscription.customer?.email,
+                webhookProcessedAt: new Date().toISOString(),
+                eventType: type,
+              },
+            };
+
+            let savedSubscription;
+            
+            if (existingSubscription) {
+              console.log(`[Webhook] Updating existing subscription ${existingSubscription.id}`);
+              // Update existing subscription
+              savedSubscription = await storage.updateSubscription(
+                existingSubscription.id,
+                subscriptionData
+              );
+            } else {
+              console.log(`[Webhook] Creating new subscription record`);
+              // Create new subscription
+              savedSubscription = await storage.createSubscription(subscriptionData);
+            }
+
+            console.log(`[Webhook] Subscription ${savedSubscription ? 'saved' : 'save failed'} - ID: ${savedSubscription?.id}`);
+
+            // Update user's subscription benefits with full details
+            const benefitsWithSubscription = {
+              plan: planName,
+              quizzesPerDay: plan.limits.quizzesPerDay,
+              categoriesAccess: plan.limits.categoriesAccess,
+              analyticsAccess: plan.limits.analyticsAccess,
+              teamMembers: (plan.limits as any).teamMembers,
+              subscriptionId: savedSubscription?.id,
+              polarSubscriptionId: subscription.id,
+              cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+              canceledAt: subscription.canceled_at,
+              currentPeriodEnd: subscription.current_period_end,
+              trialEndsAt: subscription.trial_ends_at,
+              lastSyncedAt: new Date().toISOString(),
+            };
+
+            console.log(`[Webhook] Updating user benefits to ${planName} plan`);
+            await storage.updateUser(user.id, {
+              subscriptionBenefits: benefitsWithSubscription,
+            });
+
+            console.log(`[Webhook] Successfully processed ${type} for user ${user.id}`);
+          } catch (dbError) {
+            console.error(`[Webhook] Database error processing subscription:`, dbError);
+            // Continue processing - we'll still return 200 to prevent retries
           }
 
           break;
@@ -1066,27 +1158,77 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           const subscription = data.subscription;
           const customerId = subscription.customer_id;
 
+          console.log(`[Webhook] Processing ${type} for customer ID: ${customerId}`);
+          console.log(`[Webhook] Subscription ID: ${subscription.id}`);
+
           // Find user by customer ID
           const users = await storage.getUserByPolarCustomerId(customerId);
           if (!users || users.length === 0) {
-            console.log("No user found for customer ID:", customerId);
+            console.warn(`[Webhook] No user found for customer ID: ${customerId}`);
             return res.status(200).json({ received: true });
           }
 
           const user = users[0];
+          console.log(`[Webhook] Found user: ${user.id} (${user.email})`);
 
-          // Update to free tier benefits
-          const freeBenefits = {
-            plan: 'free',
-            quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
-            categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
-            analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
-            lastSyncedAt: new Date().toISOString(),
-          };
+          try {
+            // Find and update subscription in database
+            const existingSubscription = await storage.getSubscriptionByPolarId(subscription.id);
+            
+            if (existingSubscription) {
+              console.log(`[Webhook] Updating subscription ${existingSubscription.id} to ${type === 'subscription.canceled' ? 'canceled' : 'expired'}`);
+              
+              const updateData: any = {
+                status: type === 'subscription.canceled' ? 'canceled' : 'expired',
+              };
 
-          await storage.updateUser(user.id, {
-            subscriptionBenefits: freeBenefits,
-          });
+              if (type === 'subscription.canceled') {
+                updateData.canceledAt = subscription.canceled_at ? new Date(subscription.canceled_at) : new Date();
+                updateData.cancelAtPeriodEnd = subscription.cancel_at_period_end || false;
+              } else if (type === 'subscription.expired') {
+                updateData.endedAt = subscription.ended_at ? new Date(subscription.ended_at) : new Date();
+              }
+
+              // Add metadata about the cancellation/expiration
+              updateData.metadata = {
+                ...(existingSubscription.metadata as any || {}),
+                [`${type}_processed_at`]: new Date().toISOString(),
+                cancellationReason: subscription.cancellation_reason,
+                eventType: type,
+              };
+
+              await storage.updateSubscriptionByPolarId(
+                subscription.id,
+                updateData
+              );
+            } else {
+              console.warn(`[Webhook] No subscription found in database for Polar ID: ${subscription.id}`);
+            }
+
+            // Update user to free tier benefits
+            const freeBenefits = {
+              plan: 'free',
+              quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+              categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+              analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+              subscriptionId: null, // Clear the subscription reference
+              polarSubscriptionId: null,
+              cancelAtPeriodEnd: false,
+              canceledAt: type === 'subscription.canceled' ? (subscription.canceled_at || new Date().toISOString()) : undefined,
+              endedAt: type === 'subscription.expired' ? (subscription.ended_at || new Date().toISOString()) : undefined,
+              lastSyncedAt: new Date().toISOString(),
+            };
+
+            console.log(`[Webhook] Reverting user to free tier`);
+            await storage.updateUser(user.id, {
+              subscriptionBenefits: freeBenefits,
+            });
+
+            console.log(`[Webhook] Successfully processed ${type} for user ${user.id}`);
+          } catch (dbError) {
+            console.error(`[Webhook] Database error processing cancellation/expiration:`, dbError);
+            // Continue processing - we'll still return 200 to prevent retries
+          }
 
           break;
         }
@@ -1094,20 +1236,25 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         case 'checkout.created':
         case 'checkout.updated': {
           // Log checkout events but don't process them
-          console.log("Checkout event received:", type);
+          console.log(`[Webhook] Checkout event received: ${type}`);
           break;
         }
 
         default:
-          console.log("Unhandled webhook event:", type);
+          console.log(`[Webhook] Unhandled webhook event: ${type}`);
       }
 
+      // Always return 200 OK to prevent webhook retries
       res.json({ received: true });
     } catch (error: any) {
-      console.error("Error processing webhook:", error);
-      res.status(500).json({ 
-        error: "Webhook processing failed",
-        message: error.message 
+      console.error(`[Webhook] Critical error processing webhook:`, error);
+      console.error(`[Webhook] Error stack:`, error.stack);
+      
+      // Even on critical errors, return 200 OK to prevent webhook retries
+      // Polar will not retry if we return 200, preventing duplicate processing
+      res.status(200).json({ 
+        received: true,
+        error: "Internal processing error - logged for investigation"
       });
     }
   });
