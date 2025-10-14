@@ -522,43 +522,79 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         sub.status === 'active' || sub.status === 'trialing'
       );
 
-      // Handle existing subscription - switch plan instead of creating new checkout
+      // Handle existing subscription - check if we can switch directly or need checkout
       if (activeSubscription) {
-        console.log(`User ${user.email} has existing subscription, switching plan from current to ${plan}`);
+        // Determine the current plan from the subscription's productId
+        let currentPlan: SubscriptionPlan = 'free';
+        if (activeSubscription.productId === SUBSCRIPTION_PLANS.pro.productId) {
+          currentPlan = 'pro';
+        } else if (activeSubscription.productId === SUBSCRIPTION_PLANS.enterprise.productId) {
+          currentPlan = 'enterprise';
+        }
         
-        try {
-          // Check if planConfig has productId before using it
-          if (!('productId' in planConfig) || !planConfig.productId) {
-            return res.status(400).json({ 
-              error: "Invalid plan configuration",
-              message: "Cannot switch to a plan without a product ID"
-            });
-          }
+        console.log(`User ${user.email} has existing subscription (${currentPlan}), wants to switch to ${plan}`);
+        
+        // Only use direct plan switching for paid-to-paid changes
+        // Free-to-paid requires checkout for payment collection
+        const isCurrentPlanPaid = isPaidPlan(currentPlan);
+        const isNewPlanPaid = isPaidPlan(plan as SubscriptionPlan);
+        
+        if (isCurrentPlanPaid && isNewPlanPaid && currentPlan !== plan) {
+          // Paid-to-paid plan switch - can use direct switching
+          console.log(`Direct switch: ${currentPlan} -> ${plan} (both paid plans)`);
           
-          // Use switchSubscriptionPlan for immediate upgrade
-          const updatedSubscription = await polarClient.switchSubscriptionPlan({
-            subscriptionId: activeSubscription.id,
-            newProductId: planConfig.productId,
-            switchAtPeriodEnd: false, // Switch immediately for upgrades
-          });
+          try {
+            // Check if planConfig has productId before using it
+            if (!('productId' in planConfig) || !planConfig.productId) {
+              return res.status(400).json({ 
+                error: "Invalid plan configuration",
+                message: "Cannot switch to a plan without a product ID"
+              });
+            }
+            
+            // Use switchSubscriptionPlan for immediate upgrade
+            const updatedSubscription = await polarClient.switchSubscriptionPlan({
+              subscriptionId: activeSubscription.id,
+              newProductId: planConfig.productId,
+              switchAtPeriodEnd: false, // Switch immediately for upgrades
+            });
 
-          // For regular users, sync from Polar
-          const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
-          await storage.updateUser(userId, {
-            subscriptionBenefits: polarData.benefits,
-          });
+            // For regular users, sync from Polar
+            const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
+            await storage.updateUser(userId, {
+              subscriptionBenefits: polarData.benefits,
+            });
 
-          // Return success response for immediate upgrade
-          return res.json({
-            success: true,
-            message: `Successfully upgraded to ${plan} plan`,
-            upgraded: true,
-            plan: plan,
-            redirectUrl: '/app/subscription/success', // Redirect to success page
+            // Return success response for immediate upgrade
+            return res.json({
+              success: true,
+              message: `Successfully upgraded to ${plan} plan`,
+              upgraded: true,
+              plan: plan,
+              redirectUrl: '/app/subscription/success', // Redirect to success page
+            });
+          } catch (switchError: any) {
+            console.error('Error switching subscription plan:', switchError);
+            // Fall through to create new checkout if switching fails
+          }
+        } else if (!isCurrentPlanPaid && isNewPlanPaid) {
+          // Free-to-paid upgrade - need checkout for payment collection
+          console.log(`Free-to-paid upgrade: ${currentPlan} -> ${plan} (requires checkout for payment)`);
+          // Fall through to create checkout session
+        } else if (isCurrentPlanPaid && !isNewPlanPaid) {
+          // Downgrade to free - this might need special handling
+          console.log(`Downgrade to free: ${currentPlan} -> ${plan}`);
+          // For now, fall through to checkout (though free plan doesn't have checkout)
+          return res.status(400).json({ 
+            error: "Downgrade not supported",
+            message: "To downgrade to the free plan, please cancel your current subscription"
           });
-        } catch (switchError: any) {
-          console.error('Error switching subscription plan:', switchError);
-          // Fall through to create new checkout if switching fails
+        } else if (currentPlan === plan) {
+          // Same plan - no action needed
+          return res.status(400).json({ 
+            error: "Already subscribed",
+            message: `You are already subscribed to the ${plan} plan`
+          });
         }
       }
 
