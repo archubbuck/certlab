@@ -321,27 +321,66 @@ class PolarClient {
     return this.request<PolarCheckoutSession>(`/checkouts/${sessionId}`);
   }
 
-  // Webhook verification
+  // Webhook verification with proper HMAC-SHA256 and timing-safe comparison
   verifyWebhook(payload: string, signature: string): boolean {
     // Use dynamic webhook secret
     const secret = this.webhookSecret;
     
     if (!secret) {
-      console.log('[Polar] Webhook secret not configured');
+      console.log('[Polar] Webhook secret not configured - skipping verification');
       return false;
     }
     
-    console.log('[Polar] Verifying webhook with secret:', secret.substring(0, 8) + '...');
+    console.log('[Polar] Verifying webhook signature');
     
-    // Implement webhook signature verification
-    // This is a placeholder - actual implementation depends on Polar's webhook signature format
-    const crypto = require('crypto');
-    const expectedSignature = crypto
-      .createHmac('sha256', secret)
-      .update(payload)
-      .digest('hex');
-    
-    return signature === expectedSignature;
+    try {
+      // Import crypto at the top if not already available
+      const crypto = require('crypto');
+      
+      // Parse the signature header - Polar uses format: sha256=<hex_signature>
+      if (!signature || !signature.startsWith('sha256=')) {
+        console.error('[Polar] Invalid signature format. Expected: sha256=<signature>, Got:', signature?.substring(0, 50));
+        return false;
+      }
+      
+      // Extract the hex signature from the header
+      const providedSignature = signature.slice('sha256='.length);
+      
+      // Generate expected signature using HMAC-SHA256
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(payload, 'utf8')
+        .digest('hex');
+      
+      // Log signature comparison (first 16 chars only for security)
+      console.log('[Polar] Signature comparison:');
+      console.log('  - Expected (first 16 chars):', expectedSignature.substring(0, 16) + '...');
+      console.log('  - Provided (first 16 chars):', providedSignature.substring(0, 16) + '...');
+      
+      // Use timing-safe comparison to prevent timing attacks
+      const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+      const providedBuffer = Buffer.from(providedSignature, 'hex');
+      
+      // Ensure both buffers are the same length before comparison
+      if (expectedBuffer.length !== providedBuffer.length) {
+        console.error('[Polar] Signature length mismatch');
+        return false;
+      }
+      
+      // Timing-safe comparison
+      const isValid = crypto.timingSafeEqual(expectedBuffer, providedBuffer);
+      
+      if (isValid) {
+        console.log('[Polar] Webhook signature verified successfully');
+      } else {
+        console.error('[Polar] Webhook signature verification failed');
+      }
+      
+      return isValid;
+    } catch (error) {
+      console.error('[Polar] Error during webhook verification:', error);
+      return false;
+    }
   }
 
   // Helper methods for CertLab integration

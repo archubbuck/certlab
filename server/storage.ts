@@ -165,6 +165,10 @@ export interface IStorage {
   updateSubscription(id: number, updates: Partial<InsertSubscription>): Promise<SelectSubscription | null>;
   updateSubscriptionByPolarId(polarSubscriptionId: string, updates: Partial<InsertSubscription>): Promise<SelectSubscription | null>;
   cancelSubscription(id: number, canceledAt: Date): Promise<SelectSubscription | null>;
+  
+  // Webhook idempotency tracking
+  checkWebhookProcessed(eventId: string): Promise<boolean>;
+  markWebhookProcessed(eventId: string, details: any): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3615,6 +3619,49 @@ ${recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')}
       .where(eq(subscriptions.id, id))
       .returning();
     return updated[0] || null;
+  }
+
+  // Webhook idempotency tracking - using in-memory storage for simplicity
+  // In production, this should be stored in database or Redis
+  private processedWebhooks = new Map<string, { timestamp: Date; details: any }>();
+  private readonly WEBHOOK_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+  async checkWebhookProcessed(eventId: string): Promise<boolean> {
+    // Clean up old entries
+    this.cleanupOldWebhooks();
+    
+    return this.processedWebhooks.has(eventId);
+  }
+
+  async markWebhookProcessed(eventId: string, details: any): Promise<void> {
+    this.processedWebhooks.set(eventId, {
+      timestamp: new Date(),
+      details
+    });
+    
+    // Clean up old entries periodically
+    if (this.processedWebhooks.size > 1000) {
+      this.cleanupOldWebhooks();
+    }
+  }
+
+  private cleanupOldWebhooks(): void {
+    const now = Date.now();
+    const entriesToDelete: string[] = [];
+    
+    for (const [eventId, data] of Array.from(this.processedWebhooks.entries())) {
+      if (now - data.timestamp.getTime() > this.WEBHOOK_EXPIRY_MS) {
+        entriesToDelete.push(eventId);
+      }
+    }
+    
+    for (const eventId of entriesToDelete) {
+      this.processedWebhooks.delete(eventId);
+    }
+    
+    if (entriesToDelete.length > 0) {
+      console.log(`[Webhook] Cleaned up ${entriesToDelete.length} old webhook entries`);
+    }
   }
 }
 

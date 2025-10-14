@@ -168,7 +168,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
                   await storage.createSubscription(subscriptionData);
                 }
               }
-            } catch (err) {
+            } catch (err: any) {
               console.error("Error getting detailed subscription status:", err);
             }
           }
@@ -176,7 +176,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           // Determine subscription status from benefits
           isSubscribed = benefits.plan !== 'free';
           status = isSubscribed ? 'active' : 'inactive';
-        } catch (polarError) {
+        } catch (polarError: any) {
           console.error("Error syncing with Polar:", polarError);
           // Fall back to cached benefits if Polar sync fails
           if (updatedUser?.subscriptionBenefits) {
@@ -383,7 +383,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
             },
             fromCache: false,
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error fetching subscription from Polar:", error);
           
           // If Polar fails but we have database data, return it
@@ -831,7 +831,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         }
         
         subscriptionId = activeSubscription.id;
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error finding subscription:", error);
         return res.status(400).json({ 
           error: "Subscription not found", 
@@ -967,7 +967,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         }
         
         subscriptionId = canceledSubscription.id;
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error finding subscription:", error);
         return res.status(400).json({ 
           error: "Subscription not found", 
@@ -1134,7 +1134,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         if (matchingPrice) {
           priceId = matchingPrice.id;
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching product prices:", error);
         // Continue without price ID - Polar will use default pricing
       }
@@ -1299,7 +1299,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           billingInterval,
           message: 'Subscription activated successfully'
         });
-      } catch (polarError) {
+      } catch (polarError: any) {
         console.error('Error confirming Polar session:', polarError);
         
         // Even if Polar fails, update user to pro for demo purposes
@@ -1322,7 +1322,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           message: 'Subscription confirmed'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error confirming subscription:', error);
       res.status(500).json({ 
         error: "Internal server error",
@@ -1333,11 +1333,77 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
   // Webhook endpoint for Polar events - ENHANCED WITH FULL SUBSCRIPTION DATA PERSISTENCE
   app.post("/api/subscription/webhook", async (req: Request, res: Response) => {
+    const webhookStartTime = Date.now();
+    let processedEventId: string | undefined;
+    
     try {
+      // Log incoming webhook (excluding sensitive data)
+      const sanitizedBody = {
+        type: req.body?.type,
+        eventId: req.body?.eventId || req.body?.event_id || req.body?.id,
+        timestamp: req.body?.timestamp || new Date().toISOString(),
+        dataKeys: req.body?.data ? Object.keys(req.body.data) : [],
+      };
+      
+      console.log(`[Webhook] ========== WEBHOOK RECEIVED ==========`);
+      console.log(`[Webhook] Headers:`, {
+        'content-type': req.headers['content-type'],
+        'polar-webhook-signature': req.headers['polar-webhook-signature'] ? 'present' : 'missing',
+        'x-request-id': req.headers['x-request-id'],
+      });
+      console.log(`[Webhook] Sanitized payload:`, JSON.stringify(sanitizedBody, null, 2));
+      
+      // Validate payload structure
+      if (!req.body) {
+        console.error("[Webhook] ERROR: Empty request body");
+        return res.status(200).json({ 
+          received: true, 
+          error: "EMPTY_BODY",
+          message: "Empty request body" 
+        });
+      }
+      
       const { type, data } = req.body;
+      
+      if (!type) {
+        console.error("[Webhook] ERROR: Missing event type");
+        return res.status(200).json({ 
+          received: true, 
+          error: "MISSING_TYPE",
+          message: "Missing event type" 
+        });
+      }
+      
+      if (!data) {
+        console.error("[Webhook] ERROR: Missing event data");
+        return res.status(200).json({ 
+          received: true, 
+          error: "MISSING_DATA",
+          message: "Missing event data" 
+        });
+      }
 
-      console.log(`[Webhook] Received Polar event: ${type}`);
-      console.log(`[Webhook] Event data:`, JSON.stringify(data, null, 2));
+      // Extract event ID for idempotency
+      processedEventId = req.body.eventId || req.body.event_id || req.body.id || `${type}_${Date.now()}`;
+      
+      console.log(`[Webhook] Processing event: ${type} (ID: ${processedEventId})`);
+      console.log(`[Webhook] Full event data (for debugging):`, JSON.stringify(data, null, 2));
+
+      // Check for duplicate webhook delivery (idempotency check)
+      try {
+        const isDuplicate = await storage.checkWebhookProcessed(processedEventId);
+        if (isDuplicate) {
+          console.log(`[Webhook] Duplicate webhook detected (ID: ${processedEventId}) - skipping processing`);
+          return res.status(200).json({ 
+            received: true, 
+            duplicate: true,
+            message: "Webhook already processed" 
+          });
+        }
+      } catch (idempotencyError: any) {
+        console.warn(`[Webhook] Warning: Could not check idempotency:`, idempotencyError);
+        // Continue processing even if idempotency check fails
+      }
 
       // Verify webhook signature if secret is configured
       // For webhooks, we use the real client by default since we don't have user context yet
@@ -1345,22 +1411,54 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       
       if (process.env.POLAR_WEBHOOK_SECRET) {
         const signature = req.headers['polar-webhook-signature'] as string;
+        
         if (!signature) {
-          console.error("[Webhook] Missing webhook signature");
-          // Return 200 to prevent retries even on signature failure
-          return res.status(200).json({ received: true, error: "Missing webhook signature" });
+          console.error("[Webhook] SECURITY ERROR: Missing webhook signature header");
+          console.error("[Webhook] Expected header: 'polar-webhook-signature'");
+          console.error("[Webhook] Received headers:", Object.keys(req.headers).join(', '));
+          
+          // Mark as processed to prevent retries but log security concern
+          await storage.markWebhookProcessed(processedEventId, {
+            status: 'failed',
+            error: 'MISSING_SIGNATURE',
+            timestamp: new Date(),
+          }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+          
+          return res.status(200).json({ 
+            received: true, 
+            error: "MISSING_SIGNATURE",
+            message: "Missing webhook signature" 
+          });
         }
 
+        console.log("[Webhook] Verifying webhook signature...");
         const isValid = defaultPolarClient.verifyWebhook(
           JSON.stringify(req.body),
           signature
         );
 
         if (!isValid) {
-          console.error("[Webhook] Invalid webhook signature");
-          // Return 200 to prevent retries even on signature failure
-          return res.status(200).json({ received: true, error: "Invalid webhook signature" });
+          console.error("[Webhook] SECURITY ERROR: Invalid webhook signature");
+          console.error("[Webhook] Signature header value:", signature.substring(0, 20) + '...');
+          console.error("[Webhook] Payload size:", JSON.stringify(req.body).length, "bytes");
+          
+          // Mark as processed to prevent retries but log security concern
+          await storage.markWebhookProcessed(processedEventId, {
+            status: 'failed',
+            error: 'INVALID_SIGNATURE',
+            timestamp: new Date(),
+          }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+          
+          return res.status(200).json({ 
+            received: true, 
+            error: "INVALID_SIGNATURE",
+            message: "Invalid webhook signature" 
+          });
         }
+        
+        console.log("[Webhook] ✓ Signature verified successfully");
+      } else {
+        console.warn("[Webhook] WARNING: Webhook secret not configured - skipping signature verification");
       }
 
       // Handle different webhook events
@@ -1368,34 +1466,128 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         case 'subscription.created':
         case 'subscription.updated':
         case 'subscription.resumed': {
+          // Validate subscription data structure
+          if (!data.subscription) {
+            console.error(`[Webhook] ERROR: Missing subscription object in ${type} event`);
+            await storage.markWebhookProcessed(processedEventId, {
+              status: 'failed',
+              error: 'MISSING_SUBSCRIPTION',
+              timestamp: new Date(),
+            }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+            
+            return res.status(200).json({ 
+              received: true, 
+              error: "MISSING_SUBSCRIPTION",
+              message: "Missing subscription object" 
+            });
+          }
+          
           const subscription = data.subscription;
+          
+          // Validate required subscription fields
+          const requiredFields = ['id', 'customer_id', 'product_id', 'status'];
+          const missingFields = requiredFields.filter(field => !subscription[field]);
+          
+          if (missingFields.length > 0) {
+            console.error(`[Webhook] ERROR: Missing required subscription fields: ${missingFields.join(', ')}`);
+            await storage.markWebhookProcessed(processedEventId, {
+              status: 'failed',
+              error: 'INVALID_SUBSCRIPTION_DATA',
+              missingFields,
+              timestamp: new Date(),
+            }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+            
+            return res.status(200).json({ 
+              received: true, 
+              error: "INVALID_SUBSCRIPTION_DATA",
+              message: `Missing required fields: ${missingFields.join(', ')}` 
+            });
+          }
+          
           const customerId = subscription.customer_id;
 
           console.log(`[Webhook] Processing ${type} for customer ID: ${customerId}`);
-          console.log(`[Webhook] Subscription ID: ${subscription.id}`);
-          console.log(`[Webhook] Product ID: ${subscription.product_id}`);
-          console.log(`[Webhook] Status: ${subscription.status}`);
+          console.log(`[Webhook] Subscription details:`, {
+            id: subscription.id,
+            product_id: subscription.product_id,
+            status: subscription.status,
+            price_id: subscription.price_id,
+            interval: subscription.recurring_interval,
+            trial: subscription.trial_ends_at ? 'yes' : 'no',
+            cancel_at_period_end: subscription.cancel_at_period_end,
+          });
 
-          // Find user by customer ID
-          const users = await storage.getUserByPolarCustomerId(customerId);
-          if (!users || users.length === 0) {
-            console.warn(`[Webhook] No user found for customer ID: ${customerId}`);
-            return res.status(200).json({ received: true });
+          // Find user by customer ID with retry logic for transient errors
+          let user;
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries) {
+            try {
+              const users = await storage.getUserByPolarCustomerId(customerId);
+              if (!users || users.length === 0) {
+                console.warn(`[Webhook] No user found for customer ID: ${customerId}`);
+                await storage.markWebhookProcessed(processedEventId, {
+                  status: 'skipped',
+                  reason: 'USER_NOT_FOUND',
+                  customerId,
+                  timestamp: new Date(),
+                }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+                
+                return res.status(200).json({ 
+                  received: true,
+                  skipped: true,
+                  reason: "User not found" 
+                });
+              }
+              user = users[0];
+              break; // Success, exit retry loop
+            } catch (dbError: any) {
+              retryCount++;
+              if (retryCount >= maxRetries) {
+                console.error(`[Webhook] ERROR: Failed to fetch user after ${maxRetries} retries:`, dbError);
+                await storage.markWebhookProcessed(processedEventId, {
+                  status: 'failed',
+                  error: 'DATABASE_ERROR',
+                  retries: retryCount,
+                  timestamp: new Date(),
+                }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+                
+                return res.status(200).json({ 
+                  received: true,
+                  error: "DATABASE_ERROR",
+                  message: "Failed to fetch user" 
+                });
+              }
+              console.warn(`[Webhook] Database error fetching user (retry ${retryCount}/${maxRetries}):`, dbError.message);
+              // Wait before retry with exponential backoff
+              await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 100));
+            }
           }
 
-          const user = users[0];
           console.log(`[Webhook] Found user: ${user.id} (${user.email})`);
 
           // Update user's Polar customer ID if not set
           if (!user.polarCustomerId) {
             console.log(`[Webhook] Updating user's Polar customer ID`);
-            await storage.updateUser(user.id, {
-              polarCustomerId: customerId,
-            });
+            try {
+              await storage.updateUser(user.id, {
+                polarCustomerId: customerId,
+              });
+            } catch (updateError: any) {
+              console.error(`[Webhook] ERROR: Failed to update user's Polar customer ID:`, updateError);
+              // Continue processing - this is not critical
+            }
           }
 
+          // Start database transaction for subscription processing
+          let transactionStarted = false;
           try {
-            // Check if subscription exists in database
+            // Note: If storage supports transactions, uncomment this:
+            // await storage.beginTransaction();
+            // transactionStarted = true;
+            
+            // Check if subscription exists in database (idempotency check by subscription ID)
             const existingSubscription = await storage.getSubscriptionByPolarId(subscription.id);
             
             // Determine plan from product ID
@@ -1472,9 +1664,44 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
               subscriptionBenefits: benefitsWithSubscription,
             });
 
-            console.log(`[Webhook] Successfully processed ${type} for user ${user.id}`);
-          } catch (dbError) {
-            console.error(`[Webhook] Database error processing subscription:`, dbError);
+            console.log(`[Webhook] ✓ Successfully processed ${type} for user ${user.id}`);
+            
+            // Mark webhook as successfully processed
+            await storage.markWebhookProcessed(processedEventId, {
+              status: 'success',
+              eventType: type,
+              userId: user.id,
+              subscriptionId: savedSubscription?.id,
+              timestamp: new Date(),
+            }).catch((err: any) => console.error('[Webhook] Failed to mark webhook as processed:', err));
+            
+            // Commit transaction if started
+            // if (transactionStarted) {
+            //   await storage.commitTransaction();
+            // }
+          } catch (dbError: any) {
+            console.error(`[Webhook] ERROR: Database error processing subscription:`, dbError);
+            console.error(`[Webhook] Error stack:`, dbError.stack);
+            
+            // Rollback transaction if started
+            // if (transactionStarted) {
+            //   try {
+            //     await storage.rollbackTransaction();
+            //     console.log(`[Webhook] Transaction rolled back due to error`);
+            //   } catch (rollbackError: any) {
+            //     console.error(`[Webhook] ERROR: Failed to rollback transaction:`, rollbackError);
+            //   }
+            // }
+            
+            // Mark webhook as failed but still return 200
+            await storage.markWebhookProcessed(processedEventId, {
+              status: 'failed',
+              error: 'DATABASE_ERROR',
+              errorMessage: dbError.message,
+              eventType: type,
+              timestamp: new Date(),
+            }).catch((err: any) => console.error('[Webhook] Failed to mark webhook as failed:', err));
+            
             // Continue processing - we'll still return 200 to prevent retries
           }
 
@@ -1483,20 +1710,100 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
         case 'subscription.canceled':
         case 'subscription.expired': {
+          // Validate subscription data structure
+          if (!data.subscription) {
+            console.error(`[Webhook] ERROR: Missing subscription object in ${type} event`);
+            await storage.markWebhookProcessed(processedEventId, {
+              status: 'failed',
+              error: 'MISSING_SUBSCRIPTION',
+              timestamp: new Date(),
+            }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+            
+            return res.status(200).json({ 
+              received: true, 
+              error: "MISSING_SUBSCRIPTION",
+              message: "Missing subscription object" 
+            });
+          }
+          
           const subscription = data.subscription;
+          
+          // Validate required fields for cancellation
+          if (!subscription.id || !subscription.customer_id) {
+            console.error(`[Webhook] ERROR: Missing required fields in ${type} event`);
+            await storage.markWebhookProcessed(processedEventId, {
+              status: 'failed',
+              error: 'INVALID_CANCELLATION_DATA',
+              timestamp: new Date(),
+            }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+            
+            return res.status(200).json({ 
+              received: true, 
+              error: "INVALID_CANCELLATION_DATA",
+              message: "Missing subscription ID or customer ID" 
+            });
+          }
+          
           const customerId = subscription.customer_id;
 
           console.log(`[Webhook] Processing ${type} for customer ID: ${customerId}`);
-          console.log(`[Webhook] Subscription ID: ${subscription.id}`);
+          console.log(`[Webhook] Cancellation details:`, {
+            id: subscription.id,
+            status: subscription.status,
+            canceled_at: subscription.canceled_at,
+            ended_at: subscription.ended_at,
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            cancellation_reason: subscription.cancellation_reason,
+          });
 
-          // Find user by customer ID
-          const users = await storage.getUserByPolarCustomerId(customerId);
-          if (!users || users.length === 0) {
-            console.warn(`[Webhook] No user found for customer ID: ${customerId}`);
-            return res.status(200).json({ received: true });
+          // Find user by customer ID with retry logic
+          let user;
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries) {
+            try {
+              const users = await storage.getUserByPolarCustomerId(customerId);
+              if (!users || users.length === 0) {
+                console.warn(`[Webhook] No user found for customer ID: ${customerId}`);
+                await storage.markWebhookProcessed(processedEventId, {
+                  status: 'skipped',
+                  reason: 'USER_NOT_FOUND',
+                  customerId,
+                  timestamp: new Date(),
+                }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+                
+                return res.status(200).json({ 
+                  received: true,
+                  skipped: true,
+                  reason: "User not found" 
+                });
+              }
+              user = users[0];
+              break; // Success, exit retry loop
+            } catch (dbError: any) {
+              retryCount++;
+              if (retryCount >= maxRetries) {
+                console.error(`[Webhook] ERROR: Failed to fetch user after ${maxRetries} retries:`, dbError);
+                await storage.markWebhookProcessed(processedEventId, {
+                  status: 'failed',
+                  error: 'DATABASE_ERROR',
+                  retries: retryCount,
+                  timestamp: new Date(),
+                }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+                
+                return res.status(200).json({ 
+                  received: true,
+                  error: "DATABASE_ERROR",
+                  message: "Failed to fetch user" 
+                });
+              }
+              console.warn(`[Webhook] Database error fetching user (retry ${retryCount}/${maxRetries}):`, dbError.message);
+              // Wait before retry with exponential backoff
+              await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 100));
+            }
           }
 
-          const user = users[0];
           console.log(`[Webhook] Found user: ${user.id} (${user.email})`);
 
           try {
@@ -1552,9 +1859,28 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
               subscriptionBenefits: freeBenefits,
             });
 
-            console.log(`[Webhook] Successfully processed ${type} for user ${user.id}`);
-          } catch (dbError) {
-            console.error(`[Webhook] Database error processing cancellation/expiration:`, dbError);
+            console.log(`[Webhook] ✓ Successfully processed ${type} for user ${user.id}`);
+            
+            // Mark webhook as successfully processed
+            await storage.markWebhookProcessed(processedEventId, {
+              status: 'success',
+              eventType: type,
+              userId: user.id,
+              timestamp: new Date(),
+            }).catch((err: any) => console.error('[Webhook] Failed to mark webhook as processed:', err));
+          } catch (dbError: any) {
+            console.error(`[Webhook] ERROR: Database error processing cancellation/expiration:`, dbError);
+            console.error(`[Webhook] Error stack:`, dbError.stack);
+            
+            // Mark webhook as failed but still return 200
+            await storage.markWebhookProcessed(processedEventId, {
+              status: 'failed',
+              error: 'DATABASE_ERROR',
+              errorMessage: dbError.message,
+              eventType: type,
+              timestamp: new Date(),
+            }).catch((err: any) => console.error('[Webhook] Failed to mark webhook as failed:', err));
+            
             // Continue processing - we'll still return 200 to prevent retries
           }
 
@@ -1565,24 +1891,75 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         case 'checkout.updated': {
           // Log checkout events but don't process them
           console.log(`[Webhook] Checkout event received: ${type}`);
+          
+          // Mark as acknowledged but not processed
+          await storage.markWebhookProcessed(processedEventId, {
+            status: 'acknowledged',
+            eventType: type,
+            reason: 'Checkout events are logged only',
+            timestamp: new Date(),
+          }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
+          
           break;
         }
 
         default:
-          console.log(`[Webhook] Unhandled webhook event: ${type}`);
+          console.log(`[Webhook] WARNING: Unhandled webhook event: ${type}`);
+          
+          // Mark as acknowledged but not processed
+          await storage.markWebhookProcessed(processedEventId, {
+            status: 'unhandled',
+            eventType: type,
+            timestamp: new Date(),
+          }).catch((err: any) => console.error('[Webhook] Failed to mark webhook:', err));
       }
 
+      // Calculate processing time
+      const processingTime = Date.now() - webhookStartTime;
+      
+      // Log webhook processing complete
+      console.log(`[Webhook] ========== WEBHOOK COMPLETE ==========`);
+      console.log(`[Webhook] Event: ${type}`);
+      console.log(`[Webhook] Event ID: ${processedEventId}`);
+      console.log(`[Webhook] Processing time: ${processingTime}ms`);
+      console.log(`[Webhook] =====================================`);
+
       // Always return 200 OK to prevent webhook retries
-      res.json({ received: true });
+      res.json({ 
+        received: true,
+        eventId: processedEventId,
+        eventType: type,
+        processingTimeMs: processingTime
+      });
     } catch (error: any) {
-      console.error(`[Webhook] Critical error processing webhook:`, error);
+      // Calculate processing time even on error
+      const processingTime = Date.now() - webhookStartTime;
+      
+      console.error(`[Webhook] ========== CRITICAL ERROR ==========`);
+      console.error(`[Webhook] Error processing webhook:`, error.message);
       console.error(`[Webhook] Error stack:`, error.stack);
+      console.error(`[Webhook] Event ID: ${processedEventId}`);
+      console.error(`[Webhook] Processing time before error: ${processingTime}ms`);
+      console.error(`[Webhook] ====================================`);
+      
+      // Try to mark webhook as failed
+      if (processedEventId) {
+        await storage.markWebhookProcessed(processedEventId, {
+          status: 'critical_error',
+          error: error.message,
+          errorStack: error.stack,
+          timestamp: new Date(),
+        }).catch((err: any) => console.error('[Webhook] Failed to mark critical error:', err));
+      }
       
       // Even on critical errors, return 200 OK to prevent webhook retries
       // Polar will not retry if we return 200, preventing duplicate processing
       res.status(200).json({ 
         received: true,
-        error: "Internal processing error - logged for investigation"
+        error: "CRITICAL_ERROR",
+        message: "Internal processing error - logged for investigation",
+        eventId: processedEventId,
+        processingTimeMs: processingTime
       });
     }
   });
