@@ -361,6 +361,35 @@ export type Challenge = typeof challenges.$inferSelect;
 export type InsertChallengeAttempt = z.infer<typeof insertChallengeAttemptSchema>;
 export type ChallengeAttempt = typeof challengeAttempts.$inferSelect;
 
+// Subscription table for Polar subscription tracking
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  polarSubscriptionId: varchar("polar_subscription_id").unique().notNull(),
+  polarCustomerId: varchar("polar_customer_id").notNull(),
+  productId: varchar("product_id").notNull(),
+  productName: varchar("product_name").notNull(),
+  status: text("status").notNull(), // "active", "canceled", "past_due", "trialing", etc.
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  canceledAt: timestamp("canceled_at"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+  metadata: jsonb("metadata").$type<Record<string, any>>(), // Store any additional Polar data
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Insert schema for subscriptions
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Types for subscriptions
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type SelectSubscription = typeof subscriptions.$inferSelect;
+
 // Study Groups table for collaborative learning
 export const studyGroups = pgTable("study_groups", {
   id: serial("id").primaryKey(),
