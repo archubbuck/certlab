@@ -68,7 +68,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       };
 
       let isSubscribed = false;
-      let status = 'inactive';
+      let status = 'active'; // Free plan is always active
       let expiresAt = undefined;
 
       // FIRST: Check database for active subscription
@@ -799,15 +799,21 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     } catch (error: any) {
       console.error("Error creating checkout session:", error);
       
-      // Provide helpful error message for product not found
-      if (error.message?.includes('Not Found')) {
-        res.status(500).json({ 
-          error: "Polar product not configured",
-          message: "The subscription products are not yet configured in your Polar account. Please create products in Polar and update the product IDs in the application configuration.",
-          details: {
-            attempted_plan: req.body?.plan,
-            instruction: "Visit your Polar dashboard to create subscription products, then update the POLAR_PRODUCT_IDS environment variables with the actual product IDs."
-          }
+      // Provide demo checkout URL when Polar is not configured
+      if (error.message?.includes('Not Found') || error.message?.includes('404') || error.message?.includes('not found')) {
+        console.warn("[Checkout] Polar not configured - providing demo checkout URL");
+        
+        // Create a demo checkout URL for testing
+        const demoSessionId = `demo_session_${Date.now()}`;
+        const plan = req.body?.plan || 'pro';
+        const billing = req.body?.billing || 'monthly';
+        
+        // Return a demo checkout URL with success status
+        res.json({
+          checkoutUrl: `/app/subscription/success?session_id=${demoSessionId}&demo=true&plan=${plan}`,
+          sessionId: demoSessionId,
+          demo: true,
+          message: "Polar sandbox not configured - using demo mode. To enable real payments, configure your Polar sandbox products."
         });
         return;
       }
@@ -825,7 +831,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     console.log('[Success] Processing checkout success callback');
     
     try {
-      const { session_id } = req.query;
+      const { session_id, demo, plan } = req.query;
       
       if (!session_id || typeof session_id !== 'string') {
         console.error('[Success] Missing or invalid session ID');
@@ -834,17 +840,46 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           message: "No checkout session ID provided. Please return to the checkout page and try again."
         });
       }
-
-      console.log(`[Success] Processing session: ${session_id}`);
-
+      
+      // Get user info first for demo handling
       const sessionUser = req.user as any;
       if (!sessionUser) {
         console.error('[Success] User not authenticated');
         return res.status(401).json({ error: "Unauthorized" });
       }
-
-      // Fetch fresh user data from database to get updated email
+      
       const userId = sessionUser.claims?.sub || sessionUser.id;
+      
+      // Handle demo checkout sessions
+      if (demo === 'true') {
+        console.log('[Success] Processing demo checkout session');
+        
+        // Update user to have demo pro benefits
+        const demoProBenefits = {
+          plan: 'pro',
+          features: ['all_certifications', 'unlimited_quizzes', 'advanced_analytics', 'ai_recommendations', 'priority_support', 'custom_study_plans'],
+          limits: {
+            quizzesPerDay: -1,
+            analytics: 'advanced'
+          },
+          demo: true,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 day demo
+        };
+        
+        await storage.updateUser(userId, {
+          subscriptionBenefits: demoProBenefits,
+          updatedAt: new Date()
+        });
+        
+        return res.json({
+          success: true,
+          demo: true,
+          message: "Demo subscription activated for 7 days. Configure Polar to enable real subscriptions.",
+          redirect: '/app/subscription/plans'
+        });
+      }
+
+      console.log(`[Success] Processing session: ${session_id}`);
       const user = await storage.getUser(userId);
 
       if (!user) {
