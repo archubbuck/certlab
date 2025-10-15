@@ -135,15 +135,18 @@ export default function SubscriptionPlans() {
     },
     onError: (error: any) => {
       // Provide actionable error messages
-      const isSetupError = error.message?.includes("subscription service");
+      const isSetupError = error.message?.includes("subscription service") || error.message?.includes("Polar not configured");
       const isAlreadySubscribed = error.message?.includes("already on");
       const isPaymentError = error.message?.includes("payment");
       
+      // Extract specific error message if available
+      const errorMessage = error.response?.data?.message || error.message || "We couldn't process your subscription. Please try again or contact support.";
+      
       toast({
-        title: isPaymentError ? "Payment Failed" : isAlreadySubscribed ? "Already Subscribed" : "Subscription Error",
-        description: error.message || "We couldn't process your subscription. Please try again or contact support.",
+        title: isSetupError ? "Configuration Required" : isPaymentError ? "Payment Failed" : isAlreadySubscribed ? "Already Subscribed" : "Subscription Error",
+        description: errorMessage,
         variant: "destructive",  
-        duration: isSetupError ? 8000 : 6000,
+        duration: isSetupError ? 10000 : 6000,
         action: isAlreadySubscribed ? (
           <Button 
             variant="outline" 
