@@ -45,7 +45,7 @@ export default function BreadcrumbNavigation({ className }: { className?: string
       'profile': 'Profile',
       'lecture': 'Study Guide',
       // Subscription pages
-      'subscription-plans': 'Subscription Plans',
+      'subscription/plans': 'Subscription Plans',
       'subscription-manage': 'Manage Subscription',
       'subscription-success': 'Payment Success',
       'subscription-cancel': 'Cancellation',

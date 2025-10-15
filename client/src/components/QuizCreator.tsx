@@ -78,7 +78,7 @@ export default function QuizCreator() {
         action: (
           <Button 
             size="sm" 
-            onClick={() => setLocation('/app/subscription-plans')}
+            onClick={() => setLocation('/app/subscription/plans')}
             className="bg-purple-600 text-white hover:bg-purple-700"
           >
             <Crown className="w-3 h-3 mr-1" />
@@ -365,7 +365,7 @@ export default function QuizCreator() {
                   <Button
                     size="sm"
                     className="bg-purple-600 text-white hover:bg-purple-700"
-                    onClick={() => setLocation('/app/subscription-plans')}
+                    onClick={() => setLocation('/app/subscription/plans')}
                   >
                     Upgrade Now
                   </Button>

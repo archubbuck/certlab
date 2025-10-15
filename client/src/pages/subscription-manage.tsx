@@ -176,7 +176,7 @@ export default function SubscriptionManagePage() {
           variant: "destructive",
           duration: 8000,
           action: (
-            <Link href="/app/subscription-plans">
+            <Link href="/app/subscription/plans">
               <Button variant="secondary" size="sm">
                 View Plans
               </Button>
@@ -550,7 +550,7 @@ export default function SubscriptionManagePage() {
               )}
 
               {subscription.plan === 'free' && (
-                <Link href="/app/subscription-plans">
+                <Link href="/app/subscription/plans">
                   <Button className="w-full sm:w-auto" data-testid="upgrade-plan">
                     <CreditCard className="w-4 h-4 mr-2" />
                     Upgrade to Pro

@@ -97,7 +97,7 @@ export default function SubscriptionSuccess() {
                   Check My Subscription
                 </Button>
               </Link>
-              <Link href="/app/subscription-plans">
+              <Link href="/app/subscription/plans">
                 <Button variant="outline" className="w-full sm:w-auto" data-testid="view-plans-button">
                   View Plans
                 </Button>

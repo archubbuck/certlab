@@ -713,7 +713,7 @@ export default function ProfilePage() {
 
                   <div className="flex gap-3">
                     {subscriptionStatus.plan === "free" ? (
-                      <Link href="/app/subscription-plans">
+                      <Link href="/app/subscription/plans">
                         <Button className="w-full" data-testid="upgrade-button">
                           <Crown className="h-4 w-4 mr-2" />
                           Upgrade to Pro
@@ -728,7 +728,7 @@ export default function ProfilePage() {
                           </Button>
                         </Link>
                         {subscriptionStatus.plan === "pro" && (
-                          <Link href="/app/subscription-plans">
+                          <Link href="/app/subscription/plans">
                             <Button variant="outline" data-testid="upgrade-enterprise-button">
                               <ChevronRight className="h-4 w-4 mr-2" />
                               Upgrade to Enterprise
