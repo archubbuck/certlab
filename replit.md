@@ -107,11 +107,13 @@ The application now supports automatic environment switching between Polar sandb
 #### Environment Variables Required
 ##### Development (with POLAR_SANDBOX_ prefix):
 - `POLAR_SANDBOX_API_KEY` - Your Polar sandbox API key (already set)
+- `POLAR_SANDBOX_ORGANIZATION_ID` - Your Polar organization ID in sandbox (optional)
 - `POLAR_SANDBOX_PRO_PRODUCT_ID` - Product ID for Pro plan in sandbox
 - `POLAR_SANDBOX_ENTERPRISE_PRODUCT_ID` - Product ID for Enterprise plan in sandbox
 
 ##### Production (with POLAR_ prefix):
 - `POLAR_API_KEY` - Your Polar production API key
+- `POLAR_ORGANIZATION_ID` - Your Polar organization ID in production (optional)
 - `POLAR_PRO_PRODUCT_ID` - Product ID for Pro plan in production
 - `POLAR_ENTERPRISE_PRODUCT_ID` - Product ID for Enterprise plan in production
 
