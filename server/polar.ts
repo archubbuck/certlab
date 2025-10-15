@@ -121,7 +121,7 @@ class PolarClient {
         console.warn('[Polar] ⚠️ SANDBOX API key not configured in development environment!');
         console.warn('[Polar] Please set POLAR_SANDBOX_API_KEY environment variable');
       } else {
-        console.log('[Polar] 🧪 Using SANDBOX API key:', key.substring(0, 8) + '...');
+        console.log('[Polar] 🧪 Using SANDBOX API key');
       }
     } else {
       // In production, use production API key
@@ -129,7 +129,7 @@ class PolarClient {
       if (!key) {
         console.log('[Polar] API key not configured (checked at runtime)');
       } else {
-        console.log('[Polar] 🚀 Using PRODUCTION API key:', key.substring(0, 8) + '...');
+        console.log('[Polar] 🚀 Using PRODUCTION API key');
       }
     }
     

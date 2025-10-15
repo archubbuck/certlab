@@ -109,13 +109,23 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
             trialEndsAt: dbSubscription.trialEndsAt?.toISOString(),
           },
         });
-      } else if (process.env.POLAR_API_KEY && user.email) {
-        // Database data is stale or missing - sync with Polar
-        console.log(`[Subscription Status] Syncing with Polar for user ${userId} (data ${shouldSyncWithPolar ? 'stale' : 'missing'})`);
+      } else if (user.email) {
+        // Check if Polar is configured (works for both sandbox and production)
+        const isDev = process.env.NODE_ENV === 'development' || 
+                     process.env.NODE_ENV === 'dev' ||
+                     (process.env.NODE_ENV === undefined && process.env.POLAR_SANDBOX_API_KEY !== undefined);
         
-        try {
-          const polarClient = await getPolarClient(userId);
-          const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
+        const polarConfigured = isDev 
+          ? !!process.env.POLAR_SANDBOX_API_KEY
+          : !!process.env.POLAR_API_KEY;
+        
+        if (polarConfigured) {
+          // Database data is stale or missing - sync with Polar
+          console.log(`[Subscription Status] Syncing with Polar for user ${userId} (data ${shouldSyncWithPolar ? 'stale' : 'missing'})`);
+          
+          try {
+            const polarClient = await getPolarClient(userId);
+            const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
           
           // Update user with Polar customer ID and benefits
           benefits = polarData.benefits;
@@ -183,6 +193,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
             benefits = updatedUser.subscriptionBenefits as any;
             isSubscribed = benefits.plan !== 'free';
           }
+        }
         }
       } else if (updatedUser?.subscriptionBenefits) {
         // No Polar configured - use cached benefits
@@ -305,7 +316,15 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       }
 
       // Database data is stale or missing - sync with Polar if configured
-      if (process.env.POLAR_API_KEY && user.email) {
+      const isDev = process.env.NODE_ENV === 'development' || 
+                   process.env.NODE_ENV === 'dev' ||
+                   (process.env.NODE_ENV === undefined && process.env.POLAR_SANDBOX_API_KEY !== undefined);
+      
+      const polarConfigured = isDev 
+        ? !!process.env.POLAR_SANDBOX_API_KEY
+        : !!process.env.POLAR_API_KEY;
+      
+      if (polarConfigured && user.email) {
         console.log(`[Subscription Current] Syncing with Polar for user ${userId} (data ${shouldSyncWithPolar ? 'stale' : 'missing'})`);
         
         try {
