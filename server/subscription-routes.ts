@@ -243,8 +243,17 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       const planName = validation.normalizedPlan;
       const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
 
+      // Check if Polar is configured based on environment
+      const envIsDev = process.env.NODE_ENV === 'development' || 
+                      process.env.NODE_ENV === 'dev' ||
+                      (process.env.NODE_ENV === undefined && process.env.POLAR_SANDBOX_API_KEY !== undefined);
+      
+      const polarApiConfigured = envIsDev 
+        ? !!process.env.POLAR_SANDBOX_API_KEY
+        : !!process.env.POLAR_API_KEY;
+
       return res.json({
-        isConfigured: !!process.env.POLAR_API_KEY,
+        isConfigured: polarApiConfigured,
         isSubscribed,
         plan: planName,
         status: subscriptionState.status,
