@@ -45,12 +45,32 @@ interface PolarCustomer {
 interface PolarCheckoutSession {
   id: string;
   url: string;
-  successUrl: string;
-  cancelUrl?: string;
+  status: 'pending' | 'succeeded' | 'expired' | 'failed' | 'canceled';
+  created_at: string;
+  expires_at: string;
+  success_url: string;
+  cancel_url?: string;
   customer?: PolarCustomer;
+  customer_email?: string;
+  customer_name?: string;
+  product: {
+    id: string;
+    name: string;
+    description?: string;
+  };
+  price: {
+    id: string;
+    amount: number;
+    currency: string;
+    recurring_interval?: 'month' | 'year';
+  };
+  amount?: number;
+  currency?: string;
   productId: string;
   priceId: string;
   metadata?: Record<string, any>;
+  payment_intent_status?: string;
+  subscription_id?: string;
 }
 
 class PolarClient {
@@ -328,42 +348,259 @@ class PolarClient {
     });
   }
 
-  // Checkout Sessions API - Simplified to use product ID only
+  // Checkout Sessions API - Enhanced with full compliance
   async createCheckoutSession(params: {
     productId: string;
     successUrl: string;
     cancelUrl?: string;
     customerEmail?: string;
+    customerName?: string;
     metadata?: Record<string, any>;
+    amount?: number; // For custom amount support
+    priceId?: string; // Optional specific price ID
+    allowPromotionCodes?: boolean;
+    billingAddressCollection?: boolean;
   }): Promise<PolarCheckoutSession> {
     const isDev = this.isDevelopment;
-    console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Creating checkout session with product ID:`, params.productId ? params.productId.substring(0, 8) + '...' : '(empty)');
+    
+    // Comprehensive validation
+    if (!params.productId) {
+      throw new Error('Product ID is required to create a checkout session');
+    }
+    
+    if (!params.successUrl) {
+      throw new Error('Success URL is required for checkout session');
+    }
+    
+    // Validate URLs are properly formatted
+    try {
+      new URL(params.successUrl);
+      if (params.cancelUrl) {
+        new URL(params.cancelUrl);
+      }
+    } catch (error) {
+      throw new Error('Invalid URL format in success_url or cancel_url');
+    }
+    
+    console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Creating checkout session`);
+    console.log('[Polar] Checkout parameters:', {
+      productId: params.productId ? params.productId.substring(0, 8) + '...' : '(empty)',
+      successUrl: params.successUrl,
+      cancelUrl: params.cancelUrl,
+      customerEmail: params.customerEmail ? '***' + params.customerEmail.substring(params.customerEmail.indexOf('@')) : undefined,
+      hasMetadata: !!params.metadata,
+      customAmount: params.amount,
+    });
+    
     console.log('[Polar] Environment check at checkout time:');
     if (isDev) {
       console.log('  - POLAR_SANDBOX_API_KEY:', process.env.POLAR_SANDBOX_API_KEY ? 'Set' : 'Not set');
     } else {
       console.log('  - POLAR_API_KEY:', process.env.POLAR_API_KEY ? 'Set' : 'Not set');
     }
-    console.log('  - POLAR_PRO_PRODUCT_ID:', process.env.POLAR_PRO_PRODUCT_ID ? 'Set' : 'Not set');
-    console.log('  - POLAR_ENTERPRISE_PRODUCT_ID:', process.env.POLAR_ENTERPRISE_PRODUCT_ID ? 'Set' : 'Not set');
+    console.log('  - POLAR_PRO_PRODUCT_ID:', process.env.POLAR_PRO_PRODUCT_ID ? process.env.POLAR_PRO_PRODUCT_ID.substring(0, 8) + '...' : 'Not set');
+    console.log('  - POLAR_ENTERPRISE_PRODUCT_ID:', process.env.POLAR_ENTERPRISE_PRODUCT_ID ? process.env.POLAR_ENTERPRISE_PRODUCT_ID.substring(0, 8) + '...' : 'Not set');
     
-    // Try using 'checkouts' endpoint instead of 'checkout/sessions'
-    return this.request<PolarCheckoutSession>('/checkouts', {
-      method: 'POST',
-      body: JSON.stringify({
-        product_id: params.productId,
-        success_url: params.successUrl,
-        cancel_url: params.cancelUrl,
-        customer_email: params.customerEmail,
-        metadata: params.metadata,
-        // Don't send organization_id when using organization token
-      }),
-    });
+    // Build request body according to Polar API spec
+    const requestBody: any = {
+      product_id: params.productId,
+      success_url: params.successUrl,
+    };
+    
+    // Add optional fields only if provided
+    if (params.cancelUrl) {
+      requestBody.cancel_url = params.cancelUrl;
+    }
+    
+    if (params.customerEmail) {
+      requestBody.customer_email = params.customerEmail;
+    }
+    
+    if (params.customerName) {
+      requestBody.customer_name = params.customerName;
+    }
+    
+    if (params.metadata) {
+      requestBody.metadata = params.metadata;
+    }
+    
+    if (params.amount !== undefined) {
+      requestBody.amount = params.amount;
+    }
+    
+    if (params.priceId) {
+      requestBody.price_id = params.priceId;
+    }
+    
+    if (params.allowPromotionCodes !== undefined) {
+      requestBody.allow_promotion_codes = params.allowPromotionCodes;
+    }
+    
+    if (params.billingAddressCollection !== undefined) {
+      requestBody.billing_address_collection = params.billingAddressCollection;
+    }
+    
+    try {
+      const session = await this.request<PolarCheckoutSession>('/checkouts', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+      });
+      
+      console.log('[Polar] Checkout session created successfully:', {
+        sessionId: session.id,
+        status: session.status,
+        expiresAt: session.expires_at,
+      });
+      
+      return session;
+    } catch (error: any) {
+      // Enhanced error handling with specific error messages
+      console.error('[Polar] Failed to create checkout session:', error);
+      
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        throw new Error(
+          `Product not found: The product ID '${params.productId}' does not exist in your Polar account. ` +
+          `Please verify the product ID is correct and that the product is active in your Polar dashboard.`
+        );
+      }
+      
+      if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
+        throw new Error(
+          'Authentication failed: Please check your Polar API key configuration. ' +
+          'Ensure you are using the correct API key for the current environment (sandbox vs production).'
+        );
+      }
+      
+      if (error.message?.includes('400') || error.message?.includes('bad request')) {
+        throw new Error(
+          `Invalid checkout request: ${error.message}. ` +
+          'Please verify all required fields are provided and properly formatted.'
+        );
+      }
+      
+      // Re-throw with more context
+      throw new Error(`Failed to create Polar checkout session: ${error.message}`);
+    }
   }
 
   async getCheckoutSession(sessionId: string): Promise<PolarCheckoutSession> {
-    // Update to match the checkouts endpoint
-    return this.request<PolarCheckoutSession>(`/checkouts/${sessionId}`);
+    if (!sessionId) {
+      throw new Error('Session ID is required to retrieve checkout session');
+    }
+    
+    console.log('[Polar] Retrieving checkout session:', sessionId);
+    
+    try {
+      const session = await this.request<PolarCheckoutSession>(`/checkouts/${sessionId}`);
+      
+      // Log session status for debugging
+      console.log('[Polar] Checkout session retrieved:', {
+        sessionId: session.id,
+        status: session.status,
+        createdAt: session.created_at,
+        expiresAt: session.expires_at,
+        hasCustomer: !!session.customer,
+        hasProduct: !!session.product,
+        subscriptionId: session.subscription_id,
+      });
+      
+      // Check session status and provide helpful information
+      if (session.status === 'expired') {
+        console.warn('[Polar] Checkout session has expired:', sessionId);
+        throw new Error(
+          'This checkout session has expired. Please start a new checkout process to continue with your subscription.'
+        );
+      }
+      
+      if (session.status === 'canceled') {
+        console.warn('[Polar] Checkout session was canceled:', sessionId);
+        throw new Error(
+          'This checkout session was canceled. Please start a new checkout process if you wish to subscribe.'
+        );
+      }
+      
+      if (session.status === 'failed') {
+        console.error('[Polar] Checkout session failed:', sessionId);
+        throw new Error(
+          'This checkout session failed due to a payment issue. Please try again with a different payment method.'
+        );
+      }
+      
+      // Check if session is near expiration (within 5 minutes)
+      if (session.expires_at) {
+        const expiresAt = new Date(session.expires_at);
+        const now = new Date();
+        const timeUntilExpiry = expiresAt.getTime() - now.getTime();
+        const fiveMinutesInMs = 5 * 60 * 1000;
+        
+        if (timeUntilExpiry < fiveMinutesInMs && timeUntilExpiry > 0) {
+          console.warn('[Polar] Checkout session expiring soon:', {
+            sessionId,
+            expiresIn: Math.round(timeUntilExpiry / 1000) + ' seconds',
+          });
+        }
+      }
+      
+      // Return the complete session details
+      return session;
+    } catch (error: any) {
+      console.error('[Polar] Failed to retrieve checkout session:', error);
+      
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        throw new Error(
+          `Checkout session not found: The session ID '${sessionId}' does not exist or has already been used. ` +
+          'Please start a new checkout process.'
+        );
+      }
+      
+      if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
+        throw new Error(
+          'Authentication failed while retrieving checkout session. Please contact support.'
+        );
+      }
+      
+      // Re-throw the error if it's already formatted
+      if (error.message?.includes('expired') || error.message?.includes('canceled') || error.message?.includes('failed')) {
+        throw error;
+      }
+      
+      // Generic error
+      throw new Error(`Failed to retrieve checkout session: ${error.message}`);
+    }
+  }
+  
+  // Helper method to validate checkout session for processing
+  async validateCheckoutSession(sessionId: string): Promise<{
+    isValid: boolean;
+    session?: PolarCheckoutSession;
+    error?: string;
+  }> {
+    try {
+      const session = await this.getCheckoutSession(sessionId);
+      
+      if (session.status !== 'succeeded') {
+        return {
+          isValid: false,
+          session,
+          error: `Checkout session is in ${session.status} state. Only succeeded sessions can be processed.`,
+        };
+      }
+      
+      // Check if session has already been processed (has subscription_id)
+      if (session.subscription_id) {
+        console.log('[Polar] Checkout session already processed with subscription:', session.subscription_id);
+      }
+      
+      return {
+        isValid: true,
+        session,
+      };
+    } catch (error: any) {
+      return {
+        isValid: false,
+        error: error.message,
+      };
+    }
   }
 
   // Webhook verification with proper HMAC-SHA256 and timing-safe comparison

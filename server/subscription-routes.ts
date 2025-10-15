@@ -439,25 +439,33 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     res.json({ plans });
   });
 
-  // Create checkout session for subscription - REFACTORED
+  // Create checkout session for subscription - ENHANCED
   app.post("/api/subscription/checkout", isAuthenticated, async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    console.log('[Checkout] Starting new checkout session request');
+    
     try {
       const sessionUser = req.user as any;
       if (!sessionUser) {
+        console.log('[Checkout] Unauthorized - no session user');
         return res.status(401).json({ error: "Unauthorized" });
       }
 
       // Fetch fresh user data from database to get updated email
       const userId = sessionUser.claims?.sub || sessionUser.id;
+      console.log(`[Checkout] Processing checkout for user: ${userId}`);
+      
       const user = await storage.getUser(userId);
 
       if (!user) {
+        console.error(`[Checkout] User not found: ${userId}`);
         return res.status(401).json({ error: "User not found" });
       }
 
       // Validate request body
       const result = createCheckoutSchema.safeParse(req.body);
       if (!result.success) {
+        console.log('[Checkout] Validation failed:', fromError(result.error).toString());
         return res.status(400).json({ 
           error: "Validation error", 
           details: fromError(result.error).toString() 
@@ -465,40 +473,55 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       }
 
       const { plan, billingInterval } = result.data;
+      console.log(`[Checkout] Requested plan: ${plan}, billing: ${billingInterval}`);
       
       // Require email for all users
       if (!user.email) {
+        console.log('[Checkout] User missing email address');
         return res.status(400).json({ 
           error: "Email required", 
-          message: "Please set up an email address in your profile to subscribe" 
+          message: "Please set up an email address in your profile to subscribe",
+          action: "update_profile"
         });
       }
 
       // Check if Polar is configured
-      if (!process.env.POLAR_API_KEY) {
+      if (!process.env.POLAR_API_KEY && !process.env.POLAR_SANDBOX_API_KEY) {
+        console.error('[Checkout] Polar API keys not configured');
         return res.status(503).json({ 
           error: "Service unavailable", 
-          message: "Subscription service is not configured. Please contact support." 
+          message: "Subscription service is not configured. Please contact support.",
+          supportInfo: "The Polar integration needs to be set up by the administrator."
         });
       }
 
       // Get the plan configuration
       const planConfig = SUBSCRIPTION_PLANS[plan];
-      // Free plan doesn't have productId - that's ok, we'll handle it below
+      
       if (!planConfig) {
+        console.error(`[Checkout] Invalid plan requested: ${plan}`);
         return res.status(400).json({ 
           error: "Invalid plan", 
-          message: "The selected plan is not available" 
+          message: `The plan '${plan}' is not available. Available plans are: pro, enterprise.`,
+          availablePlans: ['pro', 'enterprise']
         });
       }
       
-      // Check if plan has productId (free plan doesn't)
-      if (!('productId' in planConfig) || !planConfig.productId) {
-        return res.status(400).json({ 
-          error: "Invalid plan", 
-          message: "The selected plan requires a valid product ID configuration" 
+      // Validate product ID configuration early
+      const productId = ('productId' in planConfig) ? planConfig.productId : null;
+      
+      if (!productId) {
+        console.error(`[Checkout] Product ID not configured for plan: ${plan}`);
+        const envVarName = plan === 'pro' ? 'POLAR_PRO_PRODUCT_ID' : 'POLAR_ENTERPRISE_PRODUCT_ID';
+        return res.status(500).json({ 
+          error: "Configuration error", 
+          message: `The ${plan} plan is not properly configured. Product ID is missing.`,
+          details: `The environment variable ${envVarName} must be set with a valid Polar product ID.`,
+          action: "contact_support"
         });
       }
+      
+      console.log(`[Checkout] Product ID validated for plan ${plan}: ${productId.substring(0, 8)}...`);
 
       // Get the appropriate Polar client for this user
       const polarClient = await getPolarClient(userId);
@@ -514,6 +537,32 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         polarCustomerId: customer.id,
       });
 
+      // Check for any pending checkout sessions first
+      const existingPendingCheckout = await storage.getSubscriptionByUserId(userId);
+      
+      if (existingPendingCheckout && existingPendingCheckout.status === 'pending_checkout') {
+        console.log('[Checkout] Found existing pending checkout for user');
+        
+        // Check if the pending checkout is still valid (created within last 1 hour)
+        const checkoutAge = Date.now() - new Date(existingPendingCheckout.createdAt || 0).getTime();
+        const oneHourInMs = 60 * 60 * 1000;
+        
+        if (checkoutAge < oneHourInMs) {
+          const checkoutMetadata = existingPendingCheckout.metadata as any;
+          if (checkoutMetadata?.checkoutUrl) {
+            console.log('[Checkout] Returning existing valid checkout session');
+            return res.json({
+              checkoutUrl: checkoutMetadata.checkoutUrl,
+              sessionId: checkoutMetadata.checkoutSessionId,
+              message: "You have an existing checkout session that's still valid. Redirecting to complete your purchase.",
+              existingSession: true,
+            });
+          }
+        } else {
+          console.log('[Checkout] Existing pending checkout expired, creating new one');
+        }
+      }
+      
       // Check if customer has any existing subscriptions
       const existingSubscriptions = await polarClient.getSubscriptions(customer.id);
       
@@ -616,13 +665,13 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Priority 1: Use APP_URL if explicitly set
       if (process.env.APP_URL) {
         baseUrl = process.env.APP_URL;
-        console.log('[Subscription] Using APP_URL for checkout:', baseUrl);
+        console.log('[Checkout] Using APP_URL for base URL:', baseUrl);
       } else {
         // Priority 2: Try to use REPLIT_DOMAINS if available (production Replit)
         if (process.env.REPLIT_DOMAINS) {
           const replitDomain = process.env.REPLIT_DOMAINS.split(',')[0].trim();
           baseUrl = `https://${replitDomain}`;
-          console.log('[Subscription] Using REPLIT_DOMAINS for checkout:', baseUrl);
+          console.log('[Checkout] Using REPLIT_DOMAINS for base URL:', baseUrl);
         } else {
           // Priority 3: Derive from request headers
           const protocol = req.get('x-forwarded-proto') || req.protocol;
@@ -631,10 +680,10 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           if (!host) {
             // Fallback to localhost if no host header
             baseUrl = 'http://localhost:5000';
-            console.warn('[Subscription] Warning: Using fallback localhost URL for checkout');
+            console.warn('[Checkout] Warning: Using fallback localhost URL');
           } else {
             baseUrl = `${protocol}://${host}`;
-            console.log('[Subscription] Using request headers for checkout:', baseUrl);
+            console.log('[Checkout] Using request headers for base URL:', baseUrl);
           }
         }
       }
@@ -642,40 +691,46 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Ensure baseUrl doesn't have trailing slash
       baseUrl = baseUrl.replace(/\/$/, '');
       
-      console.log(`[Subscription] Creating checkout for user ${user.email} with baseUrl: ${baseUrl}`);
+      console.log(`[Checkout] Creating session for user ${user.email}`);
       
-      // Check productId again before creating session (defensive programming)
-      if (!('productId' in planConfig) || !planConfig.productId) {
-        return res.status(400).json({ 
-          error: "Invalid plan configuration",
-          message: "Cannot create checkout session without a product ID"
+      // Double-check productId before creating session (defensive programming)
+      if (!productId) {
+        console.error('[Checkout] Product ID missing at session creation');
+        return res.status(500).json({ 
+          error: "Configuration error",
+          message: "Product ID is not available for checkout session creation"
         });
       }
       
-      // Log the URLs being used for debugging
+      // Build URLs with proper session ID placeholder
+      // Polar will replace {CHECKOUT_SESSION_ID} with the actual session ID
       const successUrl = `${baseUrl}/app/subscription/success?session_id={CHECKOUT_SESSION_ID}`;
       const cancelUrl = `${baseUrl}/app/subscription/cancel`;
       
-      console.log('[Subscription] Checkout URLs:', {
-        success: successUrl,
+      console.log('[Checkout] URLs configured:', {
+        success: successUrl.replace('{CHECKOUT_SESSION_ID}', '[SESSION_ID]'),
         cancel: cancelUrl,
-        productId: planConfig.productId,
-        customerEmail: user.email
+        baseUrl: baseUrl
       });
+      
+      // Prepare customer name if available
+      const customerName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || undefined;
 
       const session = await polarClient.createCheckoutSession({
-        productId: planConfig.productId,
+        productId: productId,
         successUrl: successUrl,
         cancelUrl: cancelUrl,
         customerEmail: user.email,
+        customerName: customerName,
         metadata: {
           userId: userId,
           plan: plan,
           billingInterval: billingInterval || 'month',
+          requestTime: new Date().toISOString(),
         },
       });
 
-      console.log(`[Subscription] Checkout session created successfully: ${session.id}`);
+      console.log(`[Checkout] Checkout session created successfully: ${session.id}`);
 
       // Prepare database for incoming webhook by creating a pending subscription record
       // This helps track checkout sessions and handle webhook delays
@@ -683,7 +738,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         userId: userId,
         polarSubscriptionId: session.id, // Store checkout session ID temporarily
         polarCustomerId: customer.id,
-        productId: planConfig.productId,
+        productId: productId, // Use the validated productId variable
         status: 'pending_checkout',
         plan: plan,
         billingInterval: billingInterval,
@@ -735,17 +790,27 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   });
 
-  // Handle successful checkout (callback from Polar) - REFACTORED
+  // Handle successful checkout (callback from Polar) - ENHANCED with validation
   app.get("/api/subscription/success", isAuthenticated, async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    console.log('[Success] Processing checkout success callback');
+    
     try {
       const { session_id } = req.query;
       
       if (!session_id || typeof session_id !== 'string') {
-        return res.status(400).json({ error: "Missing session ID" });
+        console.error('[Success] Missing or invalid session ID');
+        return res.status(400).json({ 
+          error: "Missing session ID",
+          message: "No checkout session ID provided. Please return to the checkout page and try again."
+        });
       }
+
+      console.log(`[Success] Processing session: ${session_id}`);
 
       const sessionUser = req.user as any;
       if (!sessionUser) {
+        console.error('[Success] User not authenticated');
         return res.status(401).json({ error: "Unauthorized" });
       }
 
@@ -754,47 +819,189 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       const user = await storage.getUser(userId);
 
       if (!user) {
+        console.error(`[Success] User not found: ${userId}`);
         return res.status(401).json({ error: "User not found" });
       }
 
       // Get the appropriate Polar client for this user
       const polarClient = await getPolarClient(userId);
       
-      // Verify the checkout session
-      const session = await polarClient.getCheckoutSession(session_id);
+      // Validate the checkout session using the new helper method
+      const validation = await polarClient.validateCheckoutSession(session_id);
       
-      // Sync from Polar
-      if (user.email) {
-        const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
+      if (!validation.isValid || !validation.session) {
+        console.error('[Success] Session validation failed:', validation.error);
         
-        if (polarData.benefits.plan !== 'free') {
-          // Update user subscription benefits in database
-          await storage.updateUser(userId, {
-            polarCustomerId: polarData.customerId,
-            subscriptionBenefits: polarData.benefits,
+        // Provide specific error messages based on the failure reason
+        if (validation.error?.includes('expired')) {
+          return res.status(400).json({ 
+            error: "Session expired",
+            message: "This checkout session has expired. Please start a new subscription process.",
+            action: "restart_checkout"
           });
-
-          const planName = polarData.benefits.plan;
-          const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.pro;
-
+        }
+        
+        if (validation.error?.includes('canceled')) {
+          return res.status(400).json({ 
+            error: "Session canceled",
+            message: "This checkout session was canceled. Please start a new subscription if you wish to proceed.",
+            action: "restart_checkout"
+          });
+        }
+        
+        if (validation.error?.includes('not found')) {
+          return res.status(404).json({ 
+            error: "Session not found",
+            message: "This checkout session could not be found. It may have already been processed or the link is invalid.",
+            action: "contact_support"
+          });
+        }
+        
+        return res.status(400).json({ 
+          error: "Invalid session",
+          message: validation.error || "The checkout session is not valid for processing.",
+          action: "restart_checkout"
+        });
+      }
+      
+      const session = validation.session;
+      console.log('[Success] Session validated successfully:', {
+        status: session.status,
+        hasSubscriptionId: !!session.subscription_id,
+        product: session.product?.name,
+      });
+      
+      // Check if this session has already been processed
+      const existingDbSubscription = await storage.getSubscriptionByUserId(userId);
+      
+      if (existingDbSubscription?.metadata) {
+        const metadata = existingDbSubscription.metadata as any;
+        if (metadata.checkoutSessionId === session_id && existingDbSubscription.status !== 'pending_checkout') {
+          console.log('[Success] Session already processed');
+          const planName = existingDbSubscription.plan || 'pro';
+          const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS];
+          
           return res.json({
             success: true,
-            message: "Subscription activated successfully",
+            message: "Your subscription is already active",
             plan: planName,
-            features: plan.features,
+            features: plan?.features,
+            alreadyProcessed: true,
           });
         }
       }
-
-      res.status(400).json({ 
-        error: "Subscription verification failed",
-        message: "Unable to verify subscription. Please contact support." 
-      });
+      
+      // Implement retry logic for webhook race conditions
+      // Try to sync subscription data with retries
+      let retries = 0;
+      const maxRetries = 3;
+      const retryDelay = 2000; // 2 seconds
+      
+      let subscriptionActivated = false;
+      let planName: string | undefined;
+      
+      while (retries < maxRetries && !subscriptionActivated) {
+        console.log(`[Success] Attempt ${retries + 1} to sync subscription data`);
+        
+        try {
+          // Sync subscription data from Polar
+          if (user.email) {
+            const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
+            
+            if (polarData.benefits.plan !== 'free') {
+              // Subscription found - update database
+              subscriptionActivated = true;
+              planName = polarData.benefits.plan;
+              
+              console.log(`[Success] Subscription activated: ${planName}`);
+              
+              // Update user subscription benefits in database
+              await storage.updateUser(userId, {
+                polarCustomerId: polarData.customerId,
+                subscriptionBenefits: polarData.benefits,
+              });
+              
+              // Update or create subscription record
+              if (existingDbSubscription) {
+                await storage.updateSubscription(existingDbSubscription.id, {
+                  status: 'active',
+                  plan: planName,
+                  metadata: {
+                    ...((existingDbSubscription.metadata as any) || {}),
+                    checkoutSessionId: session_id,
+                    activatedAt: new Date().toISOString(),
+                    processedBySuccess: true,
+                  },
+                });
+              } else {
+                // Create new subscription record
+                await storage.createSubscription({
+                  userId: userId,
+                  polarSubscriptionId: session.subscription_id || session_id,
+                  polarCustomerId: polarData.customerId,
+                  productId: session.productId,
+                  priceId: session.priceId,
+                  status: 'active',
+                  plan: planName,
+                  metadata: {
+                    checkoutSessionId: session_id,
+                    activatedAt: new Date().toISOString(),
+                    processedBySuccess: true,
+                  },
+                });
+              }
+              
+              break; // Success - exit retry loop
+            }
+          }
+          
+          // If we didn't find a subscription, the webhook might not have processed yet
+          if (!subscriptionActivated && retries < maxRetries - 1) {
+            console.log('[Success] Subscription not found yet, waiting for webhook processing...');
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            retries++;
+          } else {
+            break;
+          }
+        } catch (syncError: any) {
+          console.error('[Success] Error syncing subscription:', syncError);
+          if (retries < maxRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            retries++;
+          } else {
+            throw syncError;
+          }
+        }
+      }
+      
+      if (subscriptionActivated && planName) {
+        const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.pro;
+        console.log(`[Success] Successfully activated ${planName} subscription for user ${userId}`);
+        
+        return res.json({
+          success: true,
+          message: `Your ${planName} subscription has been activated successfully!`,
+          plan: planName,
+          features: plan.features,
+          processingTime: Date.now() - startTime,
+        });
+      } else {
+        // Subscription not found after retries
+        console.warn('[Success] Subscription not activated after retries');
+        return res.status(400).json({ 
+          error: "Subscription pending",
+          message: "Your payment was received but subscription activation is still pending. Please refresh the page in a few moments or contact support if the issue persists.",
+          action: "wait_and_retry",
+          sessionId: session_id,
+        });
+      }
     } catch (error: any) {
-      console.error("Error handling subscription success:", error);
+      console.error("[Success] Error handling subscription success:", error);
       res.status(500).json({ 
         error: "Failed to activate subscription",
-        message: error.message 
+        message: "An error occurred while activating your subscription. Please contact support with your session ID.",
+        sessionId: req.query.session_id,
+        details: error.message 
       });
     }
   });
