@@ -721,17 +721,6 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
       }
       
-      // Build URLs with proper session ID placeholder
-      // Polar will replace {CHECKOUT_SESSION_ID} with the actual session ID
-      const successUrl = `${baseUrl}/app/subscription/success?session_id={CHECKOUT_SESSION_ID}`;
-      const cancelUrl = `${baseUrl}/app/subscription/cancel`;
-      
-      console.log('[Checkout] URLs configured:', {
-        success: successUrl.replace('{CHECKOUT_SESSION_ID}', '[SESSION_ID]'),
-        cancel: cancelUrl,
-        baseUrl: baseUrl
-      });
-      
       // Prepare customer name if available
       const customerName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || undefined;
       
@@ -745,6 +734,19 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         customerEmail = customerEmail.replace('@example.com', '@test.com');
       }
 
+      // Generate a temporary checkout ID that we'll use to track this session
+      const tempCheckoutId = `checkout_${Date.now()}_${userId}`;
+      
+      // Build URLs - we'll use our own tracking mechanism since Polar sandbox doesn't replace placeholders reliably
+      const successUrl = `${baseUrl}/app/subscription/success?checkout_id=${tempCheckoutId}`;
+      const cancelUrl = `${baseUrl}/app/subscription/cancel`;
+      
+      console.log('[Checkout] URLs configured:', {
+        success: successUrl,
+        cancel: cancelUrl,
+        baseUrl: baseUrl
+      });
+
       const session = await polarClient.createCheckoutSession({
         productId: productId,
         successUrl: successUrl,
@@ -756,6 +758,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           plan: plan,
           billingInterval: billingInterval || 'month',
           requestTime: new Date().toISOString(),
+          checkoutId: tempCheckoutId, // Our tracking ID
         },
       });
 
@@ -774,6 +777,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         billingInterval: billingInterval,
         metadata: {
           checkoutSessionId: session.id,
+          checkoutTrackingId: tempCheckoutId, // Our custom tracking ID
           checkoutCreatedAt: new Date().toISOString(),
           checkoutUrl: session.url,
           isPendingCheckout: true,
@@ -1593,20 +1597,23 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
   // Confirm checkout session after successful payment - ENHANCED WITH FULL VERIFICATION
   app.get("/api/subscription/confirm", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { session_id } = req.query;
+      const { session_id, checkout_id } = req.query;
       const user = req.user as User;
       const userId = (user as any).claims?.sub || (user as any).id;
 
-      console.log(`[Subscription Confirm] Starting checkout confirmation for session ${session_id}, user ${userId}`);
+      console.log(`[Subscription Confirm] Starting checkout confirmation for session ${session_id || checkout_id}, user ${userId}`);
 
-      if (!session_id || typeof session_id !== 'string') {
-        console.error('[Subscription Confirm] Missing or invalid session ID');
+      // Handle both session_id and checkout_id parameters
+      if (!session_id && !checkout_id) {
+        console.error('[Subscription Confirm] Missing session ID and checkout ID');
         return res.status(400).json({ 
           error: "Missing session ID",
           success: false,
           message: "Invalid checkout session reference"
         });
       }
+      
+      const verificationId = session_id || checkout_id;
 
       // Get user data for processing
       const userData = await storage.getUserById(userId);
@@ -1643,9 +1650,44 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         // Get the appropriate Polar client for this user
         const polarClient = await getPolarClient(userId);
         
+        // If using checkout_id, look up the actual Polar session ID from our database
+        let actualSessionId: string;
+        
+        if (checkout_id && typeof checkout_id === 'string' && !session_id) {
+          // Look up the pending subscription by our custom checkout ID
+          const pendingSubscription = await storage.getSubscriptionByUserId(userId);
+          
+          if (pendingSubscription && pendingSubscription.metadata) {
+            const metadata = pendingSubscription.metadata as any;
+            
+            // Check if this is the matching checkout
+            if (metadata.checkoutTrackingId === checkout_id) {
+              actualSessionId = metadata.checkoutSessionId || pendingSubscription.polarSubscriptionId;
+              console.log(`[Subscription Confirm] Found Polar session ID ${actualSessionId} for checkout ID ${checkout_id}`);
+            } else {
+              console.error(`[Subscription Confirm] Checkout ID mismatch. Expected: ${checkout_id}, Found: ${metadata.checkoutTrackingId}`);
+              return res.status(400).json({
+                error: "Invalid checkout",
+                success: false,
+                message: "This checkout session does not belong to your account or has expired"
+              });
+            }
+          } else {
+            console.error(`[Subscription Confirm] No pending subscription found for checkout ID ${checkout_id}`);
+            return res.status(400).json({
+              error: "Checkout not found",
+              success: false,
+              message: "Could not find your checkout session. It may have expired or already been processed."
+            });
+          }
+        } else {
+          // Using direct session_id
+          actualSessionId = session_id as string;
+        }
+        
         // Validate the checkout session
         console.log('[Subscription Confirm] Validating checkout session with Polar...');
-        const verification = await polarClient.validateCheckoutSession(session_id);
+        const verification = await polarClient.validateCheckoutSession(actualSessionId);
         
         // Check if session belongs to this user (by email)
         const isAlreadyProcessed = verification.session?.subscription_id ? true : false;
