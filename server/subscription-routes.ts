@@ -564,16 +564,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Get the appropriate Polar client for this user
       const polarClient = await getPolarClient(userId);
       
-      // Create or get customer in Polar
-      const customer = await polarClient.createOrGetCustomerForUser(
-        user.email,
-        `${user.firstName || ''} ${user.lastName || ''}`.trim() || undefined
-      );
-
-      // Store Polar customer ID
-      await storage.updateUser(userId, {
-        polarCustomerId: customer.id,
-      });
+      // Skip customer creation - let the checkout session handle it
+      // Polar will create the customer automatically when checkout completes
+      console.log('[Checkout] Proceeding without pre-creating customer (will be created during checkout)');
 
       // Check for any pending checkout sessions first
       const existingPendingCheckout = await storage.getSubscriptionByUserId(userId);
@@ -601,13 +594,9 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         }
       }
       
-      // Check if customer has any existing subscriptions
-      const existingSubscriptions = await polarClient.getSubscriptions(customer.id);
-      
-      // Find active or trialing subscription
-      const activeSubscription = existingSubscriptions.find(sub => 
-        sub.status === 'active' || sub.status === 'trialing'
-      );
+      // Skip checking for existing subscriptions - let Polar handle this
+      // If user has an active subscription, Polar will manage the upgrade/switch
+      let activeSubscription = null;
 
       // Handle existing subscription - check if we can switch directly or need checkout
       if (activeSubscription) {
@@ -685,16 +674,8 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         }
       }
 
-      // Check for cancelled subscription that might block new checkout
-      const cancelledSubscription = existingSubscriptions.find(sub => 
-        sub.status === 'canceled' && sub.cancelAtPeriodEnd === false
-      );
-
-      if (cancelledSubscription) {
-        console.log(`User ${user.email} has a cancelled subscription, may need special handling`);
-        // For cancelled subscriptions that have ended, proceed with new checkout
-        // Polar should handle this case appropriately
-      }
+      // Skip checking for cancelled subscriptions - let Polar handle this
+      // Polar will manage subscription states and prevent conflicts
 
       // No active subscription or switching failed - create new checkout session
       // Properly derive the base URL from request headers
