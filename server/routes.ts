@@ -469,16 +469,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Grant credits to customer
-        console.log('[Credits Verify] Granting credits:', {
+        // Report credit purchase via meter event
+        console.log('[Credits Verify] Reporting credit purchase:', {
           customerId: polarCustomer.id,
           credits,
         });
 
-        await polarClient.grantCredits({
+        const productId = session.metadata?.packageId || session.productId;
+        await polarClient.reportPurchase({
           customerId: polarCustomer.id,
           amount: credits,
-          description: `Purchase of ${credits} credits (Session: ${session.id})`,
+          sessionId: session.id,
+          productId,
         });
 
         // Get updated balance
@@ -566,14 +568,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Grant credits
-      await polarClient.grantCredits({
+      // Report credit purchase via meter event
+      const productId = metadata.packageId || data.product_id;
+      await polarClient.reportPurchase({
         customerId: polarCustomer.id,
         amount: credits,
-        description: `Webhook: Purchase of ${credits} credits (Session: ${data.id})`,
+        sessionId: data.id,
+        productId,
       });
 
-      console.log('[Polar Webhook] Credits granted via webhook:', {
+      console.log('[Polar Webhook] Credit purchase reported via webhook:', {
         customerId: polarCustomer.id,
         credits,
       });
