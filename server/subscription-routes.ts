@@ -599,9 +599,20 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         }
       }
       
-      // Skip checking for existing subscriptions - let Polar handle this
-      // If user has an active subscription, Polar will manage the upgrade/switch
+      // Check for existing subscription to determine upgrade path
+      // Paid-to-paid upgrades can use direct API switch, free-to-paid needs checkout
+      const dbSubscription = await storage.getSubscriptionByUserId(userId);
       let activeSubscription = null;
+      
+      // Only consider active or trialing subscriptions as "active"
+      if (dbSubscription && (dbSubscription.status === 'active' || dbSubscription.status === 'trialing')) {
+        activeSubscription = dbSubscription;
+        console.log(`[Checkout] User has existing active subscription: ${dbSubscription.plan}`);
+      } else if (dbSubscription) {
+        console.log(`[Checkout] User has non-active subscription (status: ${dbSubscription.status})`);
+      } else {
+        console.log(`[Checkout] User has no existing subscription (free tier)`);
+      }
 
       // Handle existing subscription - check if we can switch directly or need checkout
       if (activeSubscription) {
@@ -628,26 +639,50 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
               });
             }
             
-            // Use switchSubscriptionPlan for immediate upgrade
+            // Use switchSubscriptionPlan for immediate upgrade with proration
+            console.log(`[Checkout] Calling Polar API to switch subscription`);
             const updatedSubscription = await polarClient.switchSubscriptionPlan({
-              subscriptionId: (activeSubscription as any).id,
+              subscriptionId: (activeSubscription as any).polarSubscriptionId, // Use Polar subscription ID
               newProductId: productId,
-              switchAtPeriodEnd: false, // Switch immediately for upgrades
+              priceId: priceId, // Include price ID for monthly/yearly specificity
+              switchAtPeriodEnd: false, // Switch immediately for upgrades (with proration)
             });
 
-            // For regular users, sync from Polar
+            console.log(`[Checkout] Subscription switched successfully:`, updatedSubscription.id);
+
+            // Update database subscription record
+            await storage.updateSubscription(dbSubscription.id, {
+              productId: productId,
+              priceId: priceId,
+              plan: plan,
+              billingInterval: billingInterval || 'monthly',
+              status: updatedSubscription.status,
+              currentPeriodStart: updatedSubscription.currentPeriodStart ? new Date(updatedSubscription.currentPeriodStart) : undefined,
+              currentPeriodEnd: updatedSubscription.currentPeriodEnd ? new Date(updatedSubscription.currentPeriodEnd) : undefined,
+              metadata: {
+                ...dbSubscription.metadata,
+                lastUpgrade: new Date().toISOString(),
+                previousPlan: currentPlan,
+                upgradeType: 'paid_to_paid',
+              },
+            });
+
+            // Sync benefits from Polar and update user
             const polarData = await polarClient.syncUserSubscriptionBenefits(user.email);
             await storage.updateUser(userId, {
               subscriptionBenefits: polarData.benefits,
             });
 
+            console.log(`[Checkout] Successfully upgraded ${currentPlan} → ${plan}`);
+
             // Return success response for immediate upgrade
             return res.json({
               success: true,
-              message: `Successfully upgraded to ${plan} plan`,
+              message: `Successfully upgraded from ${currentPlan} to ${plan}. Proration has been applied to your next bill.`,
               upgraded: true,
               plan: plan,
-              redirectUrl: '/app/subscription/success', // Redirect to success page
+              previousPlan: currentPlan,
+              redirectUrl: '/app/subscription/success',
             });
           } catch (switchError: any) {
             console.error('Error switching subscription plan:', switchError);
