@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Coins, Sparkles, Zap, Crown, Check, Loader2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 interface CreditProduct {
   id: string;
@@ -28,7 +29,9 @@ interface CreditProduct {
 
 export default function Credits() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [verifyingPurchase, setVerifyingPurchase] = useState(false);
 
   // Fetch credit products from Polar
   const { data: products = [], isLoading: productsLoading } = useQuery<CreditProduct[]>({
@@ -89,6 +92,67 @@ export default function Credits() {
     purchaseMutation.mutate(productId);
   };
 
+  // Handle purchase verification on return from Polar
+  useEffect(() => {
+    const verifyPurchase = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const purchaseStatus = params.get('purchase');
+      const sessionId = params.get('session_id');
+
+      if (purchaseStatus === 'success' && sessionId) {
+        setVerifyingPurchase(true);
+
+        try {
+          const response = await fetch(`/api/credits/verify?session_id=${sessionId}`, {
+            credentials: 'include',
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to verify purchase');
+          }
+
+          const data = await response.json();
+
+          if (data.success) {
+            toast({
+              title: "Purchase Successful! 🎉",
+              description: `${data.credits} credits added to your account. You now have ${data.balance} credits.`,
+              duration: 5000,
+            });
+
+            // Invalidate queries to refresh balance
+            queryClient.invalidateQueries({ queryKey: ['/api/credits/balance'] });
+
+            // Clear query parameters
+            window.history.replaceState({}, '', '/app/credits');
+          } else {
+            throw new Error('Purchase verification failed');
+          }
+        } catch (error: any) {
+          console.error('Error verifying purchase:', error);
+          toast({
+            title: "Verification Error",
+            description: "We couldn't verify your purchase. Please refresh the page or contact support.",
+            variant: "destructive",
+          });
+        } finally {
+          setVerifyingPurchase(false);
+        }
+      } else if (purchaseStatus === 'canceled') {
+        toast({
+          title: "Purchase Canceled",
+          description: "Your purchase was canceled. No charges were made.",
+          variant: "default",
+        });
+
+        // Clear query parameters
+        window.history.replaceState({}, '', '/app/credits');
+      }
+    };
+
+    verifyPurchase();
+  }, [toast]);
+
   // Generate default features if not provided
   const getProductFeatures = (product: CreditProduct): string[] => {
     if (product.features && product.features.length > 0) {
@@ -107,6 +171,23 @@ export default function Credits() {
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+      {/* Verifying Purchase Overlay */}
+      {verifyingPurchase && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <Card className="p-8 max-w-md">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="w-12 h-12 animate-spin text-primary" />
+              <div className="text-center">
+                <h3 className="text-xl font-bold mb-2">Verifying Your Purchase</h3>
+                <p className="text-muted-foreground">
+                  Please wait while we confirm your credit purchase...
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">

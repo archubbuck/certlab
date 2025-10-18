@@ -363,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create Polar checkout session for credit purchase
         const checkoutSession = await polarClient.createCheckoutSession({
           priceId,
-          successUrl: `${baseUrl}/app/credits?purchase=success`,
+          successUrl: `${baseUrl}/app/credits?purchase=success&session_id=${'{CHECKOUT_ID}'}`,
           cancelUrl: `${baseUrl}/app/credits?purchase=canceled`,
           customerEmail: user.email,
           customerName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
@@ -398,6 +398,189 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Verify and process successful credit purchase
+  app.get("/api/credits/verify", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { session_id } = req.query;
+      
+      if (!session_id) {
+        return res.status(400).json({ 
+          error: "Invalid request",
+          message: "Session ID is required" 
+        });
+      }
+
+      try {
+        console.log('[Credits Verify] Fetching checkout session:', session_id);
+        
+        // Get checkout session from Polar
+        const session = await polarClient.getCheckoutSession(session_id as string);
+        
+        console.log('[Credits Verify] Session status:', {
+          sessionId: session.id,
+          status: session.status,
+          metadata: session.metadata,
+        });
+
+        // Verify session belongs to this user
+        if (session.metadata?.userId !== userId) {
+          console.error('[Credits Verify] User ID mismatch');
+          return res.status(403).json({ 
+            error: "Unauthorized",
+            message: "This purchase does not belong to you" 
+          });
+        }
+
+        // Check if purchase was successful
+        if (session.status !== 'succeeded') {
+          return res.json({ 
+            success: false,
+            status: session.status,
+          });
+        }
+
+        // Get credit amount from metadata
+        const credits = parseInt(session.metadata?.credits || '0', 10);
+        
+        if (credits <= 0) {
+          console.error('[Credits Verify] Invalid credit amount in metadata');
+          return res.status(400).json({ 
+            error: "Invalid purchase",
+            message: "Credit amount not found" 
+          });
+        }
+
+        // Get user and Polar customer
+        const user = await storage.getUserById(userId);
+        if (!user || !user.email) {
+          return res.status(404).json({ 
+            error: "User not found",
+            message: "Unable to verify user account" 
+          });
+        }
+
+        const polarCustomer = await polarClient.getCustomerByEmail(user.email);
+        if (!polarCustomer) {
+          return res.status(404).json({ 
+            error: "Customer not found",
+            message: "Unable to find Polar customer" 
+          });
+        }
+
+        // Grant credits to customer
+        console.log('[Credits Verify] Granting credits:', {
+          customerId: polarCustomer.id,
+          credits,
+        });
+
+        await polarClient.grantCredits({
+          customerId: polarCustomer.id,
+          amount: credits,
+          description: `Purchase of ${credits} credits (Session: ${session.id})`,
+        });
+
+        // Get updated balance
+        const balance = await polarClient.getCustomerBalance(polarCustomer.id);
+
+        console.log('[Credits Verify] Credits granted successfully:', balance);
+
+        res.json({
+          success: true,
+          credits,
+          balance: balance.availableCredits,
+        });
+      } catch (error: any) {
+        console.error('[Credits Verify] Error verifying purchase:', error);
+        res.status(500).json({ 
+          error: "Verification failed",
+          message: error.message || "Unable to verify purchase" 
+        });
+      }
+    } catch (error) {
+      res.status(500).json({ 
+        error: "Failed to verify purchase",
+        message: "Please try again later" 
+      });
+    }
+  });
+
+  // Polar webhook endpoint (public)
+  app.post("/api/webhooks/polar", async (req, res) => {
+    try {
+      const event = req.body;
+      
+      console.log('[Polar Webhook] Received event:', {
+        type: event.type,
+        id: event.id,
+      });
+
+      // Handle different event types
+      switch (event.type) {
+        case 'checkout.completed':
+        case 'checkout.succeeded':
+        case 'order.created':
+          await handleCheckoutCompleted(event.data);
+          break;
+        default:
+          console.log('[Polar Webhook] Unhandled event type:', event.type);
+      }
+
+      res.json({ received: true });
+    } catch (error: any) {
+      console.error('[Polar Webhook] Error processing webhook:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
+    }
+  });
+
+  // Helper function to handle checkout completion
+  async function handleCheckoutCompleted(data: any) {
+    try {
+      const metadata = data.metadata || {};
+      const userId = metadata.userId;
+      const credits = parseInt(metadata.credits || '0', 10);
+
+      if (!userId || credits <= 0) {
+        console.log('[Polar Webhook] Missing userId or credits in metadata');
+        return;
+      }
+
+      console.log('[Polar Webhook] Processing checkout completion:', {
+        userId,
+        credits,
+        sessionId: data.id,
+      });
+
+      // Get user
+      const user = await storage.getUserById(userId);
+      if (!user || !user.email) {
+        console.error('[Polar Webhook] User not found:', userId);
+        return;
+      }
+
+      // Get Polar customer
+      const polarCustomer = await polarClient.getCustomerByEmail(user.email);
+      if (!polarCustomer) {
+        console.error('[Polar Webhook] Polar customer not found for:', user.email);
+        return;
+      }
+
+      // Grant credits
+      await polarClient.grantCredits({
+        customerId: polarCustomer.id,
+        amount: credits,
+        description: `Webhook: Purchase of ${credits} credits (Session: ${data.id})`,
+      });
+
+      console.log('[Polar Webhook] Credits granted via webhook:', {
+        customerId: polarCustomer.id,
+        credits,
+      });
+    } catch (error) {
+      console.error('[Polar Webhook] Error handling checkout completion:', error);
+    }
+  }
 
   // Create quiz with adaptive learning (protected)
   app.post("/api/quiz", isAuthenticated, async (req: any, res) => {

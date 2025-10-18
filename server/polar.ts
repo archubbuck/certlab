@@ -979,6 +979,36 @@ export class PolarClient {
       throw error;
     }
   }
+
+  async grantCredits(params: {
+    customerId: string;
+    amount: number;
+    description?: string;
+  }): Promise<void> {
+    const { customerId, amount, description } = params;
+    
+    const isDev = this.isDevelopment;
+    console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Granting credits to customer:`, {
+      customerId: customerId.substring(0, 8) + '...',
+      amount,
+      description,
+    });
+
+    try {
+      await this.request(`/customers/${customerId}/balance`, {
+        method: 'POST',
+        body: JSON.stringify({
+          amount,
+          description: description || `Credit purchase of ${amount} credits`,
+        }),
+      });
+
+      console.log('[Polar] Credits granted successfully');
+    } catch (error: any) {
+      console.error('[Polar] Failed to grant credits:', error);
+      throw error;
+    }
+  }
 }
 
 // Create singleton instance of Polar client
