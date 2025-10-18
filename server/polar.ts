@@ -391,22 +391,22 @@ export class PolarClient {
 
   // Checkout Sessions API - Enhanced with full compliance
   async createCheckoutSession(params: {
-    productId: string;
+    priceId: string; // Required: Polar price ID for the product
+    productId?: string; // Optional: kept for backwards compatibility/logging
     successUrl: string;
     cancelUrl?: string;
     customerEmail?: string;
     customerName?: string;
     metadata?: Record<string, any>;
     amount?: number; // For custom amount support
-    priceId?: string; // Optional specific price ID
     allowPromotionCodes?: boolean;
     billingAddressCollection?: boolean;
   }): Promise<PolarCheckoutSession> {
     const isDev = this.isDevelopment;
     
     // Comprehensive validation
-    if (!params.productId) {
-      throw new Error('Product ID is required to create a checkout session');
+    if (!params.priceId) {
+      throw new Error('Price ID is required to create a checkout session');
     }
     
     if (!params.successUrl) {
@@ -425,7 +425,8 @@ export class PolarClient {
     
     console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Creating checkout session`);
     console.log('[Polar] Checkout parameters:', {
-      productId: params.productId ? params.productId.substring(0, 8) + '...' : '(empty)',
+      priceId: params.priceId ? params.priceId.substring(0, 8) + '...' : '(empty)',
+      productId: params.productId ? params.productId.substring(0, 8) + '...' : undefined,
       successUrl: params.successUrl,
       cancelUrl: params.cancelUrl,
       customerEmail: params.customerEmail ? '***' + params.customerEmail.substring(params.customerEmail.indexOf('@')) : undefined,
@@ -445,9 +446,9 @@ export class PolarClient {
     }
     
     // Build request body according to Polar API spec
-    // Note: Polar expects product_price_id for checkout, not product_id
+    // Note: Polar expects product_price_id for checkout
     const requestBody: any = {
-      product_price_id: params.productId, // This should be a price ID, not product ID
+      product_price_id: params.priceId, // Use price ID from params
       success_url: params.successUrl,
     };
     
@@ -470,10 +471,6 @@ export class PolarClient {
     
     if (params.amount !== undefined) {
       requestBody.amount = params.amount;
-    }
-    
-    if (params.priceId) {
-      requestBody.price_id = params.priceId;
     }
     
     if (params.allowPromotionCodes !== undefined) {
@@ -502,14 +499,15 @@ export class PolarClient {
       console.error('[Polar] Failed to create checkout session:', error);
       console.error('[Polar] Full error details:', {
         message: error.message,
+        priceId: params.priceId,
         productId: params.productId,
         isDev: this.isDevelopment,
       });
       
       if (error.message?.includes('404') || error.message?.includes('not found')) {
         throw new Error(
-          `Polar API Error: Resource not found. Please ensure your product IDs and organization ID are correct. ` +
-          `Product ID: '${params.productId}'. ` +
+          `Polar API Error: Resource not found. Please ensure your price IDs and organization ID are correct. ` +
+          `Price ID: '${params.priceId}'. ` +
           `This error typically means the Polar sandbox/production account is not properly configured.`
         );
       }

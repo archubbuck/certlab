@@ -739,7 +739,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       });
 
       const session = await polarClient.createCheckoutSession({
-        productId: productId,
+        priceId: priceId, // Use price ID, not product ID
         successUrl: successUrl,
         cancelUrl: cancelUrl,
         customerEmail: customerEmail,
