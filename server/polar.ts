@@ -1,5 +1,27 @@
 // Polar API Integration Module
 // Documentation: https://polar.sh/docs/introduction
+//
+// USAGE-BASED BILLING CONFIGURATION:
+// This application uses Polar's meter events system for tracking credit purchases and consumption.
+// 
+// REQUIRED POLAR METER CONFIGURATION:
+// Configure these meters in your Polar dashboard (Organization → Meters):
+//
+// 1. credit_purchase meter:
+//    - Event name: "credit_purchase"
+//    - Property: "credits_purchased" (number)
+//    - Description: Tracks credit purchases from checkout sessions
+//
+// 2. credit_usage meter:
+//    - Event name: "credit_usage"
+//    - Property: "credits_consumed" (number)
+//    - Description: Tracks credit consumption when creating quizzes
+//
+// HOW IT WORKS:
+// - When a user purchases credits, we report a credit_purchase event with credits_purchased property
+// - When a user creates a quiz, we report a credit_usage event with credits_consumed property
+// - Polar aggregates these events to calculate the customer's credit balance
+// - Balance = sum(credits_purchased) - sum(credits_consumed)
 
 interface PolarConfig {
   apiKey: string;
@@ -910,6 +932,12 @@ export class PolarClient {
 
   // Usage-Based Billing Methods
 
+  /**
+   * Report a meter event to Polar for usage-based billing.
+   * Used for both credit purchases (credit_purchase) and consumption (credit_usage).
+   * 
+   * See file header for required Polar meter configuration.
+   */
   async reportUsage(params: {
     customerId: string;
     eventName: string;
