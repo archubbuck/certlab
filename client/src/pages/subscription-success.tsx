@@ -21,18 +21,13 @@ export default function SubscriptionSuccess() {
   const searchParams = useSearch();
   const params = new URLSearchParams(searchParams);
   const sessionId = params.get("session_id");
-  const checkoutId = params.get("checkout_id");
   const [processing, setProcessing] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
-  
-  // Use either session_id or checkout_id for verification
-  const verificationId = sessionId || checkoutId;
-  const verificationParam = sessionId ? `session_id=${sessionId}` : `checkout_id=${checkoutId}`;
 
   const { data, error, isLoading, refetch, failureCount } = useQuery<ConfirmationResponse>({
-    queryKey: [`/api/subscription/confirm?${verificationParam}`],
-    enabled: !!verificationId,
+    queryKey: [`/api/subscription/confirm?session_id=${sessionId}`],
+    enabled: !!sessionId,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
@@ -61,7 +56,7 @@ export default function SubscriptionSuccess() {
     }
   }, [data, error, retryCount]);
 
-  if (!sessionId && !checkoutId) {
+  if (!sessionId) {
     return (
       <div className="container max-w-2xl mx-auto p-8">
         <Card>
