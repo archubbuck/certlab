@@ -1,7 +1,7 @@
 import { Express, Request, Response } from "express";
 import { z } from "zod";
 import { fromError } from "zod-validation-error";
-import { getPolarClient, SUBSCRIPTION_PLANS } from "./polar";
+import { getPolarClient, SUBSCRIPTION_PLANS, getPriceId, getProductId, getPlanFromProductId } from "./polar";
 import type { User } from "@shared/schema";
 import { normalizePlanName, getPlanFeatures, isPaidPlan, validateSubscriptionState, mergeSubscriptionState, type SubscriptionPlan } from "../shared/subscriptionUtils";
 import { subscriptionLockManager } from "./subscriptionLock";
@@ -117,7 +117,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         
         const polarConfigured = isDev 
           ? !!process.env.POLAR_SANDBOX_API_KEY
-          : !!process.env.POLAR_API_KEY;
+          : !!process.env.POLAR_PRODUCTION_API_KEY;
         
         if (polarConfigured) {
           // Database data is stale or missing - sync with Polar
@@ -359,13 +359,8 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
 
           // Determine plan from product ID (handle both camelCase and snake_case)
           const sub = activeSubscription as any;
-          let planName = 'free';
           const productId = sub.productId || sub.product_id;
-          if (productId === SUBSCRIPTION_PLANS.pro.productId) {
-            planName = 'pro';
-          } else if (productId === SUBSCRIPTION_PLANS.enterprise.productId) {
-            planName = 'enterprise';
-          }
+          const planName = getPlanFromProductId(productId);
 
           // Update or create subscription in database
           const subscriptionData = {
@@ -514,7 +509,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       }
 
       // Check if Polar is configured
-      if (!process.env.POLAR_API_KEY && !process.env.POLAR_SANDBOX_API_KEY) {
+      if (!process.env.POLAR_PRODUCTION_API_KEY && !process.env.POLAR_SANDBOX_API_KEY) {
         console.error('[Checkout] Polar API keys not configured');
         return res.status(503).json({ 
           error: "Service unavailable", 
@@ -535,31 +530,32 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
       }
       
-      // Validate product ID configuration early
-      const productId = ('productId' in planConfig) ? planConfig.productId : null;
+      // Get price ID for checkout (Polar requires price ID, not product ID)
+      const priceId = getPriceId(plan, billingInterval === 'yearly' ? 'yearly' : 'monthly');
+      const productId = getProductId(plan, billingInterval === 'yearly' ? 'yearly' : 'monthly');
       
-      if (!productId) {
-        console.error(`[Checkout] Product ID not configured for plan: ${plan}`);
+      if (!priceId || !productId) {
+        console.error(`[Checkout] Price/Product ID not configured for plan: ${plan} (${billingInterval})`);
         
         // Use correct environment variable names based on environment
         const isDev = process.env.NODE_ENV === 'development' || 
                      process.env.NODE_ENV === 'dev' ||
                      (process.env.NODE_ENV === undefined && process.env.POLAR_SANDBOX_API_KEY !== undefined);
         
-        const prefix = isDev ? 'POLAR_SANDBOX_' : 'POLAR_';
-        const envVarName = plan === 'pro' 
-          ? `${prefix}PRO_PRODUCT_ID` 
-          : `${prefix}ENTERPRISE_PRODUCT_ID`;
+        const prefix = isDev ? 'POLAR_SANDBOX_' : 'POLAR_PRODUCTION_';
+        const interval = billingInterval === 'yearly' ? 'YEARLY' : 'MONTHLY';
+        const planUpper = plan.toUpperCase();
+        const envVarName = `${prefix}${planUpper}_${interval}_PRICE_ID`;
         
         return res.status(500).json({ 
           error: "Configuration error", 
-          message: `The ${plan} plan is not properly configured. Product ID is missing.`,
-          details: `The environment variable ${envVarName} must be set with a valid Polar product ID.`,
+          message: `The ${plan} plan (${billingInterval}) is not properly configured. Price ID is missing.`,
+          details: `The environment variable ${envVarName} must be set with a valid Polar price ID.`,
           action: "contact_support"
         });
       }
       
-      console.log(`[Checkout] Product ID validated for plan ${plan}: ${productId.substring(0, 8)}...`);
+      console.log(`[Checkout] Price ID validated for plan ${plan} (${billingInterval}): ${priceId.substring(0, 8)}...`);
 
       // Get the appropriate Polar client for this user
       const polarClient = await getPolarClient(userId);
@@ -601,12 +597,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
       // Handle existing subscription - check if we can switch directly or need checkout
       if (activeSubscription) {
         // Determine the current plan from the subscription's productId
-        let currentPlan: SubscriptionPlan = 'free';
-        if (activeSubscription.productId === SUBSCRIPTION_PLANS.pro.productId) {
-          currentPlan = 'pro';
-        } else if (activeSubscription.productId === SUBSCRIPTION_PLANS.enterprise.productId) {
-          currentPlan = 'enterprise';
-        }
+        const currentPlan = getPlanFromProductId((activeSubscription as any).productId);
         
         console.log(`User ${user.email} has existing subscription (${currentPlan}), wants to switch to ${plan}`);
         
@@ -620,8 +611,8 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           console.log(`Direct switch: ${currentPlan} -> ${plan} (both paid plans)`);
           
           try {
-            // Check if planConfig has productId before using it
-            if (!('productId' in planConfig) || !planConfig.productId) {
+            // Validate that we have a product ID for the new plan
+            if (!productId) {
               return res.status(400).json({ 
                 error: "Invalid plan configuration",
                 message: "Cannot switch to a plan without a product ID"
@@ -630,8 +621,8 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
             
             // Use switchSubscriptionPlan for immediate upgrade
             const updatedSubscription = await polarClient.switchSubscriptionPlan({
-              subscriptionId: activeSubscription.id,
-              newProductId: planConfig.productId,
+              subscriptionId: (activeSubscription as any).id,
+              newProductId: productId,
               switchAtPeriodEnd: false, // Switch immediately for upgrades
             });
 
@@ -1386,15 +1377,24 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
       }
 
-      // Get the product ID for the new plan
+      // Get the product ID and price ID for the new plan
       const newPlanConfig = SUBSCRIPTION_PLANS[newPlan];
-      if (!newPlanConfig || !('productId' in newPlanConfig) || !newPlanConfig.productId) {
+      if (!newPlanConfig) {
         return res.status(400).json({ 
           error: "Invalid plan",
-          message: `The ${newPlan} plan is not properly configured. Please contact support.`
+          message: `The ${newPlan} plan is not available. Please contact support.`
         });
       }
-      const newProductId = newPlanConfig.productId;
+      
+      const newProductId = getProductId(newPlan, billingInterval === 'yearly' ? 'yearly' : 'monthly');
+      const priceId = getPriceId(newPlan, billingInterval === 'yearly' ? 'yearly' : 'monthly');
+      
+      if (!newProductId || !priceId) {
+        return res.status(400).json({ 
+          error: "Invalid plan configuration",
+          message: `The ${newPlan} plan (${billingInterval}) is not properly configured. Please contact support.`
+        });
+      }
 
       // Check if switching to the same plan
       if (currentSubscription.productId === newProductId) {
@@ -1402,26 +1402,6 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           error: "Already on this plan",
           message: `You are already subscribed to the ${newPlan} plan.`
         });
-      }
-
-      // Get available prices for the new product to find the right price ID
-      // This helps select monthly vs yearly pricing
-      let priceId: string | undefined;
-      try {
-        const prices = await polarClient.getProductPrices(newProductId);
-        
-        // Find matching price based on billing interval
-        const targetInterval = billingInterval === 'yearly' ? 'year' : 'month';
-        const matchingPrice = prices.find(price => 
-          price.interval === targetInterval && price.intervalCount === 1
-        );
-        
-        if (matchingPrice) {
-          priceId = matchingPrice.id;
-        }
-      } catch (error: any) {
-        console.error("Error fetching product prices:", error);
-        // Continue without price ID - Polar will use default pricing
       }
 
       // Switch the subscription plan
@@ -1752,10 +1732,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
 
         // Extract plan and billing info from session metadata and product
-        const plan = session.metadata?.plan || 
-                    (session.productId === SUBSCRIPTION_PLANS.pro.productId ? 'pro' : 
-                     session.productId === SUBSCRIPTION_PLANS.enterprise.productId ? 'enterprise' : 
-                     'free');
+        const plan = session.metadata?.plan || getPlanFromProductId(session.productId);
         
         const billingInterval = session.metadata?.billingInterval || 
                                session.price?.recurring_interval || 
@@ -2126,12 +2103,7 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
             const existingSubscription = await storage.getSubscriptionByPolarId(subscription.id);
             
             // Determine plan from product ID
-            let planName = 'free';
-            if (subscription.product_id === SUBSCRIPTION_PLANS.pro.productId) {
-              planName = 'pro';
-            } else if (subscription.product_id === SUBSCRIPTION_PLANS.enterprise.productId) {
-              planName = 'enterprise';
-            }
+            const planName = getPlanFromProductId(subscription.product_id);
 
             const plan = SUBSCRIPTION_PLANS[planName as keyof typeof SUBSCRIPTION_PLANS];
 

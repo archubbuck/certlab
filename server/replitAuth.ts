@@ -57,13 +57,137 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
+  const userId = claims["sub"];
+  const userEmail = claims["email"];
+  
+  // Check if user exists before upserting
+  const existingUser = await storage.getUserById(userId);
+  const isNewUser = !existingUser;
+  
+  // Upsert the user
+  const user = await storage.upsertUser({
+    id: userId,
+    email: userEmail,
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
   });
+  
+  // Auto-subscribe new users to free plan
+  if (isNewUser && userEmail) {
+    console.log(`[Auth] New user detected: ${userId} (${userEmail}). Creating free plan subscription...`);
+    
+    try {
+      // Import here to avoid circular dependency
+      const { getPolarClient } = await import('./polar');
+      const { SUBSCRIPTION_PLANS } = await import('./polar');
+      const { getProductId, getPriceId } = await import('./polar');
+      
+      // Get free plan configuration
+      const freeProductId = getProductId('free', 'monthly');
+      const freePriceId = getPriceId('free', 'monthly');
+      
+      if (freeProductId && freePriceId) {
+        // Create a customer in Polar if configured
+        const polarClient = await getPolarClient(userId);
+        
+        try {
+          // Check if customer already exists
+          let customer = await polarClient.getCustomerByEmail(userEmail);
+          
+          if (!customer) {
+            // Create customer in Polar
+            customer = await polarClient.createCustomer({
+              email: userEmail,
+              name: `${claims["first_name"] || ''} ${claims["last_name"] || ''}`.trim() || undefined,
+              metadata: {
+                userId: userId,
+                source: 'auto_signup',
+                createdAt: new Date().toISOString(),
+              },
+            });
+            
+            console.log(`[Auth] Created Polar customer for new user: ${customer.id}`);
+            
+            // Update user with Polar customer ID
+            await storage.updateUser(userId, {
+              polarCustomerId: customer.id,
+            });
+          }
+          
+          // Create free subscription in database
+          const subscriptionData = {
+            userId: userId,
+            polarSubscriptionId: `free_${userId}_${Date.now()}`,
+            polarCustomerId: customer.id,
+            productId: freeProductId,
+            priceId: freePriceId,
+            plan: 'free',
+            status: 'active',
+            billingInterval: 'month',
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year for free tier
+            metadata: {
+              source: 'auto_signup',
+              createdAt: new Date().toISOString(),
+            } as any,
+          };
+          
+          await storage.createSubscription(subscriptionData as any);
+          
+          // Update user's subscription benefits
+          await storage.updateUser(userId, {
+            subscriptionBenefits: {
+              plan: 'free',
+              quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+              categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+              analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+              lastSyncedAt: new Date().toISOString(),
+            },
+          });
+          
+          console.log(`[Auth] Successfully created free plan subscription for new user: ${userId}`);
+        } catch (polarError: any) {
+          console.error(`[Auth] Error creating Polar customer/subscription for new user:`, polarError);
+          // Still create local subscription even if Polar fails
+          const subscriptionData = {
+            userId: userId,
+            polarSubscriptionId: `free_${userId}_${Date.now()}`,
+            polarCustomerId: `local_${userId}`,
+            productId: freeProductId,
+            priceId: freePriceId,
+            plan: 'free',
+            status: 'active',
+            billingInterval: 'month',
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            metadata: {
+              source: 'auto_signup',
+              createdAt: new Date().toISOString(),
+              polarError: polarError.message,
+            } as any,
+          };
+          
+          await storage.createSubscription(subscriptionData as any);
+          
+          await storage.updateUser(userId, {
+            subscriptionBenefits: {
+              plan: 'free',
+              quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+              categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+              analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+              lastSyncedAt: new Date().toISOString(),
+            },
+          });
+        }
+      } else {
+        console.warn(`[Auth] Free plan not configured (missing product/price IDs). Skipping auto-subscription.`);
+      }
+    } catch (error: any) {
+      console.error(`[Auth] Failed to auto-subscribe new user to free plan:`, error);
+      // Don't throw - authentication should still succeed
+    }
+  }
 }
 
 

@@ -104,9 +104,9 @@ export class PolarClient {
   // Dynamic base URL based on environment
   private get baseUrl(): string {
     if (this.isDevelopment) {
-      return 'https://sandbox-api.polar.sh/v1';
+      return process.env.POLAR_SANDBOX_API_BASE_URL || 'https://sandbox-api.polar.sh/v1';
     }
-    return 'https://api.polar.sh/v1';
+    return process.env.POLAR_PRODUCTION_API_BASE_URL || 'https://api.polar.sh/v1';
   }
 
   // Getter for API key that reads from env vars dynamically based on environment
@@ -125,7 +125,7 @@ export class PolarClient {
       }
     } else {
       // In production, use production API key
-      key = this._apiKey || process.env.POLAR_API_KEY || '';
+      key = this._apiKey || process.env.POLAR_PRODUCTION_API_KEY || '';
       if (!key) {
         console.log('[Polar] API key not configured (checked at runtime)');
       } else {
@@ -141,7 +141,7 @@ export class PolarClient {
     const isDev = this.isDevelopment;
     
     // Use correct prefix based on environment
-    const envVarName = isDev ? 'POLAR_SANDBOX_ORGANIZATION_ID' : 'POLAR_ORGANIZATION_ID';
+    const envVarName = isDev ? 'POLAR_SANDBOX_ORGANIZATION_ID' : 'POLAR_PRODUCTION_ORGANIZATION_ID';
     const orgId = this._organizationId || process.env[envVarName];
     
     if (orgId) {
@@ -439,7 +439,7 @@ export class PolarClient {
       console.log('  - POLAR_SANDBOX_PRO_PRODUCT_ID:', process.env.POLAR_SANDBOX_PRO_PRODUCT_ID ? process.env.POLAR_SANDBOX_PRO_PRODUCT_ID.substring(0, 8) + '...' : 'Not set');
       console.log('  - POLAR_SANDBOX_ENTERPRISE_PRODUCT_ID:', process.env.POLAR_SANDBOX_ENTERPRISE_PRODUCT_ID ? process.env.POLAR_SANDBOX_ENTERPRISE_PRODUCT_ID.substring(0, 8) + '...' : 'Not set');
     } else {
-      console.log('  - POLAR_API_KEY:', process.env.POLAR_API_KEY ? 'Set' : 'Not set');
+      console.log('  - POLAR_PRODUCTION_API_KEY:', process.env.POLAR_PRODUCTION_API_KEY ? 'Set' : 'Not set');
       console.log('  - POLAR_PRO_PRODUCT_ID:', process.env.POLAR_PRO_PRODUCT_ID ? process.env.POLAR_PRO_PRODUCT_ID.substring(0, 8) + '...' : 'Not set');
       console.log('  - POLAR_ENTERPRISE_PRODUCT_ID:', process.env.POLAR_ENTERPRISE_PRODUCT_ID ? process.env.POLAR_ENTERPRISE_PRODUCT_ID.substring(0, 8) + '...' : 'Not set');
     }
@@ -850,11 +850,19 @@ export class PolarClient {
 
   // Helper method to determine plan from product ID
   private getPlanFromProductId(productId: string): string {
-    if (productId === SUBSCRIPTION_PLANS.pro.productId) {
+    // Check Pro plan (monthly and yearly)
+    if (productId === SUBSCRIPTION_PLANS.pro.pricing.monthly.productId ||
+        productId === SUBSCRIPTION_PLANS.pro.pricing.yearly.productId) {
       return 'pro';
     }
-    if (productId === SUBSCRIPTION_PLANS.enterprise.productId) {
+    // Check Enterprise plan (monthly and yearly)
+    if (productId === SUBSCRIPTION_PLANS.enterprise.pricing.monthly.productId ||
+        productId === SUBSCRIPTION_PLANS.enterprise.pricing.yearly.productId) {
       return 'enterprise';
+    }
+    // Check Free plan
+    if (productId === SUBSCRIPTION_PLANS.free.pricing.monthly.productId) {
+      return 'free';
     }
     return 'free';
   }
@@ -915,10 +923,33 @@ export async function getPolarClient(userId?: string): Promise<PolarClient> {
 // Export singleton instance
 export const polarClient = polarClientInstance;
 
+// Helper function to determine environment
+function isDevelopmentEnvironment(): boolean {
+  return process.env.NODE_ENV === 'development' || 
+         process.env.NODE_ENV === 'dev' ||
+         (process.env.NODE_ENV === undefined && process.env.POLAR_SANDBOX_API_KEY !== undefined);
+}
+
 // Subscription plans configuration with dynamic environment variable reading
 export const SUBSCRIPTION_PLANS = {
   free: {
     name: 'Free',
+    pricing: {
+      monthly: {
+        get productId() {
+          const isDev = isDevelopmentEnvironment();
+          return isDev 
+            ? (process.env.POLAR_SANDBOX_FREE_MONTHLY_PRODUCT_ID || '')
+            : (process.env.POLAR_PRODUCTION_FREE_MONTHLY_PRODUCT_ID || '');
+        },
+        get priceId() {
+          const isDev = isDevelopmentEnvironment();
+          return isDev 
+            ? (process.env.POLAR_SANDBOX_FREE_MONTHLY_PRICE_ID || '')
+            : (process.env.POLAR_PRODUCTION_FREE_MONTHLY_PRICE_ID || '');
+        },
+      },
+    },
     features: [
       'Access to basic certifications',
       'Up to 5 quizzes per day',
@@ -933,20 +964,41 @@ export const SUBSCRIPTION_PLANS = {
   },
   pro: {
     name: 'Pro',
-    // Use getter to read environment variable dynamically based on environment
-    get productId() {
-      const isDev = process.env.NODE_ENV === 'development' || 
-                   process.env.NODE_ENV === 'dev' ||
-                   (process.env.NODE_ENV === undefined && process.env.POLAR_SANDBOX_API_KEY !== undefined);
-      
-      // Use Price ID for checkout (Polar requires price ID, not product ID)
-      const priceId = isDev 
-        ? (process.env.POLAR_SANDBOX_PRO_PRICE_ID || process.env.POLAR_SANDBOX_PRO_PRODUCT_ID || '')
-        : (process.env.POLAR_PRO_PRICE_ID || process.env.POLAR_PRO_PRODUCT_ID || '');
-      
-      console.log(`[Polar] Getting Pro Price/Product ID (${isDev ? 'SANDBOX' : 'PRODUCTION'}):`, 
-                  priceId ? `${priceId.substring(0, 8)}...` : '(empty)');
-      return priceId;
+    pricing: {
+      monthly: {
+        get productId() {
+          const isDev = isDevelopmentEnvironment();
+          return isDev 
+            ? (process.env.POLAR_SANDBOX_PRO_MONTHLY_PRODUCT_ID || '')
+            : (process.env.POLAR_PRODUCTION_PRO_MONTHLY_PRODUCT_ID || '');
+        },
+        get priceId() {
+          const isDev = isDevelopmentEnvironment();
+          const priceId = isDev 
+            ? (process.env.POLAR_SANDBOX_PRO_MONTHLY_PRICE_ID || '')
+            : (process.env.POLAR_PRODUCTION_PRO_MONTHLY_PRICE_ID || '');
+          console.log(`[Polar] Getting Pro Monthly Price ID (${isDev ? 'SANDBOX' : 'PRODUCTION'}):`, 
+                      priceId ? `${priceId.substring(0, 8)}...` : '(empty)');
+          return priceId;
+        },
+      },
+      yearly: {
+        get productId() {
+          const isDev = isDevelopmentEnvironment();
+          return isDev 
+            ? (process.env.POLAR_SANDBOX_PRO_YEARLY_PRODUCT_ID || '')
+            : (process.env.POLAR_PRODUCTION_PRO_YEARLY_PRODUCT_ID || '');
+        },
+        get priceId() {
+          const isDev = isDevelopmentEnvironment();
+          const priceId = isDev 
+            ? (process.env.POLAR_SANDBOX_PRO_YEARLY_PRICE_ID || '')
+            : (process.env.POLAR_PRODUCTION_PRO_YEARLY_PRICE_ID || '');
+          console.log(`[Polar] Getting Pro Yearly Price ID (${isDev ? 'SANDBOX' : 'PRODUCTION'}):`, 
+                      priceId ? `${priceId.substring(0, 8)}...` : '(empty)');
+          return priceId;
+        },
+      },
     },
     features: [
       'Access to all certifications',
@@ -957,27 +1009,48 @@ export const SUBSCRIPTION_PLANS = {
       'Custom study plans',
     ],
     limits: {
-      quizzesPerDay: -1, // Unlimited
+      quizzesPerDay: -1,
       categoriesAccess: ['all'],
       analyticsAccess: 'advanced',
     },
   },
   enterprise: {
     name: 'Enterprise',
-    // Use getter to read environment variable dynamically based on environment
-    get productId() {
-      const isDev = process.env.NODE_ENV === 'development' || 
-                   process.env.NODE_ENV === 'dev' ||
-                   (process.env.NODE_ENV === undefined && process.env.POLAR_SANDBOX_API_KEY !== undefined);
-      
-      // Use Price ID for checkout (Polar requires price ID, not product ID)
-      const priceId = isDev 
-        ? (process.env.POLAR_SANDBOX_ENTERPRISE_PRICE_ID || process.env.POLAR_SANDBOX_ENTERPRISE_PRODUCT_ID || '')
-        : (process.env.POLAR_ENTERPRISE_PRICE_ID || process.env.POLAR_ENTERPRISE_PRODUCT_ID || '');
-      
-      console.log(`[Polar] Getting Enterprise Price/Product ID (${isDev ? 'SANDBOX' : 'PRODUCTION'}):`, 
-                  priceId ? `${priceId.substring(0, 8)}...` : '(empty)');
-      return priceId;
+    pricing: {
+      monthly: {
+        get productId() {
+          const isDev = isDevelopmentEnvironment();
+          return isDev 
+            ? (process.env.POLAR_SANDBOX_ENTERPRISE_MONTHLY_PRODUCT_ID || '')
+            : (process.env.POLAR_PRODUCTION_ENTERPRISE_MONTHLY_PRODUCT_ID || '');
+        },
+        get priceId() {
+          const isDev = isDevelopmentEnvironment();
+          const priceId = isDev 
+            ? (process.env.POLAR_SANDBOX_ENTERPRISE_MONTHLY_PRICE_ID || '')
+            : (process.env.POLAR_PRODUCTION_ENTERPRISE_MONTHLY_PRICE_ID || '');
+          console.log(`[Polar] Getting Enterprise Monthly Price ID (${isDev ? 'SANDBOX' : 'PRODUCTION'}):`, 
+                      priceId ? `${priceId.substring(0, 8)}...` : '(empty)');
+          return priceId;
+        },
+      },
+      yearly: {
+        get productId() {
+          const isDev = isDevelopmentEnvironment();
+          return isDev 
+            ? (process.env.POLAR_SANDBOX_ENTERPRISE_YEARLY_PRODUCT_ID || '')
+            : (process.env.POLAR_PRODUCTION_ENTERPRISE_YEARLY_PRODUCT_ID || '');
+        },
+        get priceId() {
+          const isDev = isDevelopmentEnvironment();
+          const priceId = isDev 
+            ? (process.env.POLAR_SANDBOX_ENTERPRISE_YEARLY_PRICE_ID || '')
+            : (process.env.POLAR_PRODUCTION_ENTERPRISE_YEARLY_PRICE_ID || '');
+          console.log(`[Polar] Getting Enterprise Yearly Price ID (${isDev ? 'SANDBOX' : 'PRODUCTION'}):`, 
+                      priceId ? `${priceId.substring(0, 8)}...` : '(empty)');
+          return priceId;
+        },
+      },
     },
     features: [
       'Everything in Pro',
@@ -995,5 +1068,50 @@ export const SUBSCRIPTION_PLANS = {
     },
   },
 };
+
+// Helper functions to get pricing information
+export function getPriceId(plan: 'free' | 'pro' | 'enterprise', billingInterval: 'monthly' | 'yearly' = 'monthly'): string {
+  const planConfig = SUBSCRIPTION_PLANS[plan];
+  if (!planConfig || !planConfig.pricing) {
+    return '';
+  }
+  
+  if (billingInterval === 'yearly' && 'yearly' in planConfig.pricing) {
+    return planConfig.pricing.yearly.priceId;
+  }
+  
+  return planConfig.pricing.monthly.priceId;
+}
+
+export function getProductId(plan: 'free' | 'pro' | 'enterprise', billingInterval: 'monthly' | 'yearly' = 'monthly'): string {
+  const planConfig = SUBSCRIPTION_PLANS[plan];
+  if (!planConfig || !planConfig.pricing) {
+    return '';
+  }
+  
+  if (billingInterval === 'yearly' && 'yearly' in planConfig.pricing) {
+    return planConfig.pricing.yearly.productId;
+  }
+  
+  return planConfig.pricing.monthly.productId;
+}
+
+export function getPlanFromProductId(productId: string): 'free' | 'pro' | 'enterprise' {
+  // Check Pro plan (monthly and yearly)
+  if (productId === SUBSCRIPTION_PLANS.pro.pricing.monthly.productId ||
+      (SUBSCRIPTION_PLANS.pro.pricing.yearly && productId === SUBSCRIPTION_PLANS.pro.pricing.yearly.productId)) {
+    return 'pro';
+  }
+  // Check Enterprise plan (monthly and yearly)
+  if (productId === SUBSCRIPTION_PLANS.enterprise.pricing.monthly.productId ||
+      (SUBSCRIPTION_PLANS.enterprise.pricing.yearly && productId === SUBSCRIPTION_PLANS.enterprise.pricing.yearly.productId)) {
+    return 'enterprise';
+  }
+  // Check Free plan
+  if (productId === SUBSCRIPTION_PLANS.free.pricing.monthly.productId) {
+    return 'free';
+  }
+  return 'free';
+}
 
 export default polarClient;
