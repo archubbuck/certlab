@@ -80,7 +80,16 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         !dbSubscription.updatedAt || 
         new Date(dbSubscription.updatedAt) < oneHourAgo;
 
-      if (dbSubscription && !shouldSyncWithPolar) {
+      // If user has no database subscription, check if they have free tier benefits
+      // Free tier users won't have a database subscription, so use their benefits directly
+      if (!dbSubscription && updatedUser?.subscriptionBenefits?.plan === 'free') {
+        console.log(`[Subscription Status] User ${userId} on free tier (no Polar subscription)`);
+        benefits = updatedUser.subscriptionBenefits as any;
+        isSubscribed = false;
+        status = 'active'; // Free plan is always active
+        
+        // Skip Polar sync for confirmed free tier users
+      } else if (dbSubscription && !shouldSyncWithPolar) {
         // Use database subscription data as source of truth
         console.log(`[Subscription Status] Using cached database subscription for user ${userId}`);
         
