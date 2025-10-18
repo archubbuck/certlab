@@ -1454,9 +1454,12 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         console.log(`[Switch Plan] Downgrading to free tier - canceling Polar subscription`);
         
         try {
-          // Cancel the Polar subscription
-          await polarClient.cancelSubscription(currentSubscription.id);
-          console.log(`[Switch Plan] Polar subscription ${currentSubscription.id} canceled successfully`);
+          // Cancel the Polar subscription immediately (not at period end)
+          await polarClient.cancelSubscription(currentSubscription.id, { 
+            immediate: true,
+            cancelAtPeriodEnd: false 
+          });
+          console.log(`[Switch Plan] Polar subscription ${currentSubscription.id} canceled immediately`);
           
           // Update database subscription to canceled status
           const dbSubscription = await storage.getSubscriptionByUserId(userId);
