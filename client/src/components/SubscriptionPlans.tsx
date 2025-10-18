@@ -78,6 +78,46 @@ export default function SubscriptionPlans() {
     queryKey: ["/api/subscription/status"],
   });
 
+  const switchPlanMutation = useMutation({
+    mutationFn: async (data: { newPlan: string; billingInterval: "monthly" | "yearly" }) => {
+      const response = await apiRequest({
+        endpoint: "/api/subscription/switch",
+        method: "POST",
+        data,
+      });
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to switch plan");
+      }
+      
+      return result;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Plan Changed Successfully! 🎉",
+        description: data.message || `Your plan has been changed to ${data.plan}.`,
+      });
+      
+      // Invalidate subscription-related queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      // Navigate to dashboard after a brief delay
+      setTimeout(() => {
+        setLocation("/app");
+      }, 2000);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Plan Change Failed",
+        description: error.message || "Unable to change your plan. Please try again or contact support.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const createCheckoutMutation = useMutation({
     mutationFn: async (data: { plan: string; billingInterval: "monthly" | "yearly" }) => {
       const response = await apiRequest({
@@ -196,7 +236,7 @@ export default function SubscriptionPlans() {
 
   const handleSubscribe = (planId: string) => {
     // Prevent double-clicks or rapid calls
-    if (createCheckoutMutation.isPending) {
+    if (createCheckoutMutation.isPending || switchPlanMutation.isPending) {
       toast({
         title: "Processing...",
         description: "Please wait while we process your request.",
@@ -222,16 +262,16 @@ export default function SubscriptionPlans() {
       return;
     }
 
-    // Handle downgrade from pro/enterprise to free
+    // Handle downgrade from pro/enterprise to free (local-only, no Polar checkout)
     if (planId === "free" && currentPlan !== "free") {
       // Show confirmation dialog for downgrade
       if (!confirm("Are you sure you want to downgrade to the Free plan? You will lose access to premium features including unlimited quizzes and advanced analytics.")) {
         return;
       }
       
-      // Process the downgrade through the checkout mutation
-      createCheckoutMutation.mutate({
-        plan: planId,
+      // Process the downgrade using the switch API (cancels Polar subscription)
+      switchPlanMutation.mutate({
+        newPlan: planId,
         billingInterval: "monthly", // Free plan doesn't have billing intervals
       });
       return;
