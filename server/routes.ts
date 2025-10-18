@@ -154,6 +154,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get credit products from Polar (protected)
+  app.get("/api/credits/products", isAuthenticated, async (req: any, res) => {
+    try {
+      console.log('[Credits Products] Fetching products from Polar');
+      
+      // Fetch all products from Polar
+      const products = await polarClient.getProducts();
+      
+      // Filter for credit products and format response
+      const creditProducts = products
+        .filter((product: any) => {
+          // Filter for credit products with robust checking
+          if (!product) return false;
+          
+          // Check for explicit product_type metadata flag (preferred)
+          if (product.metadata?.product_type === 'credits') return true;
+          
+          // Fallback to legacy 'type' field
+          if (product.metadata?.type === 'credits') return true;
+          
+          // Final fallback: check product name (case-insensitive)
+          if (product.name && product.name.toLowerCase().includes('credit')) return true;
+          
+          return false;
+        })
+        .map((product: any) => {
+          try {
+            // Safely extract credit amount from metadata or product name
+            let credits = 0;
+            const creditsValue = product.metadata?.credits || product.metadata?.credit_amount;
+            
+            if (creditsValue) {
+              credits = parseInt(String(creditsValue), 10);
+            } else if (product.name) {
+              // Fallback: try to extract credit amount from product name
+              // Matches patterns like "50 Credits", "100 Credit Pack", etc.
+              const match = product.name.match(/(\d+)\s*credit/i);
+              if (match) {
+                credits = parseInt(match[1], 10);
+              }
+            }
+            
+            if (isNaN(credits) || credits <= 0) {
+              console.warn(`[Credits Products] Invalid or missing credits for product ${product.id}. Name: "${product.name}", metadata:`, product.metadata);
+              return null;
+            }
+            
+            // Find the USD price (or first available price as fallback)
+            const prices = product.prices || [];
+            const usdPrice = prices.find((p: any) => p.currency?.toLowerCase() === 'usd');
+            const price = usdPrice || prices[0];
+            
+            if (!price) {
+              console.warn(`[Credits Products] No price found for product ${product.id}`);
+              return null;
+            }
+            
+            // Format price display
+            const currencySymbols: Record<string, string> = {
+              usd: '$',
+              eur: '€',
+              gbp: '£',
+            };
+            const currencySymbol = currencySymbols[price.currency?.toLowerCase()] || price.currency?.toUpperCase();
+            const formattedPrice = `${currencySymbol}${(price.amount / 100).toFixed(2)}`;
+            
+            return {
+              id: product.id,
+              name: product.name || 'Credit Package',
+              description: product.description || '',
+              credits,
+              price: {
+                amount: price.amount,
+                currency: price.currency || 'USD',
+                priceId: price.id,
+                formatted: formattedPrice,
+              },
+              metadata: {
+                popular: product.metadata?.popular === true || product.metadata?.popular === 'true',
+                savings: product.metadata?.savings || null,
+                ...(product.metadata || {}),
+              },
+              features: Array.isArray(product.features) ? product.features : [],
+            };
+          } catch (err) {
+            console.error(`[Credits Products] Error mapping product ${product?.id}:`, err);
+            return null;
+          }
+        })
+        .filter((product: any) => product !== null) // Remove invalid products
+        .sort((a: any, b: any) => a.credits - b.credits); // Sort by credits ascending
+
+      console.log('[Credits Products] Found valid products:', creditProducts.length);
+      
+      res.json(creditProducts);
+    } catch (error: any) {
+      console.error('[Credits Products] Error fetching products:', error);
+      res.status(500).json({ 
+        error: "Failed to fetch products",
+        message: error.message || "Unable to load credit packages. Please try again later.",
+      });
+    }
+  });
+
   // Get credit balance (protected)
   app.get("/api/credits/balance", isAuthenticated, async (req: any, res) => {
     try {
