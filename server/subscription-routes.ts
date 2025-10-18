@@ -797,11 +797,8 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         customerEmail = customerEmail.replace('@example.com', '@test.com');
       }
 
-      // Generate a temporary checkout ID that we'll use to track this session
-      const tempCheckoutId = `checkout_${Date.now()}_${userId}`;
-      
-      // Build URLs - we'll use our own tracking mechanism since Polar sandbox doesn't replace placeholders reliably
-      const successUrl = `${baseUrl}/app/subscription/success?checkout_id=${tempCheckoutId}`;
+      // Build URLs - Polar will automatically append session_id parameter to success_url
+      const successUrl = `${baseUrl}/app/subscription/success`;
       const cancelUrl = `${baseUrl}/app/subscription/cancel`;
       
       console.log('[Checkout] URLs configured:', {
@@ -821,7 +818,6 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
           plan: plan,
           billingInterval: billingInterval || 'month',
           requestTime: new Date().toISOString(),
-          checkoutId: tempCheckoutId, // Our tracking ID
         },
       });
 
@@ -840,7 +836,6 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         billingInterval: billingInterval,
         metadata: {
           checkoutSessionId: session.id,
-          checkoutTrackingId: tempCheckoutId, // Our custom tracking ID
           checkoutCreatedAt: new Date().toISOString(),
           checkoutUrl: session.url,
           isPendingCheckout: true,
