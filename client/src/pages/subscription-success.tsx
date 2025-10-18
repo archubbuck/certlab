@@ -25,9 +25,14 @@ export default function SubscriptionSuccess() {
   const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
 
+  // If session_id is present, use it. Otherwise, use fallback endpoint
+  const confirmEndpoint = sessionId 
+    ? `/api/subscription/confirm?session_id=${sessionId}`
+    : `/api/subscription/confirm-pending`;
+
   const { data, error, isLoading, refetch, failureCount } = useQuery<ConfirmationResponse>({
-    queryKey: [`/api/subscription/confirm?session_id=${sessionId}`],
-    enabled: !!sessionId,
+    queryKey: [confirmEndpoint],
+    enabled: true, // Always enabled, will try fallback if no session_id
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
@@ -56,59 +61,8 @@ export default function SubscriptionSuccess() {
     }
   }, [data, error, retryCount]);
 
-  if (!sessionId) {
-    return (
-      <div className="container max-w-2xl mx-auto p-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HelpCircle className="h-5 w-5 text-yellow-600" />
-              Session Not Found
-            </CardTitle>
-            <CardDescription>
-              We couldn't find your checkout session
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert className="border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertTitle>What might have happened?</AlertTitle>
-              <AlertDescription className="space-y-2 mt-2">
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>You may have already completed this checkout</li>
-                  <li>The session link may have expired</li>
-                  <li>You accessed this page directly without completing checkout</li>
-                </ul>
-              </AlertDescription>
-            </Alert>
-            
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <h3 className="font-medium mb-2">What to do next:</h3>
-              <ol className="space-y-2 text-sm text-muted-foreground">
-                <li>1. Check your email for a confirmation message</li>
-                <li>2. Visit subscription management to see your current plan</li>
-                <li>3. If you haven't subscribed yet, view our plans</li>
-              </ol>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Link href="/app/subscription/manage">
-                <Button className="w-full sm:w-auto" data-testid="check-subscription-button">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Check My Subscription
-                </Button>
-              </Link>
-              <Link href="/app/subscription/plans">
-                <Button variant="outline" className="w-full sm:w-auto" data-testid="view-plans-button">
-                  View Plans
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Show loading while trying to confirm (either with session_id or fallback)
+  // Removed the "Session Not Found" early return - we'll try fallback confirmation first
 
   if (isLoading || processing) {
     return (

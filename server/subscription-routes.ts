@@ -1700,6 +1700,136 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
     }
   });
 
+  // Fallback confirmation endpoint - uses user's pending checkout when session_id is missing
+  app.get("/api/subscription/confirm-pending", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as User;
+      const userId = (user as any).claims?.sub || (user as any).id;
+
+      console.log(`[Subscription Confirm Pending] Looking up pending checkout for user ${userId}`);
+
+      // Get user data
+      const userData = await storage.getUserById(userId);
+      if (!userData || !userData.email) {
+        console.error('[Subscription Confirm Pending] User data not found');
+        return res.status(401).json({ 
+          error: "User not found",
+          success: false,
+          message: "Unable to verify user account"
+        });
+      }
+
+      // Look up the user's most recent pending checkout
+      const pendingCheckout = await storage.getSubscriptionByUserId(userId);
+      
+      if (!pendingCheckout || pendingCheckout.status !== 'pending_checkout') {
+        console.log('[Subscription Confirm Pending] No pending checkout found');
+        return res.status(404).json({
+          error: "No pending checkout",
+          success: false,
+          message: "No pending checkout session found. Your subscription may already be active, or the checkout expired."
+        });
+      }
+
+      // Get the checkout session ID from the pending record
+      const checkoutSessionId = pendingCheckout.polarSubscriptionId;
+      if (!checkoutSessionId) {
+        console.error('[Subscription Confirm Pending] No session ID in pending checkout');
+        return res.status(400).json({
+          error: "Invalid pending checkout",
+          success: false,
+          message: "Pending checkout record is missing session information"
+        });
+      }
+
+      console.log(`[Subscription Confirm Pending] Found pending checkout with session ID: ${checkoutSessionId}`);
+
+      // Now confirm this session using the same logic as the regular confirm endpoint
+      // Forward to the regular confirm logic by calling it with the session_id
+      const polarClient = await getPolarClient(userId);
+      
+      console.log('[Subscription Confirm Pending] Validating checkout session with Polar...');
+      const verification = await polarClient.validateCheckoutSession(checkoutSessionId);
+      
+      if (!verification.isValid || !verification.session) {
+        console.error('[Subscription Confirm Pending] Invalid checkout session:', verification.error);
+        return res.status(400).json({ 
+          error: verification.error || "Invalid session",
+          success: false,
+          message: verification.error || "Unable to verify checkout session"
+        });
+      }
+
+      const session = verification.session;
+      console.log('[Subscription Confirm Pending] Checkout session verified:', {
+        sessionId: session.id,
+        status: session.status,
+        subscriptionId: session.subscription_id
+      });
+
+      // Extract plan info
+      const plan = session.metadata?.plan || getPlanFromProductId(session.productId);
+      const billingInterval = session.metadata?.billingInterval || 
+                             session.price?.recurring_interval || 
+                             'month';
+
+      // Update the subscription record
+      const subscriptionData = {
+        userId,
+        polarSubscriptionId: session.subscription_id || `checkout_${session.id}`,
+        polarCustomerId: session.customer?.id || userData.polarCustomerId || '',
+        plan: plan as SubscriptionPlan,
+        status: 'active' as const,
+        billingInterval: billingInterval as 'month' | 'year',
+        productId: session.productId,
+        priceId: session.price?.id,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        metadata: {
+          checkoutSessionId: session.id,
+          productId: session.productId,
+          priceId: session.price?.id,
+          confirmedAt: new Date().toISOString()
+        }
+      };
+
+      await storage.updateSubscription(pendingCheckout.id, subscriptionData);
+      console.log('[Subscription Confirm Pending] Updated subscription to active');
+
+      // Update user benefits
+      const planConfig = SUBSCRIPTION_PLANS[plan as keyof typeof SUBSCRIPTION_PLANS] || SUBSCRIPTION_PLANS.free;
+      const benefits = {
+        plan,
+        quizzesPerDay: planConfig.limits.quizzesPerDay,
+        categoriesAccess: planConfig.limits.categoriesAccess,
+        analyticsAccess: planConfig.limits.analyticsAccess,
+        lastSyncedAt: new Date().toISOString(),
+      };
+
+      await storage.updateUser(userId, {
+        polarCustomerId: session.customer?.id || userData.polarCustomerId,
+        subscriptionBenefits: benefits,
+      });
+
+      console.log('[Subscription Confirm Pending] Successfully confirmed and activated subscription');
+
+      return res.json({
+        success: true,
+        plan,
+        billingInterval,
+        message: 'Subscription confirmed successfully!'
+      });
+
+    } catch (error: any) {
+      console.error('[Subscription Confirm Pending] Error:', error);
+      return res.status(500).json({
+        error: "Confirmation failed",
+        success: false,
+        message: error.message || "Unable to confirm subscription"
+      });
+    }
+  });
+
   // Confirm checkout session after successful payment - ENHANCED WITH FULL VERIFICATION
   app.get("/api/subscription/confirm", isAuthenticated, async (req: Request, res: Response) => {
     try {
