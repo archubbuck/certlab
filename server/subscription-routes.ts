@@ -1449,7 +1449,63 @@ export function registerSubscriptionRoutes(app: Express, storage: any, isAuthent
         });
       }
 
-      // Get the product ID and price ID for the new plan
+      // SPECIAL HANDLING: Downgrade to free (local-only, no Polar subscription)
+      if (newPlan === 'free') {
+        console.log(`[Switch Plan] Downgrading to free tier - canceling Polar subscription`);
+        
+        try {
+          // Cancel the Polar subscription
+          await polarClient.cancelSubscription(currentSubscription.id);
+          console.log(`[Switch Plan] Polar subscription ${currentSubscription.id} canceled successfully`);
+          
+          // Update database subscription to canceled status
+          const dbSubscription = await storage.getSubscriptionByUserId(userId);
+          if (dbSubscription) {
+            await storage.updateSubscription(dbSubscription.id, {
+              status: 'canceled',
+              canceledAt: new Date(),
+              cancelAtPeriodEnd: false, // Canceled immediately
+              metadata: {
+                downgradedToFree: true,
+                downgradedAt: new Date().toISOString(),
+                previousPlan: getPlanFromProductId(currentSubscription.productId),
+              } as any,
+            });
+            console.log(`[Switch Plan] Database subscription updated to canceled status`);
+          }
+          
+          // Set user's benefits to free tier (local-only)
+          const freeBenefits = {
+            plan: 'free',
+            quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
+            categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
+            analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
+            lastSyncedAt: new Date().toISOString(),
+          };
+          
+          await storage.updateUser(userId, {
+            subscriptionBenefits: freeBenefits,
+          });
+          
+          console.log(`[Switch Plan] User benefits updated to free tier`);
+          
+          return res.json({
+            success: true,
+            message: "Successfully downgraded to free plan",
+            plan: 'free',
+            effectiveDate: new Date().toISOString(),
+            benefits: freeBenefits,
+          });
+        } catch (error: any) {
+          console.error(`[Switch Plan] Error downgrading to free:`, error);
+          return res.status(500).json({
+            error: "Failed to downgrade",
+            message: error.message || "An unexpected error occurred while downgrading your subscription."
+          });
+        }
+      }
+
+      // Get the product ID and price ID for the new plan (paid plans only)
       const newPlanConfig = SUBSCRIPTION_PLANS[newPlan];
       if (!newPlanConfig) {
         return res.status(400).json({ 
