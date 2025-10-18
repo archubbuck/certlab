@@ -980,32 +980,42 @@ export class PolarClient {
     }
   }
 
-  async grantCredits(params: {
+  /**
+   * Report a credit purchase using Polar's meter events system.
+   * This uses the 'credit_purchase' meter event to track purchased credits.
+   * 
+   * Note: Requires 'credit_purchase' meter to be configured in Polar dashboard
+   * with 'credits_purchased' as a tracked property.
+   */
+  async reportPurchase(params: {
     customerId: string;
     amount: number;
-    description?: string;
+    sessionId: string;
+    productId?: string;
   }): Promise<void> {
-    const { customerId, amount, description } = params;
+    const { customerId, amount, sessionId, productId } = params;
     
     const isDev = this.isDevelopment;
-    console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Granting credits to customer:`, {
+    console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Reporting credit purchase:`, {
       customerId: customerId.substring(0, 8) + '...',
       amount,
-      description,
+      sessionId: sessionId.substring(0, 8) + '...',
     });
 
     try {
-      await this.request(`/customers/${customerId}/balance`, {
-        method: 'POST',
-        body: JSON.stringify({
-          amount,
-          description: description || `Credit purchase of ${amount} credits`,
-        }),
+      await this.reportUsage({
+        customerId,
+        eventName: 'credit_purchase',
+        properties: {
+          credits_purchased: amount,
+          session_id: sessionId,
+          ...(productId && { product_id: productId }),
+        },
       });
 
-      console.log('[Polar] Credits granted successfully');
+      console.log('[Polar] Credit purchase reported successfully via meter event');
     } catch (error: any) {
-      console.error('[Polar] Failed to grant credits:', error);
+      console.error('[Polar] Failed to report credit purchase:', error);
       throw error;
     }
   }
