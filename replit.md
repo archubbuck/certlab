@@ -7,6 +7,9 @@ Cert Lab is an AI-powered certification learning platform featuring Helen, an in
 Preferred communication style: Simple, everyday language.
 
 ## Recent Updates (October 2025)
+- **Polar environment variable refactor**: Updated to use POLAR_PRODUCTION_* and POLAR_SANDBOX_* prefixes for clear separation between environments with configurable API base URLs
+- **Monthly/yearly billing support**: Restructured SUBSCRIPTION_PLANS to support separate monthly and yearly pricing with dedicated product and price IDs for each tier
+- **Automatic free plan subscription**: New users are automatically subscribed to a free plan upon first access, with Polar API integration and local fallback
 - **Fixed subscription email issue**: Resolved session data caching - subscription system now fetches fresh user data from database to recognize email updates immediately
 - **Simplified dashboard**: Reduced clutter on /app with focused layout showing only essential information
 - **Enhanced routing**: Separated marketing landing page (/) from authenticated dashboard (/app)
@@ -107,27 +110,50 @@ The application now has complete Polar.sh integration with automatic environment
 
 #### Integration Features Completed
 - ✅ Environment-aware configuration (automatic sandbox/production switching)
+- ✅ Refactored environment variables to use POLAR_PRODUCTION_* and POLAR_SANDBOX_* prefixes
+- ✅ Support for monthly and yearly billing intervals with separate product/price IDs
+- ✅ Automatic free plan subscription for new users on first access
+- ✅ Configurable API base URLs for sandbox and production environments
+- ✅ Helper functions (getProductId, getPriceId, getPlanFromProductId) for safe pricing access
 - ✅ Checkout session creation with proper URL handling
 - ✅ Session verification on success callback
 - ✅ Comprehensive webhook handling (subscription.created, updated, resumed, canceled, expired)
 - ✅ Customer portal integration for subscription management
 - ✅ Subscription cancellation and resume flows
-- ✅ Proper error handling and fallback strategies
+- ✅ Proper error handling and fallback strategies (local subscription creation if Polar unavailable)
 - ✅ Fixed routing issues (/app/subscription-plans → /app/subscription/plans)
 - ✅ Environment-agnostic status checks (works in both sandbox and production)
 
 #### Environment Variables Required
 ##### Development (with POLAR_SANDBOX_ prefix):
 - `POLAR_SANDBOX_API_KEY` - Your Polar sandbox API key (already set)
+- `POLAR_SANDBOX_API_BASE_URL` - Polar sandbox API endpoint (defaults to https://sandbox-api.polar.sh/v1)
 - `POLAR_SANDBOX_ORGANIZATION_ID` - Your Polar organization ID in sandbox (optional)
-- `POLAR_SANDBOX_PRO_PRODUCT_ID` - Product ID for Pro plan in sandbox
-- `POLAR_SANDBOX_ENTERPRISE_PRODUCT_ID` - Product ID for Enterprise plan in sandbox
+- `POLAR_SANDBOX_FREE_MONTHLY_PRODUCT_ID` - Product ID for Free plan (monthly)
+- `POLAR_SANDBOX_FREE_MONTHLY_PRICE_ID` - Price ID for Free plan (monthly)
+- `POLAR_SANDBOX_PRO_MONTHLY_PRODUCT_ID` - Product ID for Pro plan (monthly)
+- `POLAR_SANDBOX_PRO_MONTHLY_PRICE_ID` - Price ID for Pro plan (monthly)
+- `POLAR_SANDBOX_PRO_YEARLY_PRODUCT_ID` - Product ID for Pro plan (yearly)
+- `POLAR_SANDBOX_PRO_YEARLY_PRICE_ID` - Price ID for Pro plan (yearly)
+- `POLAR_SANDBOX_ENTERPRISE_MONTHLY_PRODUCT_ID` - Product ID for Enterprise plan (monthly)
+- `POLAR_SANDBOX_ENTERPRISE_MONTHLY_PRICE_ID` - Price ID for Enterprise plan (monthly)
+- `POLAR_SANDBOX_ENTERPRISE_YEARLY_PRODUCT_ID` - Product ID for Enterprise plan (yearly)
+- `POLAR_SANDBOX_ENTERPRISE_YEARLY_PRICE_ID` - Price ID for Enterprise plan (yearly)
 
-##### Production (with POLAR_ prefix):
-- `POLAR_API_KEY` - Your Polar production API key
-- `POLAR_ORGANIZATION_ID` - Your Polar organization ID in production (optional)
-- `POLAR_PRO_PRODUCT_ID` - Product ID for Pro plan in production
-- `POLAR_ENTERPRISE_PRODUCT_ID` - Product ID for Enterprise plan in production
+##### Production (with POLAR_PRODUCTION_ prefix):
+- `POLAR_PRODUCTION_API_KEY` - Your Polar production API key
+- `POLAR_PRODUCTION_API_BASE_URL` - Polar production API endpoint (defaults to https://api.polar.sh/v1)
+- `POLAR_PRODUCTION_ORGANIZATION_ID` - Your Polar organization ID in production (optional)
+- `POLAR_PRODUCTION_FREE_MONTHLY_PRODUCT_ID` - Product ID for Free plan (monthly)
+- `POLAR_PRODUCTION_FREE_MONTHLY_PRICE_ID` - Price ID for Free plan (monthly)
+- `POLAR_PRODUCTION_PRO_MONTHLY_PRODUCT_ID` - Product ID for Pro plan (monthly)
+- `POLAR_PRODUCTION_PRO_MONTHLY_PRICE_ID` - Price ID for Pro plan (monthly)
+- `POLAR_PRODUCTION_PRO_YEARLY_PRODUCT_ID` - Product ID for Pro plan (yearly)
+- `POLAR_PRODUCTION_PRO_YEARLY_PRICE_ID` - Price ID for Pro plan (yearly)
+- `POLAR_PRODUCTION_ENTERPRISE_MONTHLY_PRODUCT_ID` - Product ID for Enterprise plan (monthly)
+- `POLAR_PRODUCTION_ENTERPRISE_MONTHLY_PRICE_ID` - Price ID for Enterprise plan (monthly)
+- `POLAR_PRODUCTION_ENTERPRISE_YEARLY_PRODUCT_ID` - Product ID for Enterprise plan (yearly)
+- `POLAR_PRODUCTION_ENTERPRISE_YEARLY_PRICE_ID` - Price ID for Enterprise plan (yearly)
 
 #### 2.2 Subscription Management
 - Implement membership validation via Polar API
