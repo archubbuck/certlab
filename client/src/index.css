@@ -678,14 +678,14 @@
   }
   
   .quiz-option-correct {
-    border-color: hsl(var(--success)) !important;
-    background-color: hsl(var(--success) / 0.1);
+    border-color: #22c55e !important;
+    background-color: rgba(34, 197, 94, 0.1);
     animation: quiz-correct-bounce 0.4s ease-out;
   }
   
   .quiz-option-incorrect {
-    border-color: hsl(var(--destructive)) !important;
-    background-color: hsl(var(--destructive) / 0.1);
+    border-color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.1);
     animation: quiz-incorrect-shake 0.3s ease-out;
   }
   
