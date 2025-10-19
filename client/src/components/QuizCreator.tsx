@@ -48,8 +48,11 @@ export default function QuizCreator() {
     },
     onSuccess: (quiz) => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-      // Force immediate refetch of credit balance to update Header
-      queryClient.refetchQueries({ queryKey: ['/api/credits/balance'] });
+      
+      // Immediately update credit balance cache if returned in response
+      if (quiz.creditBalance) {
+        queryClient.setQueryData(['/api/credits/balance'], quiz.creditBalance);
+      }
       
       // Show adaptive learning feedback if applicable
       if (quiz.adaptiveInfo && quiz.adaptiveInfo.increasePercentage > 0) {
