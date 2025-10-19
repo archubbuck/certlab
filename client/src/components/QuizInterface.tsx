@@ -531,6 +531,8 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
                   optionClassName += " quiz-option-correct-reveal";
                 } else if (isSelectedAnswer && !state.showFeedback) {
                   optionClassName += " quiz-option-selected";
+                } else if (state.selectedAnswer === undefined) {
+                  optionClassName += " quiz-option-unanswered";
                 } else {
                   optionClassName += " quiz-option-default";
                 }

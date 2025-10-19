@@ -671,6 +671,16 @@
     background-color: hsl(var(--primary) / 0.05);
   }
   
+  .quiz-option-unanswered {
+    border-color: #3b82f6 !important;
+    background-color: rgba(59, 130, 246, 0.05);
+  }
+  
+  .quiz-option-unanswered:hover {
+    border-color: #3b82f6 !important;
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  
   .quiz-option-selected {
     border-color: hsl(var(--primary));
     background-color: hsl(var(--primary) / 0.1);
