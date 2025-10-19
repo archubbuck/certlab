@@ -678,13 +678,13 @@
   }
   
   .quiz-option-correct {
-    border-color: hsl(var(--success));
+    border-color: hsl(var(--success)) !important;
     background-color: hsl(var(--success) / 0.1);
     animation: quiz-correct-bounce 0.4s ease-out;
   }
   
   .quiz-option-incorrect {
-    border-color: hsl(var(--destructive));
+    border-color: hsl(var(--destructive)) !important;
     background-color: hsl(var(--destructive) / 0.1);
     animation: quiz-incorrect-shake 0.3s ease-out;
   }

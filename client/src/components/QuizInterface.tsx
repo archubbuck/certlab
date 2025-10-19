@@ -41,7 +41,7 @@ interface QuizState {
 
 // Define action types
 type QuizAction =
-  | { type: 'SELECT_ANSWER'; payload: { questionId: number; answer: number; isCorrect: boolean } }
+  | { type: 'SELECT_ANSWER'; payload: { questionId: number; answer: number; isCorrect: boolean; showFeedback: boolean } }
   | { type: 'CHANGE_QUESTION'; payload: { index: number; savedAnswer?: number } }
   | { type: 'TOGGLE_FLAG'; payload: { questionId: number } }
   | { type: 'START_FLAGGED_REVIEW'; payload: { indices: number[] } }
@@ -60,7 +60,7 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
           ...state.answers,
           [action.payload.questionId]: action.payload.answer
         },
-        showFeedback: true,
+        showFeedback: action.payload.showFeedback,
         isCorrect: action.payload.isCorrect
       };
       
@@ -220,13 +220,17 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
     if (currentQuestion) {
       const correct = answerValue === currentQuestion.correctAnswer;
       
+      // Only show immediate feedback in Study Mode
+      const shouldShowFeedback = quiz?.mode === 'study';
+      
       // Batch all state updates in a single dispatch
       dispatch({
         type: 'SELECT_ANSWER',
         payload: {
           questionId: currentQuestion.id,
           answer: answerValue,
-          isCorrect: correct
+          isCorrect: correct,
+          showFeedback: shouldShowFeedback
         }
       });
     }
