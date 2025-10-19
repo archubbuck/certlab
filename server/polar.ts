@@ -966,6 +966,10 @@ export class PolarClient {
     console.log('[Polar] Usage event reported successfully');
   }
 
+  /**
+   * Get customer's credit balance from Polar customer state (metadata).
+   * Credits are tracked in customer metadata for accurate balance management.
+   */
   async getCustomerBalance(customerId: string): Promise<{
     availableCredits: number;
     totalPurchased: number;
@@ -975,13 +979,15 @@ export class PolarClient {
     console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Fetching credit balance for customer:`, customerId.substring(0, 8) + '...');
 
     try {
-      const response = await this.request<any>(`/customers/${customerId}/balance`);
+      const customer = await this.request<any>(`/customers/${customerId}`);
       
-      const availableCredits = response.available_credits || 0;
-      const totalPurchased = response.total_purchased || 0;
-      const totalConsumed = response.total_consumed || 0;
+      // Read balance from customer metadata
+      const metadata = customer.metadata || {};
+      const availableCredits = parseInt(metadata.credits_available || '0', 10);
+      const totalPurchased = parseInt(metadata.credits_purchased || '0', 10);
+      const totalConsumed = parseInt(metadata.credits_consumed || '0', 10);
 
-      console.log('[Polar] Credit balance retrieved:', {
+      console.log('[Polar] Credit balance retrieved from customer state:', {
         availableCredits,
         totalPurchased,
         totalConsumed,
@@ -996,7 +1002,7 @@ export class PolarClient {
       console.error('[Polar] Failed to fetch credit balance:', error);
       
       if (error.message?.includes('404') || error.message?.includes('not found')) {
-        console.log('[Polar] Customer not found or has no balance, returning 0 credits');
+        console.log('[Polar] Customer not found, returning 0 credits');
         return {
           availableCredits: 0,
           totalPurchased: 0,
@@ -1009,41 +1015,139 @@ export class PolarClient {
   }
 
   /**
-   * Report a credit purchase using Polar's meter events system.
-   * This uses the 'credit_purchase' meter event to track purchased credits.
-   * 
-   * Note: Requires 'credit_purchase' meter to be configured in Polar dashboard
-   * with 'credits_purchased' as a tracked property.
+   * Update customer's credit balance in Polar customer state.
+   * This method handles both adding credits (purchases) and deducting credits (consumption).
    */
-  async reportPurchase(params: {
+  async updateCustomerBalance(params: {
+    customerId: string;
+    creditsToAdd?: number;
+    creditsToDeduct?: number;
+    description?: string;
+  }): Promise<{
+    availableCredits: number;
+    totalPurchased: number;
+    totalConsumed: number;
+  }> {
+    const { customerId, creditsToAdd = 0, creditsToDeduct = 0, description } = params;
+    
+    const isDev = this.isDevelopment;
+    console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Updating customer balance:`, {
+      customerId: customerId.substring(0, 8) + '...',
+      creditsToAdd,
+      creditsToDeduct,
+      description,
+    });
+
+    try {
+      // First, get current balance
+      const currentBalance = await this.getCustomerBalance(customerId);
+      
+      // Calculate new values
+      const newPurchased = currentBalance.totalPurchased + creditsToAdd;
+      const newConsumed = currentBalance.totalConsumed + creditsToDeduct;
+      const newAvailable = newPurchased - newConsumed;
+
+      // Update customer metadata
+      await this.request(`/customers/${customerId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          metadata: {
+            credits_available: newAvailable.toString(),
+            credits_purchased: newPurchased.toString(),
+            credits_consumed: newConsumed.toString(),
+            last_updated: new Date().toISOString(),
+          },
+        }),
+      });
+
+      console.log('[Polar] Customer balance updated successfully:', {
+        availableCredits: newAvailable,
+        totalPurchased: newPurchased,
+        totalConsumed: newConsumed,
+      });
+
+      return {
+        availableCredits: newAvailable,
+        totalPurchased: newPurchased,
+        totalConsumed: newConsumed,
+      };
+    } catch (error: any) {
+      console.error('[Polar] Failed to update customer balance:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add credits to customer's balance after a successful purchase.
+   * Updates Polar customer state to track the purchase.
+   */
+  async addCredits(params: {
     customerId: string;
     amount: number;
     sessionId: string;
     productId?: string;
-  }): Promise<void> {
+  }): Promise<{
+    availableCredits: number;
+    totalPurchased: number;
+    totalConsumed: number;
+  }> {
     const { customerId, amount, sessionId, productId } = params;
     
     const isDev = this.isDevelopment;
-    console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Reporting credit purchase:`, {
+    console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Adding credits to customer:`, {
       customerId: customerId.substring(0, 8) + '...',
       amount,
       sessionId: sessionId.substring(0, 8) + '...',
     });
 
     try {
-      await this.reportUsage({
+      const newBalance = await this.updateCustomerBalance({
         customerId,
-        eventName: 'credit_purchase',
-        properties: {
-          credits_purchased: amount,
-          session_id: sessionId,
-          ...(productId && { product_id: productId }),
-        },
+        creditsToAdd: amount,
+        description: `Credit purchase: ${amount} credits (Session: ${sessionId})`,
       });
 
-      console.log('[Polar] Credit purchase reported successfully via meter event');
+      console.log('[Polar] Credits added successfully to customer state');
+      return newBalance;
     } catch (error: any) {
-      console.error('[Polar] Failed to report credit purchase:', error);
+      console.error('[Polar] Failed to add credits:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Deduct credits from customer's balance when consuming resources.
+   * Updates Polar customer state to track consumption.
+   */
+  async deductCredits(params: {
+    customerId: string;
+    amount: number;
+    reason: string;
+  }): Promise<{
+    availableCredits: number;
+    totalPurchased: number;
+    totalConsumed: number;
+  }> {
+    const { customerId, amount, reason } = params;
+    
+    const isDev = this.isDevelopment;
+    console.log(`[Polar] ${isDev ? '🧪 SANDBOX' : '🚀 PRODUCTION'} - Deducting credits from customer:`, {
+      customerId: customerId.substring(0, 8) + '...',
+      amount,
+      reason,
+    });
+
+    try {
+      const newBalance = await this.updateCustomerBalance({
+        customerId,
+        creditsToDeduct: amount,
+        description: `Credit consumption: ${reason}`,
+      });
+
+      console.log('[Polar] Credits deducted successfully from customer state');
+      return newBalance;
+    } catch (error: any) {
+      console.error('[Polar] Failed to deduct credits:', error);
       throw error;
     }
   }
