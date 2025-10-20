@@ -635,6 +635,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Deduct credits BEFORE creating quiz to prevent free usage
+      let updatedBalance;
+      try {
+        await polarClient.deductCredits({
+          customerId: polarCustomer.id,
+          amount: CREDITS_PER_QUIZ,
+          reason: `Quiz creation`,
+        });
+        
+        // Get updated balance to return in response
+        updatedBalance = await polarClient.getCustomerBalance(polarCustomer.id);
+        
+        console.log('[Quiz Creation] Credits deducted:', {
+          userId,
+          creditsConsumed: CREDITS_PER_QUIZ,
+          newBalance: updatedBalance.availableCredits,
+        });
+      } catch (error: any) {
+        console.error('[Quiz Creation] Failed to deduct credits:', error);
+        return res.status(500).json({ 
+          error: "Credit deduction failed",
+          message: "Unable to process credits. Please try again later.",
+        });
+      }
+      
       // Check available questions for the selected categories
       const availableQuestions = await storage.getQuestionsByCategories(
         quizData.categoryIds,
@@ -668,28 +693,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: quizData.mode || "study"
       });
       
-      // Deduct credits from customer balance
-      let updatedBalance;
-      try {
-        await polarClient.deductCredits({
-          customerId: polarCustomer.id,
-          amount: CREDITS_PER_QUIZ,
-          reason: `Quiz created (ID: ${quiz.id})`,
-        });
-        
-        // Get updated balance to return in response
-        updatedBalance = await polarClient.getCustomerBalance(polarCustomer.id);
-        
-        console.log('[Quiz Creation] Credits deducted:', {
-          quizId: quiz.id,
-          creditsConsumed: CREDITS_PER_QUIZ,
-          newBalance: updatedBalance.availableCredits,
-        });
-      } catch (error: any) {
-        console.error('[Quiz Creation] Failed to deduct credits:', error);
-        // Don't fail quiz creation if credit deduction fails
-        // The quiz has already been created
-      }
+      console.log('[Quiz Creation] Quiz created:', {
+        quizId: quiz.id,
+        userId,
+        finalQuestionCount,
+      });
       
       res.json({
         ...quiz,
