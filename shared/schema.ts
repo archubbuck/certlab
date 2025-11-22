@@ -283,7 +283,7 @@ export const insertUserGameStatsSchema = createInsertSchema(userGameStats).omit(
 // Upsert user schema for Replit Auth
 export const upsertUserSchema = z.object({
   id: z.string(),
-  email: z.string().email().nullable(),
+  email: z.string().email(),
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
   profileImageUrl: z.string().nullable(),

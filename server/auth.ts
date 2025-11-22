@@ -132,23 +132,6 @@ export async function setupAuth(app: Express) {
       // Update user with password hash
       await storage.updateUser(userId, { passwordHash });
 
-      // Set up free tier for new users
-      try {
-        const { SUBSCRIPTION_PLANS } = await import('./polar');
-        
-        await storage.updateUser(userId, {
-          subscriptionBenefits: {
-            plan: 'free',
-            quizzesPerDay: SUBSCRIPTION_PLANS.free.limits.quizzesPerDay,
-            categoriesAccess: SUBSCRIPTION_PLANS.free.limits.categoriesAccess,
-            analyticsAccess: SUBSCRIPTION_PLANS.free.limits.analyticsAccess,
-            lastSyncedAt: new Date().toISOString(),
-          },
-        });
-      } catch (error: any) {
-        console.error(`[Auth] Failed to set up free tier for new user:`, error);
-      }
-
       // Log the user in
       req.login(user, (loginErr) => {
         if (loginErr) {
