@@ -8,8 +8,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Coins, AlertCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth-provider";
 import { clientStorage } from "@/lib/client-storage";
