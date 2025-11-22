@@ -86,7 +86,12 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser(async (id: string, cb) => {
     try {
       const user = await storage.getUser(id);
-      cb(null, user);
+      if (user) {
+        const { passwordHash, ...sanitizedUser } = user;
+        cb(null, sanitizedUser);
+      } else {
+        cb(null, undefined);
+      }
     } catch (error) {
       cb(error);
     }
@@ -107,7 +112,8 @@ export async function setupAuth(app: Express) {
         if (loginErr) {
           return res.status(500).json({ message: "Login failed" });
         }
-        return res.json({ user });
+        const { passwordHash, ...sanitizedUser } = user;
+        return res.json({ user: sanitizedUser });
       });
     })(req, res, next);
   });
@@ -159,7 +165,8 @@ export async function setupAuth(app: Express) {
         if (loginErr) {
           return res.status(500).json({ message: "Registration successful but login failed" });
         }
-        return res.status(201).json({ user });
+        const { passwordHash, ...sanitizedUser } = user;
+        return res.status(201).json({ user: sanitizedUser });
       });
     } catch (error) {
       console.error("Registration error:", error);

@@ -18,7 +18,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
-      res.json(user);
+      const { passwordHash, ...sanitizedUser } = user;
+      res.json(sanitizedUser);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -35,7 +36,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      res.json(user);
+      const { passwordHash, ...sanitizedUser } = user;
+      res.json(sanitizedUser);
     } catch (error) {
       res.status(400).json({ message: "Invalid user ID" });
     }
