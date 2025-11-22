@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { clientAuth } from "./client-auth";
 
 interface User {
   id: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
-  profileImageUrl?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
   role: string;
 }
 
@@ -15,20 +15,35 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ["/api/auth/user"],
-    retry: false,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadUser = async () => {
+    try {
+      const currentUser = await clientAuth.getCurrentUser();
+      setUser(currentUser);
+    } catch (error) {
+      console.error('Error loading user:', error);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUser();
+  }, []);
 
   const logout = async () => {
     try {
-      await fetch('/api/logout', { method: 'GET' });
+      await clientAuth.logout();
+      setUser(null);
       window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
@@ -36,11 +51,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshUser = async () => {
+    await loadUser();
+  };
+
   const contextValue: AuthContextType = {
-    user: user && typeof user === 'object' && 'id' in user ? user as User : null,
+    user,
     isLoading,
-    isAuthenticated: !!user && !error && typeof user === 'object' && 'id' in user,
+    isAuthenticated: !!user,
     logout,
+    refreshUser,
   };
 
   return (

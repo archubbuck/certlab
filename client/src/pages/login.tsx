@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { clientAuth } from "@/lib/client-auth";
 
 export default function Login() {
   const [loginEmail, setLoginEmail] = useState("");
@@ -23,31 +24,21 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: loginEmail,
-          password: loginPassword,
-        }),
-      });
+      const result = await clientAuth.login(loginEmail, loginPassword);
 
-      if (response.ok) {
-        window.location.href = "/";
+      if (result.success) {
+        window.location.href = "/app";
       } else {
-        const data = await response.json();
         toast({
           title: "Login Failed",
-          description: data.message || "Invalid email or password",
+          description: result.message || "Invalid email or password",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
         title: "Login Failed",
-        description: "Unable to connect to server. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -60,33 +51,26 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: registerEmail,
-          password: registerPassword,
-          firstName: registerFirstName,
-          lastName: registerLastName,
-        }),
-      });
+      const result = await clientAuth.register(
+        registerEmail,
+        registerPassword,
+        registerFirstName,
+        registerLastName
+      );
 
-      if (response.ok) {
-        window.location.href = "/";
+      if (result.success) {
+        window.location.href = "/app";
       } else {
-        const data = await response.json();
         toast({
           title: "Registration Failed",
-          description: data.message || "Unable to create account",
+          description: result.message || "Unable to create account",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
         title: "Registration Failed",
-        description: "Unable to connect to server. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
