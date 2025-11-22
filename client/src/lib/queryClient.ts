@@ -122,9 +122,19 @@ export async function apiRequest({
   endpoint: string;
   data?: unknown | undefined;
 }): Promise<Response> {
-  // This function is kept for compatibility but should be replaced with direct storage calls
-  console.warn(`apiRequest to ${endpoint} should be replaced with direct storage calls`);
-  throw new Error("apiRequest is deprecated in client-side mode");
+  // This function is kept for compatibility but gradually being deprecated
+  // TODO: Replace all apiRequest calls with direct clientStorage calls
+  console.warn(
+    `⚠️ apiRequest to ${endpoint} is deprecated. ` +
+    `Please use clientStorage methods directly. ` +
+    `See MIGRATION_STATUS.md for migration guide.`
+  );
+  
+  // Return a mock Response for now to avoid breaking existing code
+  return new Response(JSON.stringify({ message: "API deprecated - use clientStorage" }), {
+    status: 501,
+    statusText: "Not Implemented",
+  });
 }
 
 export const queryClient = new QueryClient({

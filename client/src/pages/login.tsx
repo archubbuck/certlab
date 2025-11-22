@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { clientAuth } from "@/lib/client-auth";
+import { useLocation } from "wouter";
 
 export default function Login() {
   const [loginEmail, setLoginEmail] = useState("");
@@ -18,6 +19,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +29,8 @@ export default function Login() {
       const result = await clientAuth.login(loginEmail, loginPassword);
 
       if (result.success) {
-        window.location.href = "/app";
+        // Use relative navigation for GitHub Pages compatibility
+        setLocation("/app");
       } else {
         toast({
           title: "Login Failed",
@@ -59,7 +62,8 @@ export default function Login() {
       );
 
       if (result.success) {
-        window.location.href = "/app";
+        // Use relative navigation for GitHub Pages compatibility
+        setLocation("/app");
       } else {
         toast({
           title: "Registration Failed",

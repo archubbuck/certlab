@@ -6,15 +6,20 @@
 import { clientStorage } from './client-storage';
 import { indexedDBService } from './indexeddb';
 
+const SEED_VERSION = 1;
+
 export async function seedInitialData(): Promise<void> {
-  // Check if data already exists
+  // Check if data already exists and version
   const existingCategories = await clientStorage.getCategories();
-  if (existingCategories.length > 0) {
-    console.log('Data already seeded');
+  
+  // Check seed version
+  const versionSetting = await indexedDBService.get<{ key: string; value: number }>('settings', 'seedVersion');
+  if (existingCategories.length > 0 && versionSetting?.value === SEED_VERSION) {
+    console.log('Data already seeded (version', SEED_VERSION, ')');
     return;
   }
 
-  console.log('Seeding initial data...');
+  console.log('Seeding initial data (version', SEED_VERSION, ')...');
 
   // Create categories
   const cissp = await clientStorage.createCategory({
@@ -238,7 +243,10 @@ export async function seedInitialData(): Promise<void> {
     createdAt: new Date(),
   });
 
-  console.log('Initial data seeded successfully');
+  // Save seed version
+  await indexedDBService.put('settings', { key: 'seedVersion', value: SEED_VERSION });
+  
+  console.log('Initial data seeded successfully (version', SEED_VERSION, ')');
 }
 
 // Function to check if seeding is needed and perform it

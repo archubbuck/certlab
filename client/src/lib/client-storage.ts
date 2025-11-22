@@ -10,9 +10,9 @@ import type {
   StudyGroup, StudyGroupMember, PracticeTest, PracticeTestAttempt
 } from '@shared/schema';
 
-// Generate unique IDs
+// Generate unique IDs using crypto.randomUUID for better uniqueness
 function generateId(): string {
-  return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return crypto.randomUUID();
 }
 
 class ClientStorage {

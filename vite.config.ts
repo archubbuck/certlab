@@ -14,7 +14,8 @@ export default defineConfig({
     },
   },
   root: path.resolve(import.meta.dirname, "client"),
-  base: process.env.NODE_ENV === 'production' ? '/certlab/' : '/',
+  // Use environment variable or default to repository name
+  base: process.env.VITE_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/certlab/' : '/'),
   publicDir: path.resolve(import.meta.dirname, "client", "public"),
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
