@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import adminRoutes from "./admin-routes";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { polarClient } from "./polar";
 import { 
   insertUserSchema, 
@@ -16,7 +16,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -86,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.params.id;
       
       // Verify the user is updating their own profile
-      if (userId !== req.user.claims.sub) {
+      if (userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized to update this profile" });
       }
       
@@ -275,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get credit balance (protected)
   app.get("/api/credits/balance", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUserById(userId);
       
       if (!user || !user.email) {
@@ -322,7 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create checkout session for credit purchase (protected)
   app.post("/api/credits/checkout", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUserById(userId);
       
       if (!user || !user.email) {
@@ -356,7 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Get the base URL for success/cancel redirects
-        const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}`;
+        const baseUrl = process.env.APP_URL || `http://localhost:5000`;
         
         // Create Polar checkout session for credit purchase
         const checkoutSession = await polarClient.createCheckoutSession({
@@ -400,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Verify and process successful credit purchase
   app.get("/api/credits/verify", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { session_id } = req.query;
       
       if (!session_id) {
@@ -585,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/quiz", isAuthenticated, async (req: any, res) => {
     try {
       const quizData = createQuizSchema.parse(req.body);
-      const userId = req.user.claims.sub; // Get userId from authenticated user
+      const userId = req.user.id; // Get userId from authenticated user
       const isAdaptive = req.body.isAdaptive || false;
       
       // Credit-based billing: check if user has enough credits
@@ -758,7 +758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const quizId = parseInt(req.params.id);
       const { answers } = req.body;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       console.log(`Quiz submission for quiz ${quizId}:`, { answers, answersCount: answers?.length });
       
@@ -967,7 +967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/quiz/adaptive", isAuthenticated, async (req: any, res) => {
     try {
       const { title, categoryIds, subcategoryIds, questionCount, timeLimit } = req.body;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Always calculate adaptive question count for this endpoint
       const adaptiveQuestionCount = await storage.getAdaptiveQuestionCount(userId, questionCount, categoryIds);
@@ -1051,7 +1051,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/quiz/filtered", isAuthenticated, async (req: any, res) => {
     try {
       const { title, categoryIds, subcategoryIds, questionCount, timeLimit, difficultyLevels } = req.body;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Get questions with difficulty filter
       const filteredQuestions = await storage.getQuestionsByCategories(
@@ -1294,7 +1294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/study-groups', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { name, description, categoryIds, maxMembers, level } = req.body;
       
       if (!name || !categoryIds || categoryIds.length === 0) {
@@ -1320,7 +1320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/study-groups/:id/join', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const groupId = parseInt(req.params.id);
       
       const member = await storage.joinStudyGroup(groupId, userId);
@@ -1333,7 +1333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/study-groups/:id/leave', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const groupId = parseInt(req.params.id);
       
       await storage.leaveStudyGroup(groupId, userId);
@@ -1399,7 +1399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/practice-tests', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { 
         name, 
         description, 
@@ -1437,7 +1437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/practice-tests/:id/start', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const testId = parseInt(req.params.id);
       const CREDITS_PER_QUIZ = 5;
       
@@ -1634,7 +1634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/user/:userId/study-plan', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.params.userId;
-      const authenticatedUserId = req.user.claims.sub;
+      const authenticatedUserId = req.user.id;
       
       // Allow access if requesting own data or if admin
       if (userId !== authenticatedUserId) {
