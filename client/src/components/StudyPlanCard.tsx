@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-provider";
 import { Calendar, Clock, Target, TrendingUp, Bot } from "lucide-react";
 import type { UserStats, MasteryScore, Category, Quiz } from "@shared/schema";
 

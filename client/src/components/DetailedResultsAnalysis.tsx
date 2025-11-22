@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-provider";
 import { TrendingUp, TrendingDown, Target, Clock, CheckCircle, XCircle, BarChart3 } from "lucide-react";
 import type { Quiz, Category } from "@shared/schema";
 

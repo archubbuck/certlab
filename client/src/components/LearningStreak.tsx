@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-provider";
 import { Flame, TrendingUp, Calendar } from "lucide-react";
 import type { UserStats } from "@shared/schema";
 

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-provider";
 import { 
   Menu, 
   Search, 

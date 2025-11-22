@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/lib/auth";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth-provider";
+import { queryClient } from "@/lib/queryClient";
+import { clientStorage } from "@/lib/client-storage";
 import { useToast } from "@/hooks/use-toast";
+import { InsufficientTokensDialog } from "@/components/InsufficientTokensDialog";
 import { Sparkles } from "lucide-react";
 import type { Category, Subcategory } from "@shared/schema";
 
@@ -20,6 +22,19 @@ export default function QuizCreator() {
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
   const [timeLimit, setTimeLimit] = useState("30");
+  const [showInsufficientTokensDialog, setShowInsufficientTokensDialog] = useState(false);
+  
+  interface QuizCreationData {
+    title: string;
+    categoryIds: number[];
+    subcategoryIds?: number[];
+    questionCount: number;
+    timeLimit?: number;
+  }
+  
+  const [pendingQuizData, setPendingQuizData] = useState<QuizCreationData | null>(null);
+  const [requiredTokens, setRequiredTokens] = useState(0);
+  const [currentTokenBalance, setCurrentTokenBalance] = useState(0);
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -32,60 +47,46 @@ export default function QuizCreator() {
 
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: any) => {
-      const response = await apiRequest({ method: "POST", endpoint: "/api/quiz", data: quizData });
+      if (!currentUser?.id) throw new Error("Not authenticated");
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw errorData;
+      const tokenCost = clientStorage.calculateQuizTokenCost(quizData.questionCount);
+      
+      // Check and consume tokens
+      const tokenResult = await clientStorage.consumeTokens(currentUser.id, tokenCost);
+      
+      if (!tokenResult.success) {
+        // Get current balance and show dialog
+        const balance = await clientStorage.getUserTokenBalance(currentUser.id);
+        setCurrentTokenBalance(balance);
+        setRequiredTokens(tokenCost);
+        setPendingQuizData(quizData);
+        setShowInsufficientTokensDialog(true);
+        throw new Error("INSUFFICIENT_TOKENS"); // Special error to handle differently
       }
       
-      return response.json();
+      // Create the quiz
+      const quiz = await clientStorage.createQuiz({
+        userId: currentUser.id,
+        ...quizData,
+      });
+      
+      return { quiz, tokenResult, tokenCost };
     },
-    onSuccess: (quiz) => {
+    onSuccess: ({ quiz, tokenResult, tokenCost }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/user/${currentUser?.id}/token-balance`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       
-      if (quiz.creditBalance) {
-        console.log('[QuizCreator] Received credit balance:', quiz.creditBalance);
-        console.log('[QuizCreator] Current cache:', queryClient.getQueryData(['/api/credits/balance']));
-        
-        queryClient.setQueryData(['/api/credits/balance'], quiz.creditBalance);
-        
-        console.log('[QuizCreator] Updated cache:', queryClient.getQueryData(['/api/credits/balance']));
-        
-        queryClient.invalidateQueries({ queryKey: ['/api/credits/balance'] });
-        
-        console.log('[QuizCreator] Invalidated cache');
-      } else {
-        console.log('[QuizCreator] No creditBalance in response:', quiz);
-      }
-      
-      if (quiz.adaptiveInfo && quiz.adaptiveInfo.increasePercentage > 0) {
-        toast({
-          title: "Adaptive Learning Activated",
-          description: `Question count increased by ${quiz.adaptiveInfo.increasePercentage}% based on your performance (${quiz.adaptiveInfo.originalQuestionCount} → ${quiz.adaptiveInfo.adaptedQuestionCount} questions)`,
-          variant: "default",
-        });
-      }
+      toast({
+        title: "Quiz Created",
+        description: `Used ${tokenCost} tokens. New balance: ${tokenResult.newBalance}`,
+      });
       
       setLocation(`/app/quiz/${quiz.id}`);
     },
     onError: (error: any) => {
-      if (error?.error === "Insufficient credits") {
-        toast({
-          title: "Insufficient Credits",
-          description: error.message || "You don't have enough credits to create a quiz.",
-          variant: "destructive",
-          action: (
-            <Button 
-              size="sm" 
-              onClick={() => setLocation('/app/credits')}
-              className="bg-purple-600 text-white hover:bg-purple-700"
-            >
-              <Sparkles className="w-3 h-3 mr-1" />
-              Buy Credits
-            </Button>
-          ),
-        });
+      // Don't show error toast for insufficient tokens - dialog handles it
+      if (error?.message === "INSUFFICIENT_TOKENS") {
         return;
       }
       
@@ -147,6 +148,14 @@ export default function QuizCreator() {
     };
 
     createQuizMutation.mutate(quizData);
+  };
+
+  const handleTokensAdded = () => {
+    // Retry the quiz creation after tokens are added
+    if (pendingQuizData) {
+      createQuizMutation.mutate(pendingQuizData);
+      setPendingQuizData(null);
+    }
   };
 
   const filteredSubcategories = subcategories.filter(sub => 
@@ -284,6 +293,14 @@ export default function QuizCreator() {
           )}
         </Button>
       </CardContent>
+
+      <InsufficientTokensDialog
+        open={showInsufficientTokensDialog}
+        onOpenChange={setShowInsufficientTokensDialog}
+        requiredTokens={requiredTokens}
+        currentBalance={currentTokenBalance}
+        onTokensAdded={handleTokensAdded}
+      />
     </Card>
   );
 }

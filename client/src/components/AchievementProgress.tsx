@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge as BadgeUI } from "@/components/ui/badge";
 import { Trophy, Star, Target, Flame, Award, Lock, CheckCircle } from "lucide-react";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-provider";
 
 interface BadgeProgress {
   badge: {
