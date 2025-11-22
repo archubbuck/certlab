@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-provider";
 import { TrendingUp, TrendingDown, Clock, Target, Award, BookOpen } from "lucide-react";
 import type { UserStats } from "@shared/schema";
 
