@@ -23,7 +23,16 @@ export default function QuizCreator() {
   const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
   const [timeLimit, setTimeLimit] = useState("30");
   const [showInsufficientTokensDialog, setShowInsufficientTokensDialog] = useState(false);
-  const [pendingQuizData, setPendingQuizData] = useState<any>(null);
+  
+  interface QuizCreationData {
+    title: string;
+    categoryIds: number[];
+    subcategoryIds?: number[];
+    questionCount: number;
+    timeLimit?: number;
+  }
+  
+  const [pendingQuizData, setPendingQuizData] = useState<QuizCreationData | null>(null);
   const [requiredTokens, setRequiredTokens] = useState(0);
   const [currentTokenBalance, setCurrentTokenBalance] = useState(0);
 
@@ -68,9 +77,10 @@ export default function QuizCreator() {
       queryClient.invalidateQueries({ queryKey: [`/api/user/${currentUser?.id}/token-balance`] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       
+      const tokensUsed = currentTokenBalance - tokenResult.newBalance;
       toast({
         title: "Quiz Created",
-        description: `Used ${requiredTokens || tokenResult.newBalance} tokens. New balance: ${tokenResult.newBalance}`,
+        description: `Used ${tokensUsed} tokens. New balance: ${tokenResult.newBalance}`,
       });
       
       setLocation(`/app/quiz/${quiz.id}`);

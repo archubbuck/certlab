@@ -23,7 +23,7 @@ import {
   Sparkles,
   ArrowRight
 } from "lucide-react";
-import type { UserStats, Quiz } from "@shared/schema";
+import type { UserStats, Quiz, Category } from "@shared/schema";
 
 export default function Dashboard() {
   const { user: currentUser } = useAuth();
@@ -65,6 +65,11 @@ export default function Dashboard() {
     enabled: !!currentUser,
   });
 
+  // Get categories to avoid hardcoding category IDs
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+  });
+
 
   // Get completed quizzes for recent activity
   const completedQuizzes = recentQuizzes
@@ -101,10 +106,11 @@ export default function Dashboard() {
       return;
     }
 
-    // Create the quiz
+    // Create the quiz with first available category
+    const firstCategoryId = categories.length > 0 ? categories[0].id : 1;
     const quiz = await clientStorage.createQuiz({
       userId: currentUser.id,
-      categoryIds: [1], // Default to first category
+      categoryIds: [firstCategoryId],
       questionCount,
       title: `Practice Session - ${new Date().toLocaleDateString()}`,
     });
