@@ -149,7 +149,9 @@ class ClientStorage {
   // Subcategories
   async getSubcategories(categoryId?: number, tenantId: number = 1): Promise<Subcategory[]> {
     if (categoryId) {
-      return await indexedDBService.getByIndex<Subcategory>(STORES.subcategories, 'categoryId', categoryId);
+      // Filter by both categoryId and tenantId to maintain data isolation
+      const allForCategory = await indexedDBService.getByIndex<Subcategory>(STORES.subcategories, 'categoryId', categoryId);
+      return allForCategory.filter(sub => sub.tenantId === tenantId);
     }
     return await indexedDBService.getByIndex<Subcategory>(STORES.subcategories, 'tenantId', tenantId);
   }
