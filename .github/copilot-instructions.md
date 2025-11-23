@@ -115,8 +115,8 @@ vite.config.ts       # Vite build configuration with path aliases
     main.tsx               # Entry point: renders <App />
     App.tsx                # Main app component with routing
     index.css              # Global styles (Tailwind directives)
-    /components/           # 30+ React components (Header, Badge components, etc.)
-    /pages/                # 18 page components (dashboard, quiz, results, etc.)
+    /components/           # 37 React components (Header, Badge components, etc.)
+    /pages/                # 17 page components (dashboard, quiz, results, etc.)
     /lib/                  # Core utilities
       client-storage.ts    # IndexedDB wrapper (mimics server storage API)
       indexeddb.ts         # Low-level IndexedDB service
@@ -280,8 +280,8 @@ The app uses these stores (defined in `client/src/lib/indexeddb.ts`):
 4. **Test production**: `npm run build && npm run preview` - verify production build
 
 ### File Modifications
-- **Components**: Located in `/client/src/components/` - 30+ files
-- **Pages**: Located in `/client/src/pages/` - 18 page files
+- **Components**: Located in `/client/src/components/` - 37 files
+- **Pages**: Located in `/client/src/pages/` - 17 page files
 - **Storage Logic**: `/client/src/lib/client-storage.ts` - handles all data operations
 - **Styles**: Global styles in `/client/src/index.css`, component styles use Tailwind classes
 - **Routing**: Defined in `/client/src/App.tsx` using Wouter
