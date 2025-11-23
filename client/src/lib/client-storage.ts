@@ -5,7 +5,7 @@
 
 import { indexedDBService, STORES } from './indexeddb';
 import type {
-  User, Category, Subcategory, Question, Quiz, UserProgress,
+  Tenant, User, Category, Subcategory, Question, Quiz, UserProgress,
   MasteryScore, Badge, UserBadge, UserGameStats, Challenge, ChallengeAttempt,
   StudyGroup, StudyGroupMember, PracticeTest, PracticeTestAttempt
 } from '@shared/schema';
@@ -28,6 +28,40 @@ class ClientStorage {
 
   async clearCurrentUser(): Promise<void> {
     await indexedDBService.delete(STORES.settings, 'currentUserId');
+  }
+
+  // Tenant management
+  async getTenants(): Promise<Tenant[]> {
+    return await indexedDBService.getAll<Tenant>(STORES.tenants);
+  }
+
+  async getTenant(id: number): Promise<Tenant | undefined> {
+    return await indexedDBService.get<Tenant>(STORES.tenants, id);
+  }
+
+  async createTenant(tenant: Partial<Tenant>): Promise<Tenant> {
+    const newTenant: any = {
+      name: tenant.name!,
+      domain: tenant.domain || null,
+      settings: tenant.settings || {},
+      isActive: tenant.isActive !== undefined ? tenant.isActive : true,
+      createdAt: tenant.createdAt || new Date(),
+    };
+    const id = await indexedDBService.add(STORES.tenants, newTenant);
+    return { ...newTenant, id: Number(id) };
+  }
+
+  async updateTenant(id: number, updates: Partial<Tenant>): Promise<Tenant | null> {
+    const tenant = await this.getTenant(id);
+    if (!tenant) return null;
+    
+    const updatedTenant = { ...tenant, ...updates };
+    await indexedDBService.put(STORES.tenants, updatedTenant);
+    return updatedTenant;
+  }
+
+  async getUsersByTenant(tenantId: number): Promise<User[]> {
+    return await indexedDBService.getByIndex<User>(STORES.users, 'tenantId', tenantId);
   }
 
   // User management

@@ -61,14 +61,40 @@ export const getQueryFn: <T>(options: {
         }
       }
 
+      // Handle tenants
+      if (path === "/api/tenants") {
+        return await clientStorage.getTenants();
+      }
+      
+      // Handle specific tenant query
+      if (path.startsWith("/api/tenants/")) {
+        const match = path.match(/\/api\/tenants\/(\d+)/);
+        if (match) {
+          const tenantId = parseInt(match[1]);
+          return await clientStorage.getTenant(tenantId);
+        }
+      }
+
       // Handle categories
       if (path === "/api/categories") {
-        return await clientStorage.getCategories();
+        // Get current user to determine tenantId
+        const userId = await clientStorage.getCurrentUserId();
+        if (!userId) return await clientStorage.getCategories(1); // Default to tenant 1
+        
+        const user = await clientStorage.getUser(userId);
+        const tenantId = user?.tenantId || 1;
+        return await clientStorage.getCategories(tenantId);
       }
 
       // Handle subcategories
       if (path === "/api/subcategories") {
-        return await clientStorage.getSubcategories();
+        // Get current user to determine tenantId
+        const userId = await clientStorage.getCurrentUserId();
+        if (!userId) return await clientStorage.getSubcategories(undefined, 1);
+        
+        const user = await clientStorage.getUser(userId);
+        const tenantId = user?.tenantId || 1;
+        return await clientStorage.getSubcategories(undefined, tenantId);
       }
 
       // Handle badges

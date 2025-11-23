@@ -4,10 +4,11 @@
  */
 
 const DB_NAME = 'certlab';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 // Define all stores (tables)
 const STORES = {
+  tenants: 'tenants',
   users: 'users',
   categories: 'categories',
   subcategories: 'subcategories',
@@ -50,6 +51,13 @@ class IndexedDBService {
 
       request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
         const db = (event.target as IDBOpenDBRequest).result;
+        const oldVersion = event.oldVersion;
+
+        // Create tenants store (added in version 2)
+        if (!db.objectStoreNames.contains(STORES.tenants)) {
+          const tenantStore = db.createObjectStore(STORES.tenants, { keyPath: 'id', autoIncrement: true });
+          tenantStore.createIndex('domain', 'domain', { unique: false });
+        }
 
         // Create stores if they don't exist
         if (!db.objectStoreNames.contains(STORES.users)) {
