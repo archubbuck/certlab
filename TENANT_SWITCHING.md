@@ -77,10 +77,32 @@ interface User {
 
 ### Data Isolation
 
-Categories, subcategories, and questions are filtered by `tenantId`:
-- When a user switches tenants, queries automatically filter data by the user's current `tenantId`
-- Each tenant's data is completely isolated from other tenants
-- Users in different tenants cannot see each other's data
+**Complete Tenant Isolation**: When a user switches tenants, they get a completely fresh start with no data transfer:
+
+**Tenant-Specific Content** (filtered by `tenantId`):
+- Categories (certifications)
+- Subcategories (topic areas)
+- Questions
+- Study groups
+- Practice tests
+- Badges
+
+**User Data** (filtered by both `userId` AND `tenantId`):
+- Quizzes and quiz history
+- User progress tracking
+- Mastery scores
+- Lectures
+- User badges and achievements
+- Game statistics (points, streaks, levels)
+- Challenge attempts
+- Practice test attempts
+
+**What Persists Across Tenants:**
+- User identity (email, name, profile)
+- User account settings
+- Authentication credentials
+
+When switching tenants, the user maintains their identity but all learning progress, achievements, and activity history are isolated per tenant.
 
 ### IndexedDB Changes
 

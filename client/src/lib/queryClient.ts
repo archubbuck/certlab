@@ -29,23 +29,27 @@ export const getQueryFn: <T>(options: {
         const userId = await clientStorage.getCurrentUserId();
         if (!userId) throw new Error("Not authenticated");
 
+        // Get user's current tenant for data isolation
+        const user = await clientStorage.getUser(userId);
+        const tenantId = user?.tenantId || 1;
+
         if (path.includes("/stats")) {
-          return await clientStorage.getUserStats(userId);
+          return await clientStorage.getUserStats(userId, tenantId);
         }
         if (path.includes("/quizzes")) {
-          return await clientStorage.getUserQuizzes(userId);
+          return await clientStorage.getUserQuizzes(userId, tenantId);
         }
         if (path.includes("/progress")) {
-          return await clientStorage.getUserProgress(userId);
+          return await clientStorage.getUserProgress(userId, tenantId);
         }
         if (path.includes("/mastery")) {
-          return await clientStorage.getCertificationMasteryScores(userId);
+          return await clientStorage.getCertificationMasteryScores(userId, tenantId);
         }
         if (path.includes("/lectures")) {
-          return await clientStorage.getUserLectures(userId);
+          return await clientStorage.getUserLectures(userId, tenantId);
         }
         if (path.includes("/achievements")) {
-          return await clientStorage.getUserBadges(userId);
+          return await clientStorage.getUserBadges(userId, tenantId);
         }
         if (path.includes("/study-groups")) {
           return await clientStorage.getUserStudyGroups(userId);
