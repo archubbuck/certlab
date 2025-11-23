@@ -199,8 +199,11 @@ export async function importFromBundledYAML(
   try {
     // Dynamically import the YAML file from public directory
     // Use BASE_URL to ensure correct path for GitHub Pages deployment (e.g., /certlab/)
+    // Ensure proper path separator handling - BASE_URL already includes trailing slash
     const fileName = categoryName.toLowerCase();
-    const response = await fetch(`${import.meta.env.BASE_URL}data/${fileName}-questions.yaml`);
+    const baseUrl = import.meta.env.BASE_URL || '/';
+    const dataPath = baseUrl.endsWith('/') ? 'data' : '/data';
+    const response = await fetch(`${baseUrl}${dataPath}/${fileName}-questions.yaml`);
     
     if (!response.ok) {
       throw new Error(`Failed to load ${categoryName} questions: ${response.statusText}`);

@@ -183,7 +183,7 @@ export default function DataImportPage() {
     category: 'CISSP' | 'CISM',
     state: CategoryImportState
   ) => {
-    const progressPercentage = state.progress && state.progress.total > 0
+    const progressPercentage = state.progress && state.progress.total > 0 && state.progress.current !== undefined
       ? (state.progress.current / state.progress.total) * 100 
       : 0;
 

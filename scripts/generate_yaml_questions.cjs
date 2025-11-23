@@ -325,6 +325,13 @@ function generateQuestions(baseQuestions, targetCount, categoryName) {
   // Distribute questions across subcategories
   subcategories.forEach((subcategory, subcatIndex) => {
     const baseQs = baseQuestions[subcategory];
+    
+    // Skip subcategories with no base questions to avoid division by zero
+    if (!baseQs || baseQs.length === 0) {
+      console.warn(`Skipping subcategory "${subcategory}" - no base questions defined`);
+      return;
+    }
+    
     // Give extra question to first subcategories if there's a remainder
     const numQuestionsForSubcat = baseQuestionsPerSubcat + (subcatIndex < remainder ? 1 : 0);
     
