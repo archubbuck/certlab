@@ -18,7 +18,7 @@ export default function Login() {
   const [registerLastName, setRegisterLastName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, refreshUser } = useAuth();
   const [, setLocation] = useLocation();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -29,6 +29,8 @@ export default function Login() {
       const result = await clientAuth.login(loginEmail, loginPassword);
 
       if (result.success) {
+        // Refresh the auth context to update isAuthenticated state
+        await refreshUser();
         // Use relative navigation for GitHub Pages compatibility
         setLocation("/app");
       } else {
@@ -62,6 +64,8 @@ export default function Login() {
       );
 
       if (result.success) {
+        // Refresh the auth context to update isAuthenticated state
+        await refreshUser();
         // Use relative navigation for GitHub Pages compatibility
         setLocation("/app");
       } else {
