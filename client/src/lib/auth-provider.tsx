@@ -43,10 +43,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = async () => {
-    // Construct the logout redirect URL dynamically based on environment
-    // For production on GitHub Pages: https://archubbuck.github.io/certlab/
-    // For development: http://localhost:5000/
-    const logoutUrl = new URL(import.meta.env.BASE_URL, window.location.origin).href;
+    // Construct the logout redirect URL dynamically based on environment configuration
+    // Uses BASE_URL from vite.config.ts combined with current origin
+    let logoutUrl: string;
+    try {
+      logoutUrl = new URL(import.meta.env.BASE_URL || '/', window.location.origin).href;
+    } catch (error) {
+      // Fallback to origin if URL construction fails
+      console.error('Error constructing logout URL:', error);
+      logoutUrl = window.location.origin;
+    }
     
     try {
       await clientAuth.logout();
