@@ -45,18 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     // Construct the logout redirect URL dynamically based on environment configuration
     // Uses BASE_URL from vite.config.ts combined with current origin
-    let logoutUrl: string;
-    try {
-      logoutUrl = new URL(import.meta.env.BASE_URL || '/', window.location.origin).href;
-    } catch (error) {
-      // Fallback to origin if URL construction fails
-      console.error('Error constructing logout URL:', error);
-      logoutUrl = window.location.origin;
-    }
+    const logoutUrl = window.location.origin + (import.meta.env.BASE_URL || '/');
     
     try {
       await clientAuth.logout();
       setUser(null);
+      // Wait briefly to allow any toast notifications to be visible
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
