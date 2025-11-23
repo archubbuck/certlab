@@ -4,13 +4,13 @@
 
 :root {
   --background: hsl(210, 50%, 96%);
-  --foreground: hsl(215, 25%, 27%);
+  --foreground: hsl(215, 25%, 20%);
   --muted: hsl(210, 40%, 92%);
-  --muted-foreground: hsl(215, 16%, 47%);
+  --muted-foreground: hsl(215, 20%, 35%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(215, 25%, 27%);
+  --popover-foreground: hsl(215, 25%, 20%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(215, 25%, 27%);
+  --card-foreground: hsl(215, 25%, 20%);
   --border: hsl(214, 32%, 89%);
   --input: hsl(214, 32%, 91%);
   --primary: hsl(221, 83%, 53%);
@@ -46,13 +46,13 @@
 
 .dark {
   --background: hsl(240, 10%, 8%);
-  --foreground: hsl(0, 0%, 92%);
+  --foreground: hsl(0, 0%, 95%);
   --muted: hsl(240, 8%, 12%);
-  --muted-foreground: hsl(240, 5%, 65%);
+  --muted-foreground: hsl(240, 5%, 75%);
   --popover: hsl(240, 10%, 10%);
-  --popover-foreground: hsl(0, 0%, 92%);
+  --popover-foreground: hsl(0, 0%, 95%);
   --card: hsl(240, 10%, 10%);
-  --card-foreground: hsl(0, 0%, 92%);
+  --card-foreground: hsl(0, 0%, 95%);
   --border: hsl(240, 6%, 20%);
   --input: hsl(240, 8%, 15%);
   --primary: hsl(210, 100%, 60%);
@@ -76,9 +76,9 @@
 /* Nord - Cool arctic palette with muted blues and grays */
 .nord {
   --background: hsl(220, 16%, 96%);
-  --foreground: hsl(220, 16%, 22%);
+  --foreground: hsl(220, 20%, 18%);
   --muted: hsl(220, 16%, 88%);
-  --muted-foreground: hsl(220, 9%, 46%);
+  --muted-foreground: hsl(220, 15%, 32%);
   --popover: hsl(0, 0%, 100%);
   --popover-foreground: hsl(220, 16%, 22%);
   --card: hsl(0, 0%, 100%);
@@ -106,9 +106,9 @@
 /* Catppuccin Mocha - Warm, cozy dark theme */
 .catppuccin {
   --background: hsl(240, 21%, 15%);
-  --foreground: hsl(226, 64%, 88%);
+  --foreground: hsl(226, 64%, 90%);
   --muted: hsl(240, 23%, 18%);
-  --muted-foreground: hsl(227, 27%, 72%);
+  --muted-foreground: hsl(227, 27%, 78%);
   --popover: hsl(240, 23%, 18%);
   --popover-foreground: hsl(226, 64%, 88%);
   --card: hsl(240, 23%, 18%);
@@ -136,9 +136,9 @@
 /* Tokyo Night - Modern vibrant neon dark theme */
 .tokyo-night {
   --background: hsl(220, 13%, 18%);
-  --foreground: hsl(215, 13%, 70%);
+  --foreground: hsl(215, 13%, 78%);
   --muted: hsl(221, 12%, 23%);
-  --muted-foreground: hsl(217, 13%, 57%);
+  --muted-foreground: hsl(217, 13%, 70%);
   --popover: hsl(221, 12%, 23%);
   --popover-foreground: hsl(215, 13%, 70%);
   --card: hsl(221, 12%, 23%);
@@ -168,7 +168,7 @@
   --background: hsl(231, 15%, 18%);
   --foreground: hsl(60, 30%, 96%);
   --muted: hsl(232, 14%, 31%);
-  --muted-foreground: hsl(233, 14%, 65%);
+  --muted-foreground: hsl(233, 14%, 75%);
   --popover: hsl(231, 15%, 18%);
   --popover-foreground: hsl(60, 30%, 96%);
   --card: hsl(232, 14%, 31%);
@@ -196,9 +196,9 @@
 /* Rose Pine - Soft, elegant pastel theme */
 .rose-pine {
   --background: hsl(249, 22%, 12%);
-  --foreground: hsl(245, 50%, 91%);
+  --foreground: hsl(245, 50%, 93%);
   --muted: hsl(247, 23%, 15%);
-  --muted-foreground: hsl(245, 22%, 68%);
+  --muted-foreground: hsl(245, 22%, 75%);
   --popover: hsl(247, 23%, 15%);
   --popover-foreground: hsl(245, 50%, 91%);
   --card: hsl(247, 23%, 15%);

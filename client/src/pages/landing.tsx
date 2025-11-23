@@ -40,12 +40,12 @@ export default function Landing() {
           <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
             Master Your Certifications
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
+          <p className="text-xl text-gray-700 dark:text-gray-200 mb-8">
             AI-powered learning platform for CISSP, CISM, and other professional certifications
           </p>
           {isAuthenticated ? (
             <div className="space-y-4">
-              <p className="text-lg text-gray-600 dark:text-gray-300">
+              <p className="text-lg text-gray-700 dark:text-gray-200">
                 Welcome back, {getUserDisplayName(user)}!
               </p>
               <Button 
@@ -77,7 +77,7 @@ export default function Landing() {
               <CardTitle className="text-lg">Adaptive Learning</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 AI-powered system adapts to your learning pace and identifies knowledge gaps
               </p>
             </CardContent>
@@ -89,7 +89,7 @@ export default function Landing() {
               <CardTitle className="text-lg">Multi-Tenant</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Secure multi-tenant architecture for organizations and teams
               </p>
             </CardContent>
@@ -101,7 +101,7 @@ export default function Landing() {
               <CardTitle className="text-lg">Smart Lectures</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 AI generates personalized lectures based on your weak topics
               </p>
             </CardContent>
@@ -113,7 +113,7 @@ export default function Landing() {
               <CardTitle className="text-lg">Achievement System</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Gamified progress tracking with badges and level progression
               </p>
             </CardContent>
