@@ -43,17 +43,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = async () => {
+    // Construct the logout redirect URL dynamically based on environment
+    // For production on GitHub Pages: https://archubbuck.github.io/certlab/
+    // For development: http://localhost:5000/
+    const logoutUrl = window.location.origin + import.meta.env.BASE_URL;
+    
     try {
       await clientAuth.logout();
       setUser(null);
-      // Redirect to the production URL after sign out
-      // For production on GitHub Pages: https://archubbuck.github.io/certlab/
-      const logoutUrl = window.location.origin + import.meta.env.BASE_URL;
-      window.location.href = logoutUrl;
     } catch (error) {
       console.error('Logout error:', error);
-      // Redirect to the production URL even on error
-      const logoutUrl = window.location.origin + import.meta.env.BASE_URL;
+    } finally {
+      // Always redirect to the landing page, even on error
       window.location.href = logoutUrl;
     }
   };
