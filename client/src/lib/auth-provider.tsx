@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Construct the logout redirect URL dynamically based on environment
     // For production on GitHub Pages: https://archubbuck.github.io/certlab/
     // For development: http://localhost:5000/
-    const logoutUrl = window.location.origin + import.meta.env.BASE_URL;
+    const logoutUrl = new URL(import.meta.env.BASE_URL, window.location.origin).href;
     
     try {
       await clientAuth.logout();
