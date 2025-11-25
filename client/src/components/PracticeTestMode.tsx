@@ -8,7 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth-provider";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { clientStorage } from "@/lib/client-storage";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Clock, FileText, Trophy, AlertCircle, CheckCircle } from "lucide-react";
 import type { Category, PracticeTest, PracticeTestAttempt } from "@shared/schema";
@@ -46,36 +47,59 @@ export default function PracticeTestMode() {
 
   const startPracticeTestMutation = useMutation({
     mutationFn: async (testId: number) => {
-      const response = await apiRequest({ 
-        method: "POST", 
-        endpoint: `/api/practice-tests/${testId}/start`
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw data;
+      if (!currentUser) {
+        throw new Error("User not authenticated");
       }
-      return data;
+
+      // Get the practice test details
+      const test = await clientStorage.getPracticeTest(testId);
+      if (!test) {
+        throw new Error("Practice test not found");
+      }
+
+      // Get current user to determine tenant
+      const user = await clientStorage.getUser(currentUser.id);
+      const tenantId = user?.tenantId || 1;
+
+      // Check if there are questions available for this test
+      const questions = await clientStorage.getQuestionsByCategories(
+        test.categoryIds,
+        undefined,
+        undefined,
+        tenantId
+      );
+
+      if (questions.length === 0) {
+        throw new Error("No questions available for this practice test");
+      }
+
+      // Create a quiz based on the practice test configuration
+      const quiz = await clientStorage.createQuiz({
+        userId: currentUser.id,
+        tenantId: tenantId,
+        title: test.name,
+        categoryIds: test.categoryIds,
+        subcategoryIds: [],
+        questionCount: Math.min(test.questionCount, questions.length),
+        timeLimit: test.timeLimit,
+        mode: 'quiz',
+      });
+
+      // Create a practice test attempt
+      await clientStorage.createPracticeTestAttempt({
+        userId: currentUser.id,
+        testId: test.id,
+        quizId: quiz.id,
+      });
+
+      return { quiz, test };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-      
-      if (data.creditBalance) {
-        queryClient.setQueryData(['/api/credits/balance'], data.creditBalance);
-        queryClient.invalidateQueries({ queryKey: ['/api/credits/balance'] });
-      }
-      
+      queryClient.invalidateQueries({ queryKey: [`/api/user/${currentUser?.id}/practice-test-attempts`] });
       setLocation(`/app/quiz/${data.quiz.id}`);
     },
     onError: (error: any) => {
-      if (error.error === "Insufficient credits") {
-        toast({
-          title: "Insufficient Credits",
-          description: error.message || "You don't have enough credits to start a practice test.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
       const message = error.message || "Failed to start practice test. Please try again.";
       toast({
         title: "Cannot Start Practice Test",
@@ -202,51 +226,60 @@ export default function PracticeTestMode() {
                 
                 setIsCreating(true);
                 try {
+                  // Get current user to determine tenant
+                  const user = await clientStorage.getUser(currentUser.id);
+                  const tenantId = user?.tenantId || 1;
+                  
+                  // Check if there are questions available for this category
+                  const questions = await clientStorage.getQuestionsByCategories(
+                    [parseInt(selectedTest)],
+                    undefined,
+                    undefined,
+                    tenantId
+                  );
+
+                  if (questions.length === 0) {
+                    toast({
+                      title: "No Questions Available",
+                      description: "This category doesn't have any questions available yet.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
                   // Create a quick practice test on-demand
-                  const response = await apiRequest({
-                    method: "POST",
-                    endpoint: "/api/practice-tests",
-                    data: {
-                      name: `Quick ${categories.find(c => c.id.toString() === selectedTest)?.name} Test`,
-                      description: 'Quick practice test',
-                      categoryIds: [parseInt(selectedTest)],
-                      questionCount: 25,
-                      timeLimit: 30,
-                      difficulty: 'Mixed',
-                      passingScore: 70
-                    }
-                  });
-                  const test = await response.json();
-                  
-                  // Start the newly created test
-                  const startResponse = await apiRequest({
-                    method: "POST",
-                    endpoint: `/api/practice-tests/${test.id}/start`
+                  const test = await clientStorage.createPracticeTest({
+                    name: `Quick ${categories.find(c => c.id.toString() === selectedTest)?.name} Test`,
+                    description: 'Quick practice test',
+                    categoryIds: [parseInt(selectedTest)],
+                    questionCount: 25,
+                    timeLimit: 30,
+                    difficulty: 'Mixed',
+                    passingScore: 70
                   });
                   
-                  if (!startResponse.ok) {
-                    const errorData = await startResponse.json();
-                    if (errorData.error === "Insufficient credits") {
-                      toast({
-                        title: "Insufficient Credits",
-                        description: errorData.message || "You don't have enough credits to start a practice test.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    throw new Error(errorData.message || 'Failed to start practice test');
-                  }
-                  
-                  const data = await startResponse.json();
-                  
-                  // Update credit balance cache
-                  if (data.creditBalance) {
-                    queryClient.setQueryData(['/api/credits/balance'], data.creditBalance);
-                    queryClient.invalidateQueries({ queryKey: ['/api/credits/balance'] });
-                  }
+                  // Create a quiz based on the practice test configuration
+                  const quiz = await clientStorage.createQuiz({
+                    userId: currentUser.id,
+                    tenantId: tenantId,
+                    title: test.name,
+                    categoryIds: test.categoryIds,
+                    subcategoryIds: [],
+                    questionCount: Math.min(test.questionCount, questions.length),
+                    timeLimit: test.timeLimit,
+                    mode: 'quiz',
+                  });
+
+                  // Create a practice test attempt
+                  await clientStorage.createPracticeTestAttempt({
+                    userId: currentUser.id,
+                    testId: test.id,
+                    quizId: quiz.id,
+                  });
                   
                   queryClient.invalidateQueries({ queryKey: ['/api/practice-tests'] });
-                  setLocation(`/app/quiz/${data.quiz.id}`);
+                  queryClient.invalidateQueries({ queryKey: [`/api/user/${currentUser.id}/practice-test-attempts`] });
+                  setLocation(`/app/quiz/${quiz.id}`);
                 } catch (error: any) {
                   toast({
                     title: "Error",

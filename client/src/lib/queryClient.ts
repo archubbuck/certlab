@@ -54,6 +54,9 @@ export const getQueryFn: <T>(options: {
         if (path.includes("/study-groups")) {
           return await clientStorage.getUserStudyGroups(userId);
         }
+        if (path.includes("/practice-test-attempts")) {
+          return await clientStorage.getPracticeTestAttempts(userId);
+        }
         if (path.includes("/token-balance") || path.includes("/tokens")) {
           return { balance: await clientStorage.getUserTokenBalance(userId) };
         }
