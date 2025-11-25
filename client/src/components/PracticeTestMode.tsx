@@ -12,7 +12,7 @@ import { clientStorage } from "@/lib/client-storage";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Clock, FileText, Trophy, AlertCircle, CheckCircle } from "lucide-react";
-import type { Category, PracticeTest, PracticeTestAttempt } from "@shared/schema";
+import type { Category, PracticeTest, PracticeTestAttempt, Quiz } from "@shared/schema";
 
 interface PracticeTestWithStats extends PracticeTest {
   totalAttempts?: number;
@@ -21,6 +21,49 @@ interface PracticeTestWithStats extends PracticeTest {
 
 interface UserAttemptWithTest extends PracticeTestAttempt {
   test?: PracticeTest;
+}
+
+// Helper function to start a practice test
+async function startPracticeTest(
+  userId: string,
+  test: PracticeTest
+): Promise<{ quiz: Quiz; test: PracticeTest }> {
+  // Get current user to determine tenant
+  const user = await clientStorage.getUser(userId);
+  const tenantId = user?.tenantId || 1;
+
+  // Check if there are questions available for this test
+  const questions = await clientStorage.getQuestionsByCategories(
+    test.categoryIds,
+    undefined,
+    undefined,
+    tenantId
+  );
+
+  if (questions.length === 0) {
+    throw new Error("No questions available for this practice test");
+  }
+
+  // Create a quiz based on the practice test configuration
+  const quiz = await clientStorage.createQuiz({
+    userId: userId,
+    tenantId: tenantId,
+    title: test.name,
+    categoryIds: test.categoryIds,
+    subcategoryIds: [],
+    questionCount: Math.min(test.questionCount, questions.length),
+    timeLimit: test.timeLimit,
+    mode: 'quiz',
+  });
+
+  // Create a practice test attempt
+  await clientStorage.createPracticeTestAttempt({
+    userId: userId,
+    testId: test.id,
+    quizId: quiz.id,
+  });
+
+  return { quiz, test };
 }
 
 export default function PracticeTestMode() {
@@ -57,42 +100,7 @@ export default function PracticeTestMode() {
         throw new Error("Practice test not found");
       }
 
-      // Get current user to determine tenant
-      const user = await clientStorage.getUser(currentUser.id);
-      const tenantId = user?.tenantId || 1;
-
-      // Check if there are questions available for this test
-      const questions = await clientStorage.getQuestionsByCategories(
-        test.categoryIds,
-        undefined,
-        undefined,
-        tenantId
-      );
-
-      if (questions.length === 0) {
-        throw new Error("No questions available for this practice test");
-      }
-
-      // Create a quiz based on the practice test configuration
-      const quiz = await clientStorage.createQuiz({
-        userId: currentUser.id,
-        tenantId: tenantId,
-        title: test.name,
-        categoryIds: test.categoryIds,
-        subcategoryIds: [],
-        questionCount: Math.min(test.questionCount, questions.length),
-        timeLimit: test.timeLimit,
-        mode: 'quiz',
-      });
-
-      // Create a practice test attempt
-      await clientStorage.createPracticeTestAttempt({
-        userId: currentUser.id,
-        testId: test.id,
-        quizId: quiz.id,
-      });
-
-      return { quiz, test };
+      return startPracticeTest(currentUser.id, test);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
@@ -226,27 +234,6 @@ export default function PracticeTestMode() {
                 
                 setIsCreating(true);
                 try {
-                  // Get current user to determine tenant
-                  const user = await clientStorage.getUser(currentUser.id);
-                  const tenantId = user?.tenantId || 1;
-                  
-                  // Check if there are questions available for this category
-                  const questions = await clientStorage.getQuestionsByCategories(
-                    [parseInt(selectedTest)],
-                    undefined,
-                    undefined,
-                    tenantId
-                  );
-
-                  if (questions.length === 0) {
-                    toast({
-                      title: "No Questions Available",
-                      description: "This category doesn't have any questions available yet.",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-
                   // Create a quick practice test on-demand
                   const test = await clientStorage.createPracticeTest({
                     name: `Quick ${categories.find(c => c.id.toString() === selectedTest)?.name} Test`,
@@ -258,24 +245,8 @@ export default function PracticeTestMode() {
                     passingScore: 70
                   });
                   
-                  // Create a quiz based on the practice test configuration
-                  const quiz = await clientStorage.createQuiz({
-                    userId: currentUser.id,
-                    tenantId: tenantId,
-                    title: test.name,
-                    categoryIds: test.categoryIds,
-                    subcategoryIds: [],
-                    questionCount: Math.min(test.questionCount, questions.length),
-                    timeLimit: test.timeLimit,
-                    mode: 'quiz',
-                  });
-
-                  // Create a practice test attempt
-                  await clientStorage.createPracticeTestAttempt({
-                    userId: currentUser.id,
-                    testId: test.id,
-                    quizId: quiz.id,
-                  });
+                  // Start the practice test using the shared helper
+                  const { quiz } = await startPracticeTest(currentUser.id, test);
                   
                   queryClient.invalidateQueries({ queryKey: ['/api/practice-tests'] });
                   queryClient.invalidateQueries({ queryKey: [`/api/user/${currentUser.id}/practice-test-attempts`] });
