@@ -51,9 +51,6 @@ export const getQueryFn: <T>(options: {
         if (path.includes("/achievements")) {
           return await clientStorage.getUserBadges(userId, tenantId);
         }
-        if (path.includes("/study-groups")) {
-          return await clientStorage.getUserStudyGroups(userId);
-        }
         if (path.includes("/practice-test-attempts")) {
           return await clientStorage.getPracticeTestAttempts(userId);
         }
@@ -133,11 +130,6 @@ export const getQueryFn: <T>(options: {
           const lectureId = parseInt(match[1]);
           return await clientStorage.getLecture(lectureId);
         }
-      }
-
-      // Handle study groups
-      if (path === "/api/study-groups") {
-        return await clientStorage.getStudyGroups();
       }
 
       // Handle practice tests
