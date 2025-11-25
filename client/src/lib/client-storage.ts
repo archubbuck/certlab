@@ -791,6 +791,7 @@ class ClientStorage {
       userId: attempt.userId!,
       testId: attempt.testId!,
       quizId: attempt.quizId!,
+      tenantId: attempt.tenantId!,
       score: attempt.score || null,
       isPassed: attempt.isPassed || false,
       startedAt: attempt.startedAt || new Date(),

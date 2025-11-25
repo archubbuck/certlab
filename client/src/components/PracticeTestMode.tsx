@@ -27,7 +27,7 @@ interface UserAttemptWithTest extends PracticeTestAttempt {
 async function startPracticeTest(
   userId: string,
   test: PracticeTest
-): Promise<{ quiz: Quiz; test: PracticeTest }> {
+): Promise<Quiz> {
   // Get current user to determine tenant
   const user = await clientStorage.getUser(userId);
   const tenantId = user?.tenantId || 1;
@@ -64,7 +64,7 @@ async function startPracticeTest(
     tenantId: tenantId,
   });
 
-  return { quiz, test };
+  return quiz;
 }
 
 export default function PracticeTestMode() {
@@ -103,10 +103,10 @@ export default function PracticeTestMode() {
 
       return startPracticeTest(currentUser.id, test);
     },
-    onSuccess: (data) => {
+    onSuccess: (quiz) => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       queryClient.invalidateQueries({ queryKey: [`/api/user/${currentUser?.id}/practice-test-attempts`] });
-      setLocation(`/app/quiz/${data.quiz.id}`);
+      setLocation(`/app/quiz/${quiz.id}`);
     },
     onError: (error: any) => {
       const message = error.message || "Failed to start practice test. Please try again.";
@@ -247,7 +247,7 @@ export default function PracticeTestMode() {
                   });
                   
                   // Start the practice test using the shared helper
-                  const { quiz } = await startPracticeTest(currentUser.id, test);
+                  const quiz = await startPracticeTest(currentUser.id, test);
                   
                   queryClient.invalidateQueries({ queryKey: ['/api/practice-tests'] });
                   queryClient.invalidateQueries({ queryKey: [`/api/user/${currentUser.id}/practice-test-attempts`] });
