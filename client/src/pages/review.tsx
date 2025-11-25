@@ -63,14 +63,14 @@ export default function Review() {
   // Mutation for generating lecture notes (client-side)
   const generateLectureMutation = useMutation({
     mutationFn: async () => {
-      if (!quiz || questions.length === 0) {
+      if (!quiz || !questions || questions.length === 0) {
         throw new Error("Quiz data not available");
       }
       
       // Get the category name for the study notes
-      const categoryIds = quiz.categoryIds as number[] || [];
+      const categoryIds = (quiz.categoryIds as number[]) || [];
       const categoryName = categoryIds
-        .map(id => categories.find(cat => cat.id === id)?.name)
+        .map(id => categories?.find(cat => cat.id === id)?.name)
         .filter(Boolean)
         .join(", ") || "Mixed Quiz";
       
