@@ -253,6 +253,48 @@ export const getQueryFn: <T>(options: {
         return await clientStorage.getPracticeTests();
       }
 
+      // Handle admin tenant queries
+      if (path === "/api/admin/tenants") {
+        return await clientStorage.getTenants();
+      }
+
+      // Handle admin tenant stats
+      const tenantStatsMatch = path.match(/\/api\/admin\/tenants\/(\d+)\/stats/);
+      if (tenantStatsMatch) {
+        const tenantId = parseInt(tenantStatsMatch[1]);
+        const categories = await clientStorage.getCategories(tenantId);
+        const subcategories = await clientStorage.getSubcategories(undefined, tenantId);
+        const questions = await clientStorage.getQuestionsByTenant(tenantId);
+        const users = await clientStorage.getUsersByTenant(tenantId);
+        return {
+          categories: categories.length,
+          subcategories: subcategories.length,
+          questions: questions.length,
+          users: users.length,
+        };
+      }
+
+      // Handle admin tenant categories
+      const tenantCategoriesMatch = path.match(/\/api\/admin\/tenants\/(\d+)\/categories/);
+      if (tenantCategoriesMatch) {
+        const tenantId = parseInt(tenantCategoriesMatch[1]);
+        return await clientStorage.getCategories(tenantId);
+      }
+
+      // Handle admin tenant questions
+      const tenantQuestionsMatch = path.match(/\/api\/admin\/tenants\/(\d+)\/questions/);
+      if (tenantQuestionsMatch) {
+        const tenantId = parseInt(tenantQuestionsMatch[1]);
+        return await clientStorage.getQuestionsByTenant(tenantId);
+      }
+
+      // Handle admin tenant users
+      const tenantUsersMatch = path.match(/\/api\/admin\/tenants\/(\d+)\/users/);
+      if (tenantUsersMatch) {
+        const tenantId = parseInt(tenantUsersMatch[1]);
+        return await clientStorage.getUsersByTenant(tenantId);
+      }
+
       // Default: return null for unsupported queries
       console.warn(`Unsupported query path: ${path}`);
       return null;

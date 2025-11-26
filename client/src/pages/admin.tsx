@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { clientStorage } from "@/lib/client-storage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,12 +84,20 @@ function QuestionForm({
   onError: () => void;
 }) {
   const createQuestionMutation = useMutation({
-    mutationFn: (data: any) =>
-      apiRequest({
-        method: "POST",
-        endpoint: `/api/admin/tenants/${tenantId}/questions`,
-        data,
-      }),
+    mutationFn: async (data: any) => {
+      if (!tenantId) throw new Error("No tenant selected");
+      return await clientStorage.createQuestion({
+        tenantId,
+        categoryId: data.categoryId,
+        subcategoryId: data.subcategoryId,
+        text: data.text,
+        options: data.options.map((text: string, index: number) => ({ id: index, text })),
+        correctAnswer: data.correctAnswer - 1, // Convert 1-based to 0-based
+        explanation: data.explanation,
+        difficultyLevel: data.difficultyLevel,
+        tags: data.tags,
+      });
+    },
     onSuccess,
     onError,
   });
@@ -289,6 +297,8 @@ function AdminBreadcrumb() {
 export default function AdminDashboard() {
   const [selectedTenant, setSelectedTenant] = useState<number | null>(null);
   const [newTenantDialog, setNewTenantDialog] = useState(false);
+  const [editTenantDialog, setEditTenantDialog] = useState(false);
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [newCategoryDialog, setNewCategoryDialog] = useState(false);
   const [newSubcategoryDialog, setNewSubcategoryDialog] = useState(false);
   const [newQuestionDialog, setNewQuestionDialog] = useState(false);
@@ -299,6 +309,9 @@ export default function AdminDashboard() {
   const { data: tenants = [], isLoading: tenantsLoading } = useQuery<Tenant[]>({
     queryKey: ["/api/admin/tenants"],
   });
+
+  // Get the currently selected tenant data
+  const currentTenant = tenants.find(t => t.id === selectedTenant);
 
   // Fetch tenant statistics if tenant is selected
   const { data: tenantStats } = useQuery<TenantStats>({
@@ -320,12 +333,14 @@ export default function AdminDashboard() {
 
   // Create tenant mutation
   const createTenantMutation = useMutation({
-    mutationFn: (data: { name: string; domain?: string }) =>
-      apiRequest({
-        method: "POST",
-        endpoint: "/api/admin/tenants",
-        data,
-      }),
+    mutationFn: async (data: { name: string; domain?: string }) => {
+      return await clientStorage.createTenant({
+        name: data.name,
+        domain: data.domain || null,
+        settings: {},
+        isActive: true,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tenants"] });
       setNewTenantDialog(false);
@@ -338,12 +353,15 @@ export default function AdminDashboard() {
 
   // Create category mutation
   const createCategoryMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string; icon?: string }) =>
-      apiRequest({
-        method: "POST",
-        endpoint: `/api/admin/tenants/${selectedTenant}/categories`,
-        data,
-      }),
+    mutationFn: async (data: { name: string; description?: string; icon?: string }) => {
+      if (!selectedTenant) throw new Error("No tenant selected");
+      return await clientStorage.createCategory({
+        tenantId: selectedTenant,
+        name: data.name,
+        description: data.description || null,
+        icon: data.icon || null,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tenants", selectedTenant, "categories"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tenants", selectedTenant, "stats"] });
@@ -355,20 +373,34 @@ export default function AdminDashboard() {
     },
   });
 
-  // Delete tenant mutation
+  // Update tenant mutation
+  const updateTenantMutation = useMutation({
+    mutationFn: async ({ tenantId, updates }: { tenantId: number; updates: Partial<Tenant> }) => {
+      return await clientStorage.updateTenant(tenantId, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/tenants"] });
+      setEditTenantDialog(false);
+      toast({ title: "Tenant updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update tenant", variant: "destructive" });
+    },
+  });
+
+  // Delete tenant mutation - Note: Only deactivates the tenant, doesn't delete data
   const deleteTenantMutation = useMutation({
-    mutationFn: (tenantId: number) =>
-      apiRequest({
-        method: "DELETE",
-        endpoint: `/api/admin/tenants/${tenantId}`,
-      }),
+    mutationFn: async (tenantId: number) => {
+      // We deactivate instead of deleting to preserve data integrity
+      return await clientStorage.updateTenant(tenantId, { isActive: false });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tenants"] });
       setSelectedTenant(null);
-      toast({ title: "Tenant deleted successfully" });
+      toast({ title: "Tenant deactivated successfully" });
     },
     onError: () => {
-      toast({ title: "Failed to delete tenant", variant: "destructive" });
+      toast({ title: "Failed to deactivate tenant", variant: "destructive" });
     },
   });
 
@@ -380,6 +412,19 @@ export default function AdminDashboard() {
       domain: formData.get("domain") as string || undefined,
     };
     createTenantMutation.mutate(data);
+  };
+
+  const handleEditTenant = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingTenant) return;
+    
+    const formData = new FormData(event.currentTarget);
+    const updates = {
+      name: formData.get("name") as string,
+      domain: formData.get("domain") as string || null,
+      isActive: formData.get("isActive") === "on",
+    };
+    updateTenantMutation.mutate({ tenantId: editingTenant.id, updates });
   };
 
   const handleCreateCategory = (event: React.FormEvent<HTMLFormElement>) => {
@@ -436,6 +481,57 @@ export default function AdminDashboard() {
                 </Button>
                 <Button type="submit" disabled={createTenantMutation.isPending}>
                   Create Tenant
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Tenant Dialog */}
+        <Dialog open={editTenantDialog} onOpenChange={setEditTenantDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Tenant</DialogTitle>
+              <DialogDescription>Update tenant settings and information</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditTenant}>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-name">Tenant Name</Label>
+                  <Input 
+                    id="edit-name" 
+                    name="name" 
+                    placeholder="Organization Name" 
+                    defaultValue={editingTenant?.name || ''} 
+                    required 
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-domain">Domain (optional)</Label>
+                  <Input 
+                    id="edit-domain" 
+                    name="domain" 
+                    placeholder="organization.com" 
+                    defaultValue={editingTenant?.domain || ''} 
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    id="edit-isActive" 
+                    name="isActive" 
+                    defaultChecked={editingTenant?.isActive ?? true}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor="edit-isActive">Active</Label>
+                </div>
+              </div>
+              <DialogFooter className="mt-6">
+                <Button type="button" variant="outline" onClick={() => setEditTenantDialog(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateTenantMutation.isPending}>
+                  {updateTenantMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </DialogFooter>
             </form>
@@ -773,7 +869,55 @@ export default function AdminDashboard() {
               </TabsContent>
 
               <TabsContent value="settings" className="space-y-6">
-                {/* Tenant Settings */}
+                {/* Tenant Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Tenant Information</CardTitle>
+                    <CardDescription>Basic information about this tenant</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Tenant Name</Label>
+                          <p className="font-medium">{currentTenant?.name || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Domain</Label>
+                          <p className="font-medium">{currentTenant?.domain || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Status</Label>
+                          <Badge variant={currentTenant?.isActive ? "default" : "secondary"}>
+                            {currentTenant?.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Created</Label>
+                          <p className="font-medium">
+                            {currentTenant?.createdAt ? new Date(currentTenant.createdAt).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex justify-end pt-4 border-t">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            if (currentTenant) {
+                              setEditingTenant(currentTenant);
+                              setEditTenantDialog(true);
+                            }
+                          }}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Tenant
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Tenant Settings Configuration */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Tenant Settings</CardTitle>
@@ -781,23 +925,51 @@ export default function AdminDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
+                      {/* Toggle Active Status */}
                       <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
-                          <div className="font-medium">Delete Tenant</div>
+                          <div className="font-medium">Active Status</div>
                           <div className="text-sm text-muted-foreground">
-                            Permanently delete this tenant and all associated data
+                            {currentTenant?.isActive 
+                              ? "This tenant is currently active and accessible to users"
+                              : "This tenant is inactive and not accessible to users"}
+                          </div>
+                        </div>
+                        <Button
+                          variant={currentTenant?.isActive ? "outline" : "default"}
+                          onClick={() => {
+                            if (selectedTenant) {
+                              updateTenantMutation.mutate({
+                                tenantId: selectedTenant,
+                                updates: { isActive: !currentTenant?.isActive }
+                              });
+                            }
+                          }}
+                          disabled={updateTenantMutation.isPending}
+                        >
+                          {currentTenant?.isActive ? "Deactivate" : "Activate"}
+                        </Button>
+                      </div>
+
+                      {/* Danger Zone */}
+                      <div className="flex items-center justify-between p-4 border border-destructive/50 rounded-lg bg-destructive/5">
+                        <div>
+                          <div className="font-medium text-destructive">Deactivate Tenant</div>
+                          <div className="text-sm text-muted-foreground">
+                            Deactivate this tenant. Users will no longer be able to access it.
                           </div>
                         </div>
                         <Button
                           variant="destructive"
                           onClick={() => {
-                            if (confirm("Are you sure? This action cannot be undone.")) {
-                              deleteTenantMutation.mutate(selectedTenant);
+                            if (confirm("Are you sure you want to deactivate this tenant? Users will no longer be able to access it.")) {
+                              deleteTenantMutation.mutate(selectedTenant!);
                             }
                           }}
+                          disabled={!currentTenant?.isActive || deleteTenantMutation.isPending}
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Delete Tenant
+                          Deactivate Tenant
                         </Button>
                       </div>
                     </div>
