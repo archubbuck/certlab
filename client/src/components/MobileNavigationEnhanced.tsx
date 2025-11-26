@@ -22,7 +22,8 @@ import {
   BarChart3,
   Crown,
   Star,
-  Sparkles
+  Sparkles,
+  Building
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
@@ -49,6 +50,7 @@ export default function MobileNavigationEnhanced() {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const isAdmin = user?.role === 'admin';
 
   const navigationSections: NavigationSection[] = [
     {
@@ -105,7 +107,21 @@ export default function MobileNavigationEnhanced() {
           description: "Application architecture"
         }
       ]
-    }
+    },
+    // Administration section - only shown to admin users
+    ...(isAdmin ? [{
+      id: "admin",
+      title: "Administration",
+      items: [
+        {
+          id: "admin-dashboard",
+          label: "Admin Dashboard",
+          icon: <Building className="w-4 h-4" />,
+          href: "/admin",
+          description: "Manage tenants, users, and content"
+        }
+      ]
+    }] : [])
   ];
 
   // Filter items based on search query
