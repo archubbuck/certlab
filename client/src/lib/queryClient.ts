@@ -52,18 +52,21 @@ export const getQueryFn: <T>(options: {
           // Return achievement progress data with all badges and user's progress
           const allBadges = await clientStorage.getBadges();
           const userBadges = await clientStorage.getUserBadges(userId, tenantId);
-          const userBadgeIds = userBadges.map(ub => ub.badgeId);
+          // Create lookup Maps for O(1) access instead of O(n) find operations
+          const userBadgeLookup = new Map(userBadges.map(ub => [ub.badgeId, ub]));
+          const userBadgeIds = new Set(userBadges.map(ub => ub.badgeId));
           const gameStats = await clientStorage.getUserGameStats(userId);
           const userQuizzes = await clientStorage.getUserQuizzes(userId, tenantId);
           const completedQuizzes = userQuizzes.filter(q => q.completedAt).length;
           // Get user's best quiz score for score-based achievements
+          // Use Math.max(0, ...) to ensure we get 0 instead of -Infinity if no valid scores exist
           const bestScore = completedQuizzes > 0 
             ? Math.max(0, ...userQuizzes.filter(q => q.completedAt && q.score !== null).map(q => q.score!))
             : 0;
           
           const progressData = allBadges.map(badge => {
-            const userBadge = userBadges.find(ub => ub.badgeId === badge.id);
-            const earned = userBadgeIds.includes(badge.id);
+            const userBadge = userBadgeLookup.get(badge.id);
+            const earned = userBadgeIds.has(badge.id);
             
             // Calculate progress based on badge requirements
             let progress = 0;
@@ -100,7 +103,7 @@ export const getQueryFn: <T>(options: {
           });
           
           return {
-            unlockedBadges: userBadgeIds,
+            unlockedBadges: Array.from(userBadgeIds),
             progressData
           };
         }
@@ -110,8 +113,13 @@ export const getQueryFn: <T>(options: {
           const allBadges = await clientStorage.getBadges();
           const gameStats = await clientStorage.getUserGameStats(userId, tenantId);
           
-          // Fallback badge for when badge details are not found
-          const createFallbackBadge = (badgeId: number) => ({
+          // Create badge lookup Map for O(1) access instead of O(n) find operations
+          const badgeLookup = new Map(allBadges.map(b => [b.id, b]));
+          
+          // Placeholder badge for when badge details are not found in the database.
+          // This can happen if a badge is deleted while users still have references to it,
+          // or if there's a data integrity issue between userBadges and badges stores.
+          const createUnknownBadge = (badgeId: number) => ({
             id: badgeId,
             name: "Unknown Badge",
             description: "",
@@ -125,7 +133,7 @@ export const getQueryFn: <T>(options: {
           
           // Map user badges with full badge details
           const badgesWithDetails = userBadges.map(userBadge => {
-            const badge = allBadges.find(b => b.id === userBadge.badgeId);
+            const badge = badgeLookup.get(userBadge.badgeId);
             return {
               id: userBadge.id,
               badgeId: userBadge.badgeId,
@@ -133,7 +141,7 @@ export const getQueryFn: <T>(options: {
               earnedAt: userBadge.earnedAt,
               progress: userBadge.progress,
               isNotified: userBadge.isNotified,
-              badge: badge || createFallbackBadge(userBadge.badgeId)
+              badge: badge || createUnknownBadge(userBadge.badgeId)
             };
           });
           
