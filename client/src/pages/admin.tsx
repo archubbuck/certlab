@@ -18,10 +18,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface Tenant {
   id: number;
   name: string;
-  domain?: string;
+  domain: string | null;
   settings: Record<string, any>;
-  isActive: boolean;
-  createdAt: string;
+  isActive: boolean | null;
+  createdAt: Date | null;
 }
 
 interface Category {
@@ -54,14 +54,14 @@ interface Question {
 }
 
 interface User {
-  id: number;
+  id: string;
   tenantId: number;
-  username: string;
+  username?: string;
   email: string;
   role: string;
-  createdAt: string;
+  createdAt: Date | null;
   isAdmin?: boolean;
-  lastLogin?: string;
+  lastLogin?: Date | null;
 }
 
 interface TenantStats {
@@ -244,10 +244,10 @@ function UserManagement({ selectedTenant }: { selectedTenant: number | null }) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                    {user.createdAt ? (user.createdAt instanceof Date ? user.createdAt : new Date(user.createdAt)).toLocaleDateString() : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                    {user.lastLogin ? (user.lastLogin instanceof Date ? user.lastLogin : new Date(user.lastLogin)).toLocaleDateString() : 'Never'}
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-1">
@@ -880,7 +880,7 @@ export default function AdminDashboard() {
                         <div>
                           <Label className="text-sm text-muted-foreground">Created</Label>
                           <p className="font-medium">
-                            {currentTenant?.createdAt ? new Date(currentTenant.createdAt).toLocaleDateString() : 'N/A'}
+                            {currentTenant?.createdAt ? (currentTenant.createdAt instanceof Date ? currentTenant.createdAt : new Date(currentTenant.createdAt)).toLocaleDateString() : 'N/A'}
                           </p>
                         </div>
                       </div>
@@ -890,7 +890,7 @@ export default function AdminDashboard() {
                           onClick={() => {
                             if (currentTenant) {
                               setEditingTenant(currentTenant);
-                              setEditIsActive(currentTenant.isActive);
+                              setEditIsActive(currentTenant.isActive ?? true);
                               setEditTenantDialog(true);
                             }
                           }}

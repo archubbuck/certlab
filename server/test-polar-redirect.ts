@@ -6,8 +6,10 @@ async function testPolarRedirect() {
 
   try {
     // Test 1: With standard placeholder
+    const priceId1 = process.env.POLAR_SANDBOX_PRO_PRICE_ID || '92348638-9f4b-4bc4-9d95-7258a17d4907';
     const session1 = await polarClient.createCheckoutSession({
-      productId: process.env.POLAR_SANDBOX_PRO_PRICE_ID || '92348638-9f4b-4bc4-9d95-7258a17d4907',
+      priceId: priceId1,
+      productId: priceId1,
       successUrl: 'https://example.com/success?session_id={CHECKOUT_SESSION_ID}',
       cancelUrl: 'https://example.com/cancel',
       customerEmail: 'test@test.com',
@@ -18,8 +20,10 @@ async function testPolarRedirect() {
     console.log('Checkout URL:', session1.url);
     
     // Test 2: Without placeholder
+    const priceId2 = process.env.POLAR_SANDBOX_PRO_PRICE_ID || '92348638-9f4b-4bc4-9d95-7258a17d4907';
     const session2 = await polarClient.createCheckoutSession({
-      productId: process.env.POLAR_SANDBOX_PRO_PRICE_ID || '92348638-9f4b-4bc4-9d95-7258a17d4907',
+      priceId: priceId2,
+      productId: priceId2,
       successUrl: 'https://example.com/success',
       cancelUrl: 'https://example.com/cancel',
       customerEmail: 'test2@test.com',
@@ -30,8 +34,10 @@ async function testPolarRedirect() {
     console.log('Checkout URL:', session2.url);
     
     // Test 3: Different placeholder format
+    const priceId3 = process.env.POLAR_SANDBOX_PRO_PRICE_ID || '92348638-9f4b-4bc4-9d95-7258a17d4907';
     const session3 = await polarClient.createCheckoutSession({
-      productId: process.env.POLAR_SANDBOX_PRO_PRICE_ID || '92348638-9f4b-4bc4-9d95-7258a17d4907',
+      priceId: priceId3,
+      productId: priceId3,
       successUrl: 'https://example.com/success?session_id={{CHECKOUT_SESSION_ID}}',
       cancelUrl: 'https://example.com/cancel',
       customerEmail: 'test3@test.com',

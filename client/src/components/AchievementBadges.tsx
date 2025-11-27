@@ -7,7 +7,7 @@ import { LevelProgress } from "@/components/LevelProgress";
 interface BadgeData {
   id: number;
   badgeId: number;
-  userId: number;
+  userId: string;
   earnedAt: string;
   progress: number;
   isNotified: boolean;
@@ -40,7 +40,7 @@ interface AchievementData {
 }
 
 interface AchievementBadgesProps {
-  userId: number;
+  userId: string;
 }
 
 // Badge color mappings

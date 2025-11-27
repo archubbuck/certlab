@@ -100,15 +100,15 @@ export const getQueryFn: <T>(options: {
               progressText = "Completed!";
             } else if (badge.requirement) {
               // Try to calculate progress based on requirement type
-              const req = badge.requirement;
-              if (req.type === "quiz_count") {
+              const req = badge.requirement as { type?: string; value?: number };
+              if (req.type === "quiz_count" && req.value) {
                 progress = Math.min(100, Math.round((completedQuizzes / req.value) * 100));
                 progressText = `${completedQuizzes}/${req.value} quizzes completed`;
-              } else if (req.type === "streak") {
+              } else if (req.type === "streak" && req.value) {
                 const currentStreak = gameStats?.currentStreak || 0;
                 progress = Math.min(100, Math.round((currentStreak / req.value) * 100));
                 progressText = `${currentStreak}/${req.value} day streak`;
-              } else if (req.type === "score") {
+              } else if (req.type === "score" && req.value) {
                 // Calculate progress based on user's best quiz score vs target
                 progress = Math.min(100, Math.round((bestScore / req.value) * 100));
                 progressText = bestScore > 0 
