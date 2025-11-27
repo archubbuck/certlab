@@ -1,19 +1,155 @@
 /**
  * Client-side authentication system
  * Uses browser storage for authentication state
+ * 
+ * Security notes for client-side password hashing:
+ * - Uses PBKDF2 with 100,000 iterations via Web Crypto API
+ * - Generates a unique 128-bit salt for each password using crypto.getRandomValues()
+ * - Hash format: "pbkdf2:iterations:salt:hash" for version identification
+ * - While client-side hashing provides some protection, users should understand that
+ *   all data (including hashes) is stored locally in IndexedDB which can be accessed
+ *   by anyone with physical access to the device
+ * - This implementation protects against casual inspection but not against determined
+ *   attackers with device access
  */
 
 import { clientStorage } from './client-storage';
 import type { User } from '@shared/schema';
 
-// Simple client-side password hashing (NOT cryptographically secure, but sufficient for local storage)
-async function hashPassword(password: string): Promise<string> {
+// PBKDF2 configuration
+const PBKDF2_ITERATIONS = 100000;
+const SALT_LENGTH = 16; // 128 bits
+const HASH_LENGTH = 32; // 256 bits
+
+/**
+ * Generates a cryptographically secure random salt
+ */
+function generateSalt(): Uint8Array {
+  return crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+}
+
+/**
+ * Converts Uint8Array to hex string
+ */
+function arrayToHex(array: Uint8Array): string {
+  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Converts hex string to Uint8Array
+ */
+function hexToArray(hex: string): Uint8Array {
+  const matches = hex.match(/.{1,2}/g);
+  if (!matches) return new Uint8Array(0);
+  return new Uint8Array(matches.map(byte => parseInt(byte, 16)));
+}
+
+/**
+ * Hash password using PBKDF2 with the provided salt
+ * Returns the hash as a hex string
+ */
+async function pbkdf2Hash(password: string, salt: Uint8Array): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+  const passwordBuffer = encoder.encode(password);
+  
+  // Import password as key material
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    passwordBuffer,
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+  
+  // Derive bits using PBKDF2
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: PBKDF2_ITERATIONS,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    HASH_LENGTH * 8 // length in bits
+  );
+  
+  return arrayToHex(new Uint8Array(derivedBits));
+}
+
+/**
+ * Creates a password hash using PBKDF2
+ * Returns format: "pbkdf2:iterations:salt:hash"
+ */
+async function hashPassword(password: string): Promise<string> {
+  const salt = generateSalt();
+  const hash = await pbkdf2Hash(password, salt);
+  return `pbkdf2:${PBKDF2_ITERATIONS}:${arrayToHex(salt)}:${hash}`;
+}
+
+/**
+ * Verifies a password against a stored hash
+ * Supports both legacy SHA-256 hashes and new PBKDF2 hashes
+ */
+async function verifyPassword(password: string, storedHash: string): Promise<{ valid: boolean; needsRehash: boolean }> {
+  // Check if this is a PBKDF2 hash (format: "pbkdf2:iterations:salt:hash")
+  if (storedHash.startsWith('pbkdf2:')) {
+    const parts = storedHash.split(':');
+    if (parts.length !== 4) {
+      return { valid: false, needsRehash: false };
+    }
+    
+    const [, iterationsStr, saltHex, expectedHash] = parts;
+    const iterations = parseInt(iterationsStr, 10);
+    const salt = hexToArray(saltHex);
+    
+    // Compute hash with stored parameters
+    const encoder = new TextEncoder();
+    const passwordBuffer = encoder.encode(password);
+    
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      passwordBuffer,
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    );
+    
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: iterations,
+        hash: 'SHA-256',
+      },
+      keyMaterial,
+      HASH_LENGTH * 8
+    );
+    
+    const computedHash = arrayToHex(new Uint8Array(derivedBits));
+    const valid = computedHash === expectedHash;
+    
+    // Check if we need to rehash (e.g., if iterations have increased)
+    const needsRehash = valid && iterations < PBKDF2_ITERATIONS;
+    
+    return { valid, needsRehash };
+  }
+  
+  // Legacy SHA-256 hash (64 character hex string)
+  // These need to be migrated to PBKDF2
+  if (storedHash.length === 64 && /^[0-9a-f]+$/.test(storedHash)) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    const valid = computedHash === storedHash;
+    // Legacy hashes always need rehashing to PBKDF2
+    return { valid, needsRehash: valid };
+  }
+  
+  // Unknown hash format
+  return { valid: false, needsRehash: false };
 }
 
 export interface AuthResponse {
@@ -83,10 +219,17 @@ class ClientAuth {
         return { success: true, user: sanitizedUser };
       }
 
-      // Verify password if user has one
-      const passwordHash = await hashPassword(password);
-      if (user.passwordHash !== passwordHash) {
+      // Verify password using the new verification function
+      const { valid, needsRehash } = await verifyPassword(password, user.passwordHash);
+      if (!valid) {
         return { success: false, message: 'Invalid email or password' };
+      }
+
+      // If the password was verified but needs rehashing (e.g., migrating from SHA-256 to PBKDF2),
+      // rehash with the new algorithm
+      if (needsRehash) {
+        const newHash = await hashPassword(password);
+        await clientStorage.updateUser(user.id, { passwordHash: newHash });
       }
 
       // Set as current user
@@ -183,9 +326,9 @@ class ClientAuth {
         return { success: true, user: sanitizedUser, message: 'Password set successfully' };
       }
 
-      // Verify current password
-      const currentHash = await hashPassword(currentPassword);
-      if (user.passwordHash !== currentHash) {
+      // Verify current password using the secure verification function
+      const { valid } = await verifyPassword(currentPassword, user.passwordHash);
+      if (!valid) {
         return { success: false, message: 'Current password is incorrect' };
       }
 
@@ -194,7 +337,7 @@ class ClientAuth {
         return { success: false, message: 'New password must be at least 8 characters' };
       }
 
-      // Update password
+      // Update password with new PBKDF2 hash
       const newHash = await hashPassword(newPassword);
       const updatedUser = await clientStorage.updateUser(userId, { passwordHash: newHash });
       if (!updatedUser) {
