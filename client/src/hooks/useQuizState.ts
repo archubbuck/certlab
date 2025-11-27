@@ -1,4 +1,4 @@
-import { useReducer, useState, useEffect, useCallback } from "react";
+import { useReducer, useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -23,6 +23,9 @@ export function useQuizState({ quizId, quiz, questions }: UseQuizStateOptions) {
   // Separate state for time and dialogs (don't need batching)
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [showFlaggedQuestionsDialog, setShowFlaggedQuestionsDialog] = useState(false);
+
+  // Ref to hold the submit function to avoid stale closure in timer effect
+  const submitQuizRef = useRef<() => void>(() => {});
 
   const submitQuizMutation = useMutation({
     mutationFn: async (quizAnswers: { questionId: number; answer: number }[]) => {
@@ -57,8 +60,8 @@ export function useQuizState({ quizId, quiz, questions }: UseQuizStateOptions) {
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev === null || prev <= 1) {
-          // Time's up - auto submit
-          handleSubmitQuiz();
+          // Time's up - auto submit using ref to avoid stale closure
+          submitQuizRef.current();
           return 0;
         }
         return prev - 1;
@@ -209,6 +212,11 @@ export function useQuizState({ quizId, quiz, questions }: UseQuizStateOptions) {
       submitQuizMutation.mutate(quizAnswers);
     }
   }, [state, questions, submitQuizMutation]);
+
+  // Keep the ref updated with the latest handleSubmitQuiz function
+  useEffect(() => {
+    submitQuizRef.current = handleSubmitQuiz;
+  }, [handleSubmitQuiz]);
 
   const handleReviewFlaggedQuestions = useCallback(() => {
     setShowFlaggedQuestionsDialog(false);
