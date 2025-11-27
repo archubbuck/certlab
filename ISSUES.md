@@ -757,7 +757,7 @@ This code review identified 35+ issues across 15 categories, plus 4 additional i
 | API Design | 2 | Low |
 | State Management | 2 | Low |
 | Scripts/Tooling | 2 | Low |
-| **User Feedback** | **4** | **High/Medium** |
+| User Feedback | 4 | Mixed |
 
 **Priority Recommendations:**
 
@@ -770,20 +770,20 @@ This code review identified 35+ issues across 15 categories, plus 4 additional i
    - Reduce bundle size
    - Add error boundaries
    - Clean up legacy code
-   - **Fix Quick Practice certification selection**
-   - **Add category management for organizations**
+   - Fix Quick Practice certification selection (User Feedback)
+   - Add category management for organizations (User Feedback)
 
 3. **Medium-term (Maintainability):**
    - Add linting and formatting
    - Improve documentation
    - Update dependencies
-   - **Complete AI Study Notes generation**
+   - Complete AI Study Notes generation (User Feedback)
 
 4. **Long-term (Architecture):**
    - Restructure codebase
    - Add comprehensive testing
    - Implement proper CI/CD
-   - **Complete Study Groups feature (after enrollment system)**
+   - Complete Study Groups feature after enrollment system (User Feedback)
 
 ---
 
