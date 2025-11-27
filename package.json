@@ -50,7 +50,7 @@
     "@typescript-eslint/parser": "^8.48.0",
     "@typescript-eslint/typescript-estree": "^8.46.0",
     "bcrypt": "^6.0.0",
-    "chokidar": "^4.0.3",
+    "chokidar": "^5.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
