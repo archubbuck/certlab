@@ -45,10 +45,10 @@ function hexToArray(hex: string): Uint8Array {
 }
 
 /**
- * Hash password using PBKDF2 with the provided salt
+ * Hash password using PBKDF2 with the provided salt and iterations
  * Returns the hash as a hex string
  */
-async function pbkdf2Hash(password: string, salt: Uint8Array): Promise<string> {
+async function pbkdf2Hash(password: string, salt: Uint8Array, iterations: number = PBKDF2_ITERATIONS): Promise<string> {
   const encoder = new TextEncoder();
   const passwordBuffer = encoder.encode(password);
   
@@ -66,7 +66,7 @@ async function pbkdf2Hash(password: string, salt: Uint8Array): Promise<string> {
     {
       name: 'PBKDF2',
       salt: salt,
-      iterations: PBKDF2_ITERATIONS,
+      iterations: iterations,
       hash: 'SHA-256',
     },
     keyMaterial,
@@ -74,6 +74,22 @@ async function pbkdf2Hash(password: string, salt: Uint8Array): Promise<string> {
   );
   
   return arrayToHex(new Uint8Array(derivedBits));
+}
+
+/**
+ * Constant-time comparison of two hex strings to prevent timing attacks.
+ * Compares all bytes regardless of early mismatches.
+ */
+function constantTimeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
 }
 
 /**
@@ -89,6 +105,7 @@ async function hashPassword(password: string): Promise<string> {
 /**
  * Verifies a password against a stored hash
  * Supports both legacy SHA-256 hashes and new PBKDF2 hashes
+ * Uses constant-time comparison to prevent timing attacks
  */
 async function verifyPassword(password: string, storedHash: string): Promise<{ valid: boolean; needsRehash: boolean }> {
   // Check if this is a PBKDF2 hash (format: "pbkdf2:iterations:salt:hash")
@@ -100,33 +117,20 @@ async function verifyPassword(password: string, storedHash: string): Promise<{ v
     
     const [, iterationsStr, saltHex, expectedHash] = parts;
     const iterations = parseInt(iterationsStr, 10);
+    
+    // Validate iterations is a positive integer within reasonable bounds
+    // Minimum 1000 iterations, maximum 10 million (prevents DoS)
+    if (isNaN(iterations) || iterations < 1000 || iterations > 10000000) {
+      return { valid: false, needsRehash: false };
+    }
+    
     const salt = hexToArray(saltHex);
     
-    // Compute hash with stored parameters
-    const encoder = new TextEncoder();
-    const passwordBuffer = encoder.encode(password);
+    // Use the shared pbkdf2Hash function with stored iterations
+    const computedHash = await pbkdf2Hash(password, salt, iterations);
     
-    const keyMaterial = await crypto.subtle.importKey(
-      'raw',
-      passwordBuffer,
-      'PBKDF2',
-      false,
-      ['deriveBits']
-    );
-    
-    const derivedBits = await crypto.subtle.deriveBits(
-      {
-        name: 'PBKDF2',
-        salt: salt,
-        iterations: iterations,
-        hash: 'SHA-256',
-      },
-      keyMaterial,
-      HASH_LENGTH * 8
-    );
-    
-    const computedHash = arrayToHex(new Uint8Array(derivedBits));
-    const valid = computedHash === expectedHash;
+    // Use constant-time comparison to prevent timing attacks
+    const valid = constantTimeCompare(computedHash, expectedHash);
     
     // Check if we need to rehash (e.g., if iterations have increased)
     const needsRehash = valid && iterations < PBKDF2_ITERATIONS;
@@ -143,7 +147,8 @@ async function verifyPassword(password: string, storedHash: string): Promise<{ v
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     
-    const valid = computedHash === storedHash;
+    // Use constant-time comparison to prevent timing attacks
+    const valid = constantTimeCompare(computedHash, storedHash);
     // Legacy hashes always need rehashing to PBKDF2
     return { valid, needsRehash: valid };
   }
