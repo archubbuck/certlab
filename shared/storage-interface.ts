@@ -49,12 +49,34 @@ export interface UserStatsResult {
 }
 
 /**
+ * User study preferences
+ */
+export interface StudyPreferences {
+  dailyTimeMinutes?: number;
+  preferredDifficulty?: 'beginner' | 'intermediate' | 'advanced';
+  focusAreas?: string[];
+  studyDays?: string[];
+  reminderTime?: string;
+}
+
+/**
+ * User skills assessment
+ */
+export interface SkillsAssessment {
+  experienceLevel?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  relevantExperience?: string[];
+  learningStyle?: 'visual' | 'auditory' | 'kinesthetic' | 'reading';
+  completedCertifications?: string[];
+  motivations?: string[];
+}
+
+/**
  * User goals for certification study
  */
 export interface UserGoals {
   certificationGoals: string[];
-  studyPreferences: any;
-  skillsAssessment: any;
+  studyPreferences: StudyPreferences | null;
+  skillsAssessment: SkillsAssessment | null;
 }
 
 /**

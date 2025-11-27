@@ -119,11 +119,7 @@ class ClientStorage implements IClientStorage {
     return updatedUser;
   }
 
-  async updateUserGoals(id: string, goals: {
-    certificationGoals: string[];
-    studyPreferences: any;
-    skillsAssessment: any;
-  }): Promise<User | null> {
+  async updateUserGoals(id: string, goals: UserGoals): Promise<User | null> {
     return this.updateUser(id, goals);
   }
 
@@ -144,7 +140,7 @@ class ClientStorage implements IClientStorage {
     return { ...newCategory, id: Number(id) };
   }
 
-  async updateCategory(id: number, updates: Partial<Category>): Promise<Category> {
+  async updateCategory(id: number, updates: Partial<InsertCategory>): Promise<Category> {
     const category = await indexedDBService.get<Category>(STORES.categories, id);
     if (!category) throw new Error('Category not found');
     
@@ -179,7 +175,7 @@ class ClientStorage implements IClientStorage {
     return { ...newSubcategory, id: Number(id) };
   }
 
-  async updateSubcategory(id: number, updates: Partial<Subcategory>): Promise<Subcategory> {
+  async updateSubcategory(id: number, updates: Partial<InsertSubcategory>): Promise<Subcategory> {
     const subcategory = await indexedDBService.get<Subcategory>(STORES.subcategories, id);
     if (!subcategory) throw new Error('Subcategory not found');
     
@@ -229,7 +225,7 @@ class ClientStorage implements IClientStorage {
     return { ...newQuestion, id: Number(id) };
   }
 
-  async updateQuestion(id: number, updates: Partial<Question>): Promise<Question> {
+  async updateQuestion(id: number, updates: Partial<InsertQuestion>): Promise<Question> {
     const question = await indexedDBService.get<Question>(STORES.questions, id);
     if (!question) throw new Error('Question not found');
     
