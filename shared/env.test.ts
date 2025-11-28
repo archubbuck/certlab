@@ -3,6 +3,7 @@ import {
   buildEnvSchema, 
   serverEnvSchema, 
   validateBuildEnv, 
+  validateServerEnv,
   getBasePath,
   requireDatabaseUrl 
 } from './env';
@@ -121,6 +122,22 @@ describe('Environment validation functions', () => {
       const result = validateBuildEnv();
       expect(result.VITE_BASE_PATH).toBeUndefined();
       expect(result.NODE_ENV).toBe('development');
+    });
+  });
+
+  describe('validateServerEnv', () => {
+    it('should return validated server environment with defaults', () => {
+      delete process.env.APP_URL;
+      
+      const result = validateServerEnv();
+      expect(result.APP_URL).toBe('http://localhost:5000');
+    });
+
+    it('should preserve valid APP_URL', () => {
+      process.env.APP_URL = 'https://example.com';
+      
+      const result = validateServerEnv();
+      expect(result.APP_URL).toBe('https://example.com');
     });
   });
 

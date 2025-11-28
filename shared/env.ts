@@ -11,6 +11,11 @@
 import { z } from "zod";
 
 /**
+ * URL validation schema (reused to avoid creating new instances).
+ */
+const urlSchema = z.string().url();
+
+/**
  * Build/Vite environment variables schema.
  * These are used during the build process and in vite.config.ts.
  */
@@ -168,8 +173,7 @@ export function requireDatabaseUrl(): string {
     );
   }
   
-  // Validate it's a proper URL
-  const urlSchema = z.string().url();
+  // Validate it's a proper URL using the module-level schema
   const result = urlSchema.safeParse(databaseUrl);
   
   if (!result.success) {
