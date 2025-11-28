@@ -2,6 +2,110 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { clientStorage } from "./client-storage";
 import { clientAuth } from "./client-auth";
 
+/**
+ * Query Key Factory
+ * 
+ * Standardized query key generation following TanStack Query best practices.
+ * All query keys use an array format: [scope, ...identifiers, resource]
+ * 
+ * Benefits:
+ * - Consistent invalidation patterns (can invalidate by prefix)
+ * - Type-safe query key generation
+ * - Centralized documentation of all query keys
+ * 
+ * Example usage:
+ *   queryKey: queryKeys.user.stats(userId)
+ *   queryKey: queryKeys.categories.all()
+ *   queryKey: queryKeys.quiz.detail(quizId)
+ * 
+ * Invalidation:
+ *   queryClient.invalidateQueries({ queryKey: queryKeys.user.all(userId) }) // Invalidates all user queries
+ *   queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() }) // Invalidates categories
+ */
+export const queryKeys = {
+  // Auth queries
+  auth: {
+    user: () => ["/api", "auth", "user"] as const,
+  },
+  
+  // User-specific queries - all prefixed with /api/user/{userId}
+  user: {
+    all: (userId: string | undefined) => ["/api", "user", userId] as const,
+    detail: (userId: string | undefined) => ["/api", "user", userId] as const,
+    stats: (userId: string | undefined) => ["/api", "user", userId, "stats"] as const,
+    quizzes: (userId: string | undefined) => ["/api", "user", userId, "quizzes"] as const,
+    progress: (userId: string | undefined) => ["/api", "user", userId, "progress"] as const,
+    mastery: (userId: string | undefined) => ["/api", "user", userId, "mastery"] as const,
+    lectures: (userId: string | undefined) => ["/api", "user", userId, "lectures"] as const,
+    achievements: (userId: string | undefined) => ["/api", "user", userId, "achievements"] as const,
+    achievementProgress: (userId: string | undefined) => ["/api", "user", userId, "achievement-progress"] as const,
+    practiceTestAttempts: (userId: string | undefined) => ["/api", "user", userId, "practice-test-attempts"] as const,
+    tokenBalance: (userId: string | undefined) => ["/api", "user", userId, "token-balance"] as const,
+    challenges: (userId: string | undefined) => ["/api", "user", userId, "challenges"] as const,
+    challengeAttempts: (userId: string | undefined) => ["/api", "user", userId, "challenge-attempts"] as const,
+    studyPlan: (userId: string | undefined) => ["/api", "user", userId, "study-plan"] as const,
+  },
+  
+  // Category queries
+  categories: {
+    all: () => ["/api", "categories"] as const,
+  },
+  
+  // Subcategory queries
+  subcategories: {
+    all: () => ["/api", "subcategories"] as const,
+  },
+  
+  // Badge queries
+  badges: {
+    all: () => ["/api", "badges"] as const,
+  },
+  
+  // Quiz queries
+  quiz: {
+    detail: (quizId: number | string | undefined) => ["/api", "quiz", quizId] as const,
+    questions: (quizId: number | string | undefined) => ["/api", "quiz", quizId, "questions"] as const,
+  },
+  
+  // Lecture queries
+  lecture: {
+    detail: (lectureId: number | string | undefined) => ["/api", "lecture", lectureId] as const,
+  },
+  
+  // Practice test queries
+  practiceTests: {
+    all: () => ["/api", "practice-tests"] as const,
+  },
+  
+  // Tenant queries
+  tenants: {
+    all: () => ["/api", "tenants"] as const,
+    detail: (tenantId: number | undefined) => ["/api", "tenants", tenantId] as const,
+  },
+  
+  // Admin queries
+  admin: {
+    tenants: {
+      all: () => ["/api", "admin", "tenants"] as const,
+      stats: (tenantId: number | undefined) => ["/api", "admin", "tenants", tenantId, "stats"] as const,
+      categories: (tenantId: number | undefined) => ["/api", "admin", "tenants", tenantId, "categories"] as const,
+      questions: (tenantId: number | undefined) => ["/api", "admin", "tenants", tenantId, "questions"] as const,
+      users: (tenantId: number | undefined) => ["/api", "admin", "tenants", tenantId, "users"] as const,
+    },
+  },
+  
+  // Credits queries
+  credits: {
+    products: () => ["/api", "credits", "products"] as const,
+    balance: () => ["/api", "credits", "balance"] as const,
+  },
+  
+  // Subscription queries
+  subscription: {
+    status: () => ["/api", "subscription", "status"] as const,
+  },
+} as const;
+
 // Helper function to fetch shared achievement data from multiple IndexedDB stores
 // Used by both /achievement-progress and /achievements endpoints to reduce duplication
 async function getAchievementData(userId: string, tenantId: number) {

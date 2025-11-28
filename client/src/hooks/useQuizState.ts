@@ -1,7 +1,7 @@
 import { useReducer, useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, queryKeys } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { quizReducer } from "@/components/quiz/quizReducer";
 import type { QuizState, Question, Quiz } from "@/components/quiz/types";
@@ -35,8 +35,8 @@ export function useQuizState({ quizId, quiz, questions }: UseQuizStateOptions) {
       return await clientStorage.submitQuiz(quizId, quizAnswers);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/quiz', quizId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.all(undefined) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.quiz.detail(quizId) });
       setLocation(`/app/results/${quizId}`);
     },
     onError: () => {
