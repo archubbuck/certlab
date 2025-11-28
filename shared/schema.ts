@@ -39,6 +39,10 @@ export function validateCorrectAnswer(options: QuestionOption[], correctAnswer: 
 /**
  * Normalizes question options to use 0-indexed IDs.
  * If options don't have IDs or have non-sequential IDs, this will reassign them.
+ * 
+ * Note: This utility function is provided for migration scripts and future use
+ * when fixing existing data with inconsistent option IDs.
+ * 
  * @param options Array of options (potentially without IDs or with inconsistent IDs)
  * @returns Normalized options with 0-indexed IDs
  */
@@ -52,6 +56,10 @@ export function normalizeQuestionOptions(options: Array<{ id?: number; text: str
 /**
  * Validates a complete question's options and correctAnswer.
  * Returns validation result with specific error messages.
+ * 
+ * Note: This utility function provides a convenient way to validate question data
+ * in migration scripts or when validating data from external sources. The import
+ * flow uses `validateQuestionOptions` in import-questions.ts for per-question validation.
  */
 export function validateQuestionData(data: {
   options: unknown;
