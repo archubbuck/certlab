@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-provider";
-import { apiRequest, queryClient, queryKeys } from "@/lib/queryClient";
+import { apiRequest, queryKeys } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   TrendingUp,

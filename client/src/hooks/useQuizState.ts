@@ -35,8 +35,10 @@ export function useQuizState({ quizId, quiz, questions }: UseQuizStateOptions) {
       return await clientStorage.submitQuiz(quizId, quizAnswers);
     },
     onSuccess: () => {
-      // Invalidate user-related queries using the quiz's userId
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.all(quiz?.userId) });
+      // Invalidate user-related queries using the quiz's userId if available
+      if (quiz?.userId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.user.all(quiz.userId) });
+      }
       queryClient.invalidateQueries({ queryKey: queryKeys.quiz.detail(quizId) });
       setLocation(`/app/results/${quizId}`);
     },
