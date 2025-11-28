@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { clientAuth } from "./client-auth";
 import { logError } from "./errors";
 
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUser();
   }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     // Construct the logout redirect URL dynamically based on environment configuration
     // Uses BASE_URL from vite.config.ts combined with current origin
     const logoutUrl = window.location.origin + (import.meta.env.BASE_URL || '/');
@@ -65,13 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Always redirect to the landing page, even on error
       window.location.href = logoutUrl;
     }
-  };
+  }, []);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     await loadUser();
-  };
+  }, []);
 
-  const switchTenant = async (tenantId: number) => {
+  const switchTenant = useCallback(async (tenantId: number) => {
     if (!user) {
       throw new Error('No user logged in');
     }
@@ -98,16 +98,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logError('switchTenant', error, { tenantId });
       throw error;
     }
-  };
+  }, [user]);
 
-  const contextValue: AuthContextType = {
+  const contextValue = useMemo<AuthContextType>(() => ({
     user,
     isLoading,
     isAuthenticated: !!user,
     logout,
     refreshUser,
     switchTenant,
-  };
+  }), [user, isLoading, logout, refreshUser, switchTenant]);
 
   return (
     <AuthContext.Provider value={contextValue}>
