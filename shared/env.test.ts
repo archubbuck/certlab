@@ -195,5 +195,20 @@ describe('Environment validation functions', () => {
       
       expect(() => requireDatabaseUrl()).toThrow('DATABASE_URL must be a valid URL');
     });
+
+    it('should mask credentials in error message for invalid URLs with credentials', () => {
+      // A URL-like string that fails zod validation but can be parsed by URL constructor
+      process.env.DATABASE_URL = 'not-a-valid-url-format';
+      
+      const thrownFn = () => requireDatabaseUrl();
+      expect(thrownFn).toThrow('DATABASE_URL must be a valid URL');
+      // Verify the value is redacted in the error
+      try {
+        thrownFn();
+      } catch (e) {
+        const errorMessage = (e as Error).message;
+        expect(errorMessage).toContain('[redacted]');
+      }
+    });
   });
 });

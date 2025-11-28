@@ -55,6 +55,8 @@ export const serverEnvSchema = z.object({
   /**
    * Application base URL.
    * Defaults to http://localhost:5000 if not set or empty.
+   * Note: HTTP is used for localhost development. In production,
+   * set APP_URL explicitly to your HTTPS URL.
    */
   APP_URL: z.preprocess(
     (val) => (val === "" || val === undefined) ? "http://localhost:5000" : val,
@@ -177,9 +179,24 @@ export function requireDatabaseUrl(): string {
   const result = urlSchema.safeParse(databaseUrl);
   
   if (!result.success) {
+    // Mask credentials in error message to avoid exposing sensitive data
+    let sanitizedUrl = databaseUrl;
+    try {
+      const url = new URL(databaseUrl);
+      if (url.password) {
+        url.password = '***';
+      }
+      sanitizedUrl = url.toString();
+    } catch {
+      // If URL parsing fails, just show a truncated/redacted version
+      sanitizedUrl = databaseUrl.length > 20 
+        ? databaseUrl.substring(0, 20) + '...[redacted]' 
+        : '[invalid format]';
+    }
+    
     throw new Error(
       "DATABASE_URL must be a valid URL.\n" +
-      `Current value: ${databaseUrl}\n` +
+      `Current value: ${sanitizedUrl}\n` +
       "Expected format: postgresql://user:password@host:port/database"
     );
   }
