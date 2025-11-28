@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth-provider";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TokenBalance } from "@/components/TokenBalance";
 import { InsufficientTokensDialog } from "@/components/InsufficientTokensDialog";
+import { getPersonalizedMessage } from "@/data/motivational-messages";
 import { 
   BookOpen, 
   PlayCircle, 
@@ -33,31 +34,15 @@ export default function Dashboard() {
   const [requiredTokens, setRequiredTokens] = useState(0);
   const [currentTokenBalance, setCurrentTokenBalance] = useState(0);
 
-  // Motivational messages
-  const motivationalMessages = [
-    "Every question answered brings you closer to your certification goals!",
-    "Consistency is key - keep up your daily practice!",
-    "Your dedication today shapes your success tomorrow.",
-    "Small steps daily lead to big achievements.",
-    "Focus on progress, not perfection.",
-    "Learning is a journey - enjoy every step!",
-    "Stay curious, stay motivated, stay successful.",
-    "Your effort today is an investment in your future.",
-  ];
-
-  const getRandomMotivationalMessage = () => {
-    const index = Math.floor(Math.random() * motivationalMessages.length);
-    return motivationalMessages[index];
-  };
-
-  // Set motivational message once on mount to prevent it from changing on re-renders
-  const [motivationalMessage] = useState(() => getRandomMotivationalMessage());
-
   // Get user stats
   const { data: stats } = useQuery<UserStats>({
     queryKey: [`/api/user/${currentUser?.id}/stats`],
     enabled: !!currentUser?.id,
   });
+
+  // Get personalized motivational message based on user stats
+  // useMemo ensures the message is stable and only recalculated when stats change
+  const motivationalMessage = useMemo(() => getPersonalizedMessage(stats), [stats]);
 
   // Get recent quizzes
   const { data: recentQuizzes = [] } = useQuery<Quiz[]>({
