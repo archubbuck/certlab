@@ -92,6 +92,7 @@ export default function DataImportPage() {
           categoriesCreated: 0,
           subcategoriesCreated: 0,
           questionsImported: 0,
+          questionsSkipped: 0,
           errors: [error instanceof Error ? error.message : "Unknown error"],
         },
       });
@@ -138,6 +139,7 @@ export default function DataImportPage() {
           categoriesCreated: 0,
           subcategoriesCreated: 0,
           questionsImported: 0,
+          questionsSkipped: 0,
           errors: [error instanceof Error ? error.message : "Unknown error"],
         },
       });
