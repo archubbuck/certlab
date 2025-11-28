@@ -17,20 +17,31 @@
  *   --dry-run   Print what would be created without actually creating issues
  */
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const os = require('os');
-const { spawnSync } = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import os from 'os';
+import { spawnSync } from 'child_process';
+import { fileURLToPath } from 'url';
+
+// ESM __dirname workaround
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration constants
 const DRY_RUN = process.argv.includes('--dry-run');
 const WORD_OVERLAP_THRESHOLD = 0.6;  // 60% word match for fuzzy duplicate detection
 const RATE_LIMIT_DELAY_MS = 1000;    // 1 second between issue creations
 
-// Read ISSUES.md file
+// Read ISSUES.md file with error handling
 const issuesPath = path.join(__dirname, '..', 'ISSUES.md');
-const issuesContent = fs.readFileSync(issuesPath, 'utf-8');
+let issuesContent;
+try {
+  issuesContent = fs.readFileSync(issuesPath, 'utf-8');
+} catch (err) {
+  console.error('Error: ISSUES.md file not found or unreadable. Please ensure it exists in the repository root.');
+  process.exit(1);
+}
 
 /**
  * Parse issues from the ISSUES.md markdown file.
