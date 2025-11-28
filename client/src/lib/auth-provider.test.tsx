@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from './auth-provider';
@@ -121,10 +121,13 @@ describe('AuthProvider', () => {
 
   it('context value is memoized when state does not change', async () => {
     const contextRefs: Array<ReturnType<typeof useAuth>> = [];
+    let renderCount = 0;
 
     function TestComponent() {
       const context = useAuth();
-      const [, setRenderCount] = useState(0);
+      const [localRenderCount, setRenderCount] = useState(0);
+
+      renderCount++;
 
       useEffect(() => {
         contextRefs.push(context);
@@ -133,6 +136,7 @@ describe('AuthProvider', () => {
       return (
         <div>
           <span data-testid="loading">{String(context.isLoading)}</span>
+          <span data-testid="render-count">{localRenderCount}</span>
           <button onClick={() => setRenderCount((c) => c + 1)}>Rerender</button>
         </div>
       );
@@ -151,14 +155,25 @@ describe('AuthProvider', () => {
 
     // Clear refs and trigger re-renders to capture new context values
     contextRefs.length = 0;
+    const renderCountBeforeClicks = renderCount;
 
     // Trigger multiple re-renders
     await act(async () => {
       screen.getByRole('button').click();
     });
+    
+    // Verify first re-render happened
+    expect(screen.getByTestId('render-count')).toHaveTextContent('1');
+    
     await act(async () => {
       screen.getByRole('button').click();
     });
+    
+    // Verify second re-render happened
+    expect(screen.getByTestId('render-count')).toHaveTextContent('2');
+    
+    // Verify that re-renders actually occurred
+    expect(renderCount).toBeGreaterThan(renderCountBeforeClicks);
 
     // All context refs should be the same object (referential equality)
     expect(contextRefs.length).toBeGreaterThan(0);
