@@ -39,11 +39,19 @@ export function CertificationSelectionDialog({
   // Load last selected certification from localStorage
   useEffect(() => {
     if (open && categories.length > 0) {
-      const lastCertificationId = localStorage.getItem(LAST_CERTIFICATION_KEY);
-      if (lastCertificationId && categories.some((c) => c.id.toString() === lastCertificationId)) {
-        setSelectedCategoryId(lastCertificationId);
-      } else if (categories.length > 0) {
-        // Default to first category if no last selection or if the last selection is no longer valid
+      try {
+        const lastCertificationId = localStorage.getItem(LAST_CERTIFICATION_KEY);
+        if (
+          lastCertificationId &&
+          categories.some((c) => c.id.toString() === lastCertificationId)
+        ) {
+          setSelectedCategoryId(lastCertificationId);
+        } else {
+          // Default to first category if no last selection or if the last selection is no longer valid
+          setSelectedCategoryId(categories[0].id.toString());
+        }
+      } catch (error) {
+        // If localStorage fails, just default to first category
         setSelectedCategoryId(categories[0].id.toString());
       }
     }
@@ -59,7 +67,12 @@ export function CertificationSelectionDialog({
 
     if (selectedCategory) {
       // Save selection for next time
-      localStorage.setItem(LAST_CERTIFICATION_KEY, selectedCategoryId);
+      try {
+        localStorage.setItem(LAST_CERTIFICATION_KEY, selectedCategoryId);
+      } catch (error) {
+        // Silently fail if localStorage is unavailable
+        console.warn('Failed to save certification selection:', error);
+      }
       onStartQuiz(categoryId, selectedCategory.name);
     }
   };
@@ -102,7 +115,6 @@ export function CertificationSelectionDialog({
                       ? 'border-primary bg-primary/5'
                       : 'border-border hover:border-primary/50 hover:bg-muted/50'
                   }`}
-                  onClick={() => setSelectedCategoryId(category.id.toString())}
                 >
                   <RadioGroupItem
                     value={category.id.toString()}
