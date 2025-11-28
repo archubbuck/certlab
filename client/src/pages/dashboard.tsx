@@ -122,6 +122,13 @@ export default function Dashboard() {
 
         setShowCertificationDialog(false);
         setLocation(`/app/quiz/${quiz.id}`);
+      } else {
+        toast({
+          title: 'Quiz Creation Failed',
+          description: 'An error occurred while creating your quiz. Please try again.',
+          variant: 'destructive',
+        });
+        setShowCertificationDialog(false);
       }
     } finally {
       setIsCreatingQuiz(false);
@@ -167,6 +174,8 @@ export default function Dashboard() {
         await createQuickPractice(pendingCategoryId, pendingCategoryName);
       } catch (error: unknown) {
         showQuizError(error);
+        // Reopen certification dialog to allow retry
+        setShowCertificationDialog(true);
       } finally {
         setPendingCategoryId(null);
         setPendingCategoryName('');
