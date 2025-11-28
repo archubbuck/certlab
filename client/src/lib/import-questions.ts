@@ -8,8 +8,7 @@ import { clientStorage } from './client-storage';
 import type { Category, Subcategory, Question } from '@shared/schema';
 import { 
   questionOptionsSchema, 
-  validateCorrectAnswer,
-  type QuestionOption 
+  validateCorrectAnswer
 } from '@shared/schema';
 
 export interface QuestionImportData {
