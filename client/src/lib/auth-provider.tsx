@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadUser = async () => {
+  const loadUser = useCallback(async () => {
     try {
       const currentUser = await clientAuth.getCurrentUser();
       setUser(currentUser);
@@ -37,11 +37,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadUser();
-  }, []);
+  }, [loadUser]);
 
   const logout = useCallback(async () => {
     // Construct the logout redirect URL dynamically based on environment configuration
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     await loadUser();
-  }, []);
+  }, [loadUser]);
 
   const switchTenant = useCallback(async (tenantId: number) => {
     if (!user) {
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logError('switchTenant', error, { tenantId });
       throw error;
     }
-  }, [user]);
+  }, [user, loadUser]);
 
   const contextValue = useMemo<AuthContextType>(() => ({
     user,
