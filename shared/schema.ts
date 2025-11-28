@@ -2,6 +2,84 @@ import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, ind
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// ============================================================================
+// Question Option Schema Validation
+// ============================================================================
+
+/**
+ * Zod schema for a single question option.
+ * Options use 0-indexed IDs (0, 1, 2, 3) for consistency.
+ */
+export const questionOptionSchema = z.object({
+  id: z.number().int().min(0).max(9),  // 0-indexed, supports up to 10 options
+  text: z.string().min(1),              // Option text must be non-empty
+});
+
+/**
+ * Zod schema for an array of question options.
+ * Questions must have between 2 and 10 options.
+ */
+export const questionOptionsSchema = z.array(questionOptionSchema).min(2).max(10);
+
+/**
+ * TypeScript type for a question option, derived from the Zod schema.
+ */
+export type QuestionOption = z.infer<typeof questionOptionSchema>;
+
+/**
+ * Validates that a question's correctAnswer matches one of the option IDs.
+ * @param options Array of question options
+ * @param correctAnswer The ID of the correct answer
+ * @returns true if correctAnswer matches an option ID, false otherwise
+ */
+export function validateCorrectAnswer(options: QuestionOption[], correctAnswer: number): boolean {
+  return options.some(option => option.id === correctAnswer);
+}
+
+/**
+ * Normalizes question options to use 0-indexed IDs.
+ * If options don't have IDs or have non-sequential IDs, this will reassign them.
+ * @param options Array of options (potentially without IDs or with inconsistent IDs)
+ * @returns Normalized options with 0-indexed IDs
+ */
+export function normalizeQuestionOptions(options: Array<{ id?: number; text: string }>): QuestionOption[] {
+  return options.map((option, index) => ({
+    id: index,
+    text: option.text,
+  }));
+}
+
+/**
+ * Validates a complete question's options and correctAnswer.
+ * Returns validation result with specific error messages.
+ */
+export function validateQuestionData(data: {
+  options: unknown;
+  correctAnswer: number;
+}): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Validate options structure
+  const optionsResult = questionOptionsSchema.safeParse(data.options);
+  if (!optionsResult.success) {
+    errors.push(`Invalid options: ${optionsResult.error.message}`);
+    return { valid: false, errors };
+  }
+
+  // Validate correctAnswer matches an option ID
+  if (!validateCorrectAnswer(optionsResult.data, data.correctAnswer)) {
+    const optionIds = optionsResult.data.map(o => o.id).join(', ');
+    errors.push(`correctAnswer ${data.correctAnswer} does not match any option ID. Valid IDs: ${optionIds}`);
+    return { valid: false, errors };
+  }
+
+  return { valid: true, errors: [] };
+}
+
+// ============================================================================
+// Database Table Definitions
+// ============================================================================
+
 // Session storage table
 export const sessions = pgTable(
   "sessions",
@@ -76,7 +154,7 @@ export const questions = pgTable("questions", {
   categoryId: integer("category_id").notNull(),
   subcategoryId: integer("subcategory_id").notNull(),
   text: text("text").notNull(),
-  options: jsonb("options").notNull(), // Array of option objects
+  options: jsonb("options").$type<QuestionOption[]>().notNull(), // Array of option objects with id and text
   correctAnswer: integer("correct_answer").notNull(),
   explanation: text("explanation"),
   difficultyLevel: integer("difficulty_level").default(1), // 1-5 scale (1=Easy, 5=Expert)
@@ -216,6 +294,9 @@ export const insertLectureSchema = createInsertSchema(lectures).omit({
 
 export const insertQuestionSchema = createInsertSchema(questions).omit({
   id: true,
+}).extend({
+  // Override the options field with proper Zod validation
+  options: questionOptionsSchema,
 });
 
 export const insertQuizSchema = createInsertSchema(quizzes).omit({

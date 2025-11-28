@@ -6,6 +6,11 @@
 import yaml from 'js-yaml';
 import { clientStorage } from './client-storage';
 import type { Category, Subcategory, Question } from '@shared/schema';
+import { 
+  questionOptionsSchema, 
+  validateCorrectAnswer,
+  type QuestionOption 
+} from '@shared/schema';
 
 export interface QuestionImportData {
   text: string;
@@ -37,7 +42,28 @@ export interface ImportResult {
   categoriesCreated: number;
   subcategoriesCreated: number;
   questionsImported: number;
+  questionsSkipped: number;
   errors: string[];
+}
+
+/**
+ * Validates a single question's options and correctAnswer
+ * @returns Error message if invalid, null if valid
+ */
+export function validateQuestionOptions(question: QuestionImportData, questionIndex: number): string | null {
+  // Validate options structure using Zod schema
+  const optionsResult = questionOptionsSchema.safeParse(question.options);
+  if (!optionsResult.success) {
+    return `Question ${questionIndex + 1}: Invalid options structure - ${optionsResult.error.message}`;
+  }
+
+  // Validate correctAnswer matches an option ID
+  if (!validateCorrectAnswer(optionsResult.data, question.correctAnswer)) {
+    const optionIds = optionsResult.data.map(o => o.id).join(', ');
+    return `Question ${questionIndex + 1}: correctAnswer ${question.correctAnswer} does not match any option ID. Valid IDs: ${optionIds}`;
+  }
+
+  return null;
 }
 
 /**
@@ -70,6 +96,7 @@ export async function importQuestionsFromYAML(
     categoriesCreated: 0,
     subcategoriesCreated: 0,
     questionsImported: 0,
+    questionsSkipped: 0,
     errors: [],
   };
 
@@ -80,7 +107,7 @@ export async function importQuestionsFromYAML(
     onProgress?.({
       total: data.questions.length,
       current: 0,
-      status: `Preparing to import ${data.questions.length} questions for ${data.category}...`,
+      status: `Validating and preparing to import ${data.questions.length} questions for ${data.category}...`,
       category: data.category,
     });
 
@@ -133,6 +160,7 @@ export async function importQuestionsFromYAML(
     // causing UI freezes or exceeding transaction limits.
     const batchSize = 50;
     let imported = 0;
+    let skipped = 0;
     
     for (let i = 0; i < data.questions.length; i += batchSize) {
       const batch = data.questions.slice(i, i + batchSize);
@@ -144,12 +172,25 @@ export async function importQuestionsFromYAML(
         category: data.category,
       });
       
-      for (const questionData of batch) {
+      for (let batchIndex = 0; batchIndex < batch.length; batchIndex++) {
+        const questionData = batch[batchIndex];
+        const absoluteIndex = i + batchIndex;
+        
         try {
+          // Validate question options and correctAnswer before import
+          const validationError = validateQuestionOptions(questionData, absoluteIndex);
+          if (validationError) {
+            console.warn(validationError);
+            result.errors.push(validationError);
+            skipped++;
+            continue;
+          }
+          
           const subcategory = subcategoryMap.get(questionData.subcategory);
           if (!subcategory) {
             console.error(`Subcategory not found: ${questionData.subcategory}`);
-            result.errors.push(`Subcategory not found: ${questionData.subcategory}`);
+            result.errors.push(`Question ${absoluteIndex + 1}: Subcategory not found: ${questionData.subcategory}`);
+            skipped++;
             continue;
           }
           
@@ -167,18 +208,20 @@ export async function importQuestionsFromYAML(
           
           imported++;
         } catch (error) {
-          result.errors.push(`Failed to import question: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          result.errors.push(`Question ${absoluteIndex + 1}: Failed to import - ${error instanceof Error ? error.message : 'Unknown error'}`);
+          skipped++;
         }
       }
     }
     
     result.questionsImported = imported;
+    result.questionsSkipped = skipped;
     result.success = true;
     
     onProgress?.({
       total: data.questions.length,
       current: data.questions.length,
-      status: `Successfully imported ${imported} questions for ${data.category}!`,
+      status: `Successfully imported ${imported} questions for ${data.category}!${skipped > 0 ? ` (${skipped} skipped due to validation errors)` : ''}`,
       category: data.category,
     });
     
@@ -218,6 +261,7 @@ export async function importFromBundledYAML(
       categoriesCreated: 0,
       subcategoriesCreated: 0,
       questionsImported: 0,
+      questionsSkipped: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error'],
     };
   }
@@ -239,6 +283,7 @@ export async function importFromFile(
       categoriesCreated: 0,
       subcategoriesCreated: 0,
       questionsImported: 0,
+      questionsSkipped: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error'],
     };
   }
