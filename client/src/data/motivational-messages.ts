@@ -26,6 +26,16 @@
 import type { UserStats } from '@shared/schema';
 
 /**
+ * Configuration thresholds for message personalization
+ * These values determine when different message categories are triggered
+ */
+const STREAK_THRESHOLD = 3;              // Minimum streak days for streak messages
+const HIGH_PERFORMANCE_THRESHOLD = 80;   // Minimum average score (%) for high performance messages
+const MILESTONE_INTERVAL = 5;            // Quiz count interval for milestone messages
+const IMPROVEMENT_MIN_QUIZZES = 3;       // Minimum quizzes before showing improvement messages
+const IMPROVEMENT_PROBABILITY = 0.2;     // Probability (20%) of showing improvement messages
+
+/**
  * Categories of motivational messages for different user contexts
  */
 export type MessageCategory = 
@@ -99,24 +109,23 @@ export function getMessageCategory(stats: UserStats | null | undefined): Message
     return 'newUser';
   }
 
-  // Check for active streak (3+ days)
-  if (stats.studyStreak >= 3) {
+  // Check for active streak
+  if (stats.studyStreak >= STREAK_THRESHOLD) {
     return 'streak';
   }
 
-  // High performer (80%+ average)
-  if (stats.averageScore >= 80) {
+  // High performer
+  if (stats.averageScore >= HIGH_PERFORMANCE_THRESHOLD) {
     return 'highPerformance';
   }
 
-  // Milestone achievements (every 5 quizzes)
-  if (stats.totalQuizzes > 0 && stats.totalQuizzes % 5 === 0) {
+  // Milestone achievements
+  if (stats.totalQuizzes > 0 && stats.totalQuizzes % MILESTONE_INTERVAL === 0) {
     return 'milestone';
   }
 
-  // Show improvement message occasionally (roughly 20% of the time)
-  // for users who have completed at least 3 quizzes
-  if (stats.totalQuizzes >= 3 && Math.random() < 0.2) {
+  // Show improvement message occasionally for users who have completed enough quizzes
+  if (stats.totalQuizzes >= IMPROVEMENT_MIN_QUIZZES && Math.random() < IMPROVEMENT_PROBABILITY) {
     return 'improvement';
   }
 
