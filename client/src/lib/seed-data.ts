@@ -209,7 +209,11 @@ export async function seedInitialData(): Promise<void> {
   }
 
   // Seed categories for each tenant that exists
-  let defaultCategories: { cissp: any; cism: any } = { cissp: null, cism: null };
+  type CategoryResult = {
+    cissp: Awaited<ReturnType<typeof clientStorage.createCategory>> | null | undefined;
+    cism: Awaited<ReturnType<typeof clientStorage.createCategory>> | null | undefined;
+  };
+  let defaultCategories: CategoryResult = { cissp: null, cism: null };
 
   if (defaultTenantId !== null) {
     // Seed categories for Default Organization (both CISSP and CISM)
@@ -227,21 +231,20 @@ export async function seedInitialData(): Promise<void> {
   }
 
   // Validate that default tenant categories were created before proceeding with sample questions
+  // At this point, if we have categories, defaultTenantId is guaranteed to be non-null
   if (!defaultCategories.cissp && !defaultCategories.cism) {
     console.warn(
       'Default tenant categories could not be created, skipping sample questions and subcategories'
     );
     // Still save seed version and create badges
-  } else {
+  } else if (defaultTenantId !== null) {
     // Use default tenant categories for sample questions
     const cissp = defaultCategories.cissp;
     const cism = defaultCategories.cism;
+    const tenantId = defaultTenantId; // Capture for type safety
 
     // Get subcategories for sample questions
-    const allSubcategories = await clientStorage.getSubcategories(
-      undefined,
-      defaultTenantId as number
-    );
+    const allSubcategories = await clientStorage.getSubcategories(undefined, tenantId);
     const securityGovernance = allSubcategories.find(
       (s) => s.name === 'Security and Risk Management'
     );
@@ -257,7 +260,7 @@ export async function seedInitialData(): Promise<void> {
     // Create sample questions only if categories and subcategories exist
     if (cissp && securityGovernance) {
       await clientStorage.createQuestion({
-        tenantId: defaultTenantId as number,
+        tenantId,
         categoryId: cissp.id,
         subcategoryId: securityGovernance.id,
         text: 'What is the primary goal of information security?',
@@ -275,7 +278,7 @@ export async function seedInitialData(): Promise<void> {
       });
 
       await clientStorage.createQuestion({
-        tenantId: defaultTenantId as number,
+        tenantId,
         categoryId: cissp.id,
         subcategoryId: securityGovernance.id,
         text: 'Which of the following is NOT a security control type?',
@@ -295,7 +298,7 @@ export async function seedInitialData(): Promise<void> {
 
     if (cissp && assetSecurity) {
       await clientStorage.createQuestion({
-        tenantId: defaultTenantId as number,
+        tenantId,
         categoryId: cissp.id,
         subcategoryId: assetSecurity.id,
         text: 'What is the purpose of data classification?',
@@ -315,7 +318,7 @@ export async function seedInitialData(): Promise<void> {
 
     if (cissp && securityArchitecture) {
       await clientStorage.createQuestion({
-        tenantId: defaultTenantId as number,
+        tenantId,
         categoryId: cissp.id,
         subcategoryId: securityArchitecture.id,
         text: 'What does "defense in depth" mean?',
@@ -336,7 +339,7 @@ export async function seedInitialData(): Promise<void> {
     // Create sample questions for CISM
     if (cism && infoSecGovernance) {
       await clientStorage.createQuestion({
-        tenantId: defaultTenantId as number,
+        tenantId,
         categoryId: cism.id,
         subcategoryId: infoSecGovernance.id,
         text: 'What is the primary purpose of an information security governance framework?',
@@ -356,7 +359,7 @@ export async function seedInitialData(): Promise<void> {
 
     if (cism && riskManagement) {
       await clientStorage.createQuestion({
-        tenantId: defaultTenantId as number,
+        tenantId,
         categoryId: cism.id,
         subcategoryId: riskManagement.id,
         text: 'What is risk appetite?',
