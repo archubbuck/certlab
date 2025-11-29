@@ -393,10 +393,7 @@ export default function Review() {
                       return (
                         <div key={option.id} className={getOptionClasses(status)}>
                           <div className="flex items-start sm:items-center gap-3">
-                            <div
-                              className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-xs sm:text-sm font-bold mt-0.5 sm:mt-0"
-                              aria-label={`Option ${String.fromCharCode(65 + option.id)}`}
-                            >
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-xs sm:text-sm font-bold mt-0.5 sm:mt-0">
                               {String.fromCharCode(65 + option.id)}
                             </div>
                             <div className="flex-1 min-w-0">
