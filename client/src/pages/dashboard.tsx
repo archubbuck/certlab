@@ -257,39 +257,39 @@ export default function Dashboard() {
               <CardContent className="space-y-4">
                 <Button
                   onClick={handleStartPractice}
-                  className="w-full justify-start"
+                  className="w-full justify-start whitespace-normal text-left"
                   size="lg"
                   data-testid="start-quick-practice"
                 >
-                  <PlayCircle className="mr-3 h-5 w-5" />
+                  <PlayCircle className="mr-3 h-5 w-5 shrink-0" />
                   Start Quick Practice
-                  <span className="ml-auto text-sm opacity-80">10 questions</span>
+                  <span className="ml-auto text-sm opacity-80 shrink-0">10 questions</span>
                 </Button>
 
                 <Button
                   onClick={handleContinueLearning}
                   variant="outline"
-                  className="w-full justify-start"
+                  className="w-full justify-start whitespace-normal text-left"
                   size="lg"
                   data-testid="continue-learning"
                 >
-                  <BookOpen className="mr-3 h-5 w-5" />
+                  <BookOpen className="mr-3 h-5 w-5 shrink-0" />
                   Continue Learning
                   {recentQuizzes.find((q) => !q.completedAt) && (
-                    <span className="ml-auto text-sm opacity-80">Resume quiz</span>
+                    <span className="ml-auto text-sm opacity-80 shrink-0">Resume quiz</span>
                   )}
                 </Button>
 
                 <Button
                   onClick={handleViewProgress}
                   variant="outline"
-                  className="w-full justify-start"
+                  className="w-full justify-start whitespace-normal text-left"
                   size="lg"
                   data-testid="view-progress"
                 >
-                  <ChartBar className="mr-3 h-5 w-5" />
+                  <ChartBar className="mr-3 h-5 w-5 shrink-0" />
                   View Progress
-                  <span className="ml-auto text-sm opacity-80">Achievements</span>
+                  <span className="ml-auto text-sm opacity-80 shrink-0">Achievements</span>
                 </Button>
               </CardContent>
             </Card>
