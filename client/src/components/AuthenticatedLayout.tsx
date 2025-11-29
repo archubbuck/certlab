@@ -21,17 +21,19 @@ function AuthenticatedHeader() {
   const { togglePanel, isOpen: isRightSidebarOpen } = useRightSidebar();
   const { open: isLeftSidebarOpen, setOpen: setLeftSidebarOpen } = useSidebar();
   const previousLeftSidebarState = useRef<boolean>(true);
+  const wasRightSidebarOpen = useRef<boolean>(false);
 
   // Collapse left sidebar when right sidebar opens, restore when it closes
   useEffect(() => {
-    if (isRightSidebarOpen) {
-      // Save current left sidebar state before collapsing
+    if (isRightSidebarOpen && !wasRightSidebarOpen.current) {
+      // Right sidebar just opened - save current left sidebar state and collapse it
       previousLeftSidebarState.current = isLeftSidebarOpen;
       setLeftSidebarOpen(false);
-    } else {
-      // Restore previous left sidebar state when right sidebar closes
+    } else if (!isRightSidebarOpen && wasRightSidebarOpen.current) {
+      // Right sidebar just closed - restore previous left sidebar state
       setLeftSidebarOpen(previousLeftSidebarState.current);
     }
+    wasRightSidebarOpen.current = isRightSidebarOpen;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRightSidebarOpen, setLeftSidebarOpen]);
 
