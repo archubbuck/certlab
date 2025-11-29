@@ -3,8 +3,8 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/lib/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
-import { Bell, Menu, PanelLeft, Search, LogOut, User, Trophy } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Bell, Search, LogOut, User, Trophy } from 'lucide-react';
+import { getInitials, getUserDisplayName } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AppSidebar } from '@/components/AppSidebar';
-import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface AuthenticatedLayoutProps {
   children: ReactNode;
@@ -42,24 +42,6 @@ function AuthenticatedHeader() {
         description: 'You have been logged out of your account.',
       });
     }
-  };
-
-  const getInitials = (firstName?: string | null, lastName?: string | null) => {
-    if (!firstName && !lastName) return '?';
-    const first = firstName?.[0] || '';
-    const last = lastName?.[0] || '';
-    return (first + last).toUpperCase() || '?';
-  };
-
-  const getUserDisplayName = (user: typeof currentUser) => {
-    if (!user) return 'User';
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-    if (user.firstName) return user.firstName;
-    if (user.lastName) return user.lastName;
-    if (user.email) return user.email.split('@')[0];
-    return 'User';
   };
 
   return (
