@@ -185,7 +185,7 @@ export default function Header() {
                             <BookOpen className="w-4 h-4" />
                             Learning Features
                           </h3>
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-4 gap-3">
                             <NavigationMenuLink
                               className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
                               onClick={() => setLocation('/app/achievements')}
