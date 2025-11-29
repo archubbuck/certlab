@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ShoppingCart, Package } from 'lucide-react';
@@ -12,6 +12,43 @@ interface StudyMaterial {
   tokens: number;
   description?: string;
   featured?: boolean;
+}
+
+// Reusable component for material card grid
+interface MaterialCardGridProps {
+  materials: StudyMaterial[];
+  onBuy: (materialId: string) => void;
+  keyPrefix?: string;
+}
+
+function MaterialCardGrid({ materials, onBuy, keyPrefix = '' }: MaterialCardGridProps) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      {materials.map((material) => (
+        <Card
+          key={`${keyPrefix}${material.id}`}
+          className="flex flex-col items-center text-center p-4 hover:shadow-lg transition-all duration-200"
+        >
+          <CardContent className="flex flex-col items-center p-0 w-full">
+            <div className="mb-3">
+              <span className="text-sm font-medium text-foreground">{material.type}</span>
+            </div>
+            <div className="mb-4">
+              <span className="text-muted-foreground">({material.tokens})</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full max-w-[100px]"
+              onClick={() => onBuy(material.id)}
+            >
+              Buy
+            </Button>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 }
 
 // Sample study materials data
@@ -160,31 +197,7 @@ export default function Marketplace() {
             )}
 
             {/* Study Material Cards Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {gridMaterials.map((material) => (
-                <Card
-                  key={material.id}
-                  className="flex flex-col items-center text-center p-4 hover:shadow-lg transition-all duration-200"
-                >
-                  <CardContent className="flex flex-col items-center p-0 w-full">
-                    <div className="mb-3">
-                      <span className="text-sm font-medium text-foreground">{material.type}</span>
-                    </div>
-                    <div className="mb-4">
-                      <span className="text-muted-foreground">({material.tokens})</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full max-w-[100px]"
-                      onClick={() => handleBuyNow(material.id)}
-                    >
-                      Buy
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <MaterialCardGrid materials={gridMaterials} onBuy={handleBuyNow} />
           </TabsContent>
 
           <TabsContent value="topics">
@@ -198,31 +211,7 @@ export default function Marketplace() {
             </div>
 
             {/* Topics Grid - same materials for now */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {gridMaterials.map((material) => (
-                <Card
-                  key={`topic-${material.id}`}
-                  className="flex flex-col items-center text-center p-4 hover:shadow-lg transition-all duration-200"
-                >
-                  <CardContent className="flex flex-col items-center p-0 w-full">
-                    <div className="mb-3">
-                      <span className="text-sm font-medium text-foreground">{material.type}</span>
-                    </div>
-                    <div className="mb-4">
-                      <span className="text-muted-foreground">({material.tokens})</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full max-w-[100px]"
-                      onClick={() => handleBuyNow(material.id)}
-                    >
-                      Buy
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <MaterialCardGrid materials={gridMaterials} onBuy={handleBuyNow} keyPrefix="topic-" />
           </TabsContent>
         </Tabs>
       </div>
