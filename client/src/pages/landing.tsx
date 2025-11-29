@@ -20,15 +20,18 @@ const features = [
     title: 'Adaptive Learning',
     description:
       'AI-powered system adapts to your learning pace and identifies knowledge gaps automatically.',
+    icon: Brain,
   },
   {
     title: 'Enterprise Ready',
     description:
       'Secure multi-tenant architecture designed for organizations and teams of any size.',
+    icon: Shield,
   },
   {
     title: 'Smart Lectures',
     description: 'AI generates personalized lectures based on your weak topics and learning style.',
+    icon: BookOpen,
   },
 ];
 
@@ -114,9 +117,12 @@ export default function Landing() {
                 <span className="text-xl font-bold">CertLab</span>
               </div>
             </div>
-            <div className="border border-white/30 size-10 inline-flex justify-center items-center rounded-lg md:hidden">
+            <button
+              className="border border-white/30 size-10 inline-flex justify-center items-center rounded-lg md:hidden"
+              aria-label="Open navigation menu"
+            >
               <Menu className="text-white w-5 h-5" />
-            </div>
+            </button>
             <nav className="text-white/60 items-center gap-6 hidden md:flex">
               <button
                 onClick={handleScrollToFeatures}
@@ -157,10 +163,9 @@ export default function Landing() {
         <div className="absolute h-[375px] w-[750px] md:w-[1536px] md:h-[768px] lg:w-[2400px] lg:h-[1200px] rounded-[100%] bg-black left-1/2 -translate-x-1/2 border border-[#b48cde] bg-[radial-gradient(closest-side,#000_82%,#9560eb)] top-[calc(100%-96px)] md:top-[calc(100%-120px)]" />
         <div className="container mx-auto px-4 relative">
           <div className="flex items-center justify-center">
-            <a
-              href="#"
+            <button
               className="border border-white/30 py-1 px-2 rounded-lg inline-flex gap-3"
-              onClick={(e) => e.preventDefault()}
+              onClick={handleScrollToFeatures}
             >
               <span className="bg-[linear-gradient(to_right,#f87aff,#fb93d0,#ffdd99,#c3f0b2,#2fd8fe)] bg-clip-text text-transparent">
                 AI-Powered Learning
@@ -169,7 +174,7 @@ export default function Landing() {
                 <span>Learn More</span>
                 <ArrowRight className="w-4 h-4" />
               </span>
-            </a>
+            </button>
           </div>
           <div className="flex justify-center mt-8">
             <div className="inline-flex relative">
@@ -223,15 +228,13 @@ export default function Landing() {
             </p>
           </div>
           <div className="mt-16 flex flex-col md:flex-row gap-4">
-            {features.map(({ title, description }) => (
+            {features.map(({ title, description, icon: Icon }) => (
               <div
                 key={title}
                 className="border border-white/30 px-5 py-10 text-center rounded-xl md:flex-1"
               >
                 <div className="inline-flex h-14 w-14 bg-white text-black justify-center items-center rounded-lg">
-                  {title === 'Adaptive Learning' && <Brain className="w-6 h-6" />}
-                  {title === 'Enterprise Ready' && <Shield className="w-6 h-6" />}
-                  {title === 'Smart Lectures' && <BookOpen className="w-6 h-6" />}
+                  <Icon className="w-6 h-6" />
                 </div>
                 <h3 className="mt-6 font-bold">{title}</h3>
                 <p className="mt-2 text-white/70">{description}</p>
