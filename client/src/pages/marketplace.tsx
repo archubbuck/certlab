@@ -101,7 +101,7 @@ export default function Marketplace() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="text-center mb-8">
