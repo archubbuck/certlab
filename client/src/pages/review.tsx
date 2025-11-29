@@ -271,11 +271,11 @@ export default function Review() {
     const baseClasses = 'p-3 sm:p-4 rounded-lg border-2 transition-all';
     switch (status) {
       case 'correct-selected':
-        return `${baseClasses} border-green-500 bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-300`;
+        return `${baseClasses} border-green-500 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200`;
       case 'incorrect-selected':
-        return `${baseClasses} border-red-500 bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300`;
+        return `${baseClasses} border-red-500 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200`;
       case 'correct':
-        return `${baseClasses} border-green-500 bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-300`;
+        return `${baseClasses} border-green-500 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200`;
       default:
         return `${baseClasses} border-border bg-muted/50 text-muted-foreground`;
     }
