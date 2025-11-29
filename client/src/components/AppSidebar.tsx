@@ -4,20 +4,16 @@ import { useAuth } from '@/lib/auth-provider';
 import {
   Home,
   BookOpen,
-  Trophy,
-  FileText,
   Database,
   Settings,
   Shield,
   ChevronDown,
   Search,
   Target,
-  Sparkles,
   GraduationCap,
-  User,
   Coins,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getInitials, getUserDisplayName } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -99,7 +95,7 @@ export function AppSidebar() {
   const { data: tokenData } = useQuery<{ balance: number }>({
     queryKey: queryKeys.user.tokenBalance(currentUser?.id),
     enabled: !!currentUser?.id,
-    staleTime: 0,
+    staleTime: 30000, // 30 seconds to reduce unnecessary queries
     gcTime: 5 * 60 * 1000,
   });
 
@@ -110,24 +106,6 @@ export function AppSidebar() {
       ...prev,
       [title]: !prev[title],
     }));
-  };
-
-  const getInitials = (firstName?: string | null, lastName?: string | null) => {
-    if (!firstName && !lastName) return '?';
-    const first = firstName?.[0] || '';
-    const last = lastName?.[0] || '';
-    return (first + last).toUpperCase() || '?';
-  };
-
-  const getUserDisplayName = (user: typeof currentUser) => {
-    if (!user) return 'User';
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-    if (user.firstName) return user.firstName;
-    if (user.lastName) return user.lastName;
-    if (user.email) return user.email.split('@')[0];
-    return 'User';
   };
 
   const isPathActive = (path: string) => {
