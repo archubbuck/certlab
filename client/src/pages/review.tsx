@@ -268,96 +268,109 @@ export default function Review() {
   };
 
   const getOptionClasses = (status: string) => {
-    const baseClasses = 'p-4 rounded-lg border-2 transition-all';
+    const baseClasses = 'p-3 sm:p-4 rounded-lg border-2 transition-all';
     switch (status) {
       case 'correct-selected':
-        return `${baseClasses} border-green-500 bg-green-50 text-green-800`;
+        return `${baseClasses} border-green-500 bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-300`;
       case 'incorrect-selected':
-        return `${baseClasses} border-red-500 bg-red-50 text-red-800`;
+        return `${baseClasses} border-red-500 bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300`;
       case 'correct':
-        return `${baseClasses} border-green-500 bg-green-50 text-green-800`;
+        return `${baseClasses} border-green-500 bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-300`;
       default:
-        return `${baseClasses} border-gray-200 bg-gray-50 text-gray-700`;
+        return `${baseClasses} border-border bg-muted/50 text-muted-foreground`;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Review Answers</h1>
-              <p className="text-gray-600">
-                {getCategoryName(quiz.categoryIds as number[])} Practice Quiz
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-500">Overall Score</div>
-              <div className="text-2xl font-bold text-primary">{score}%</div>
-              <div className="text-sm text-gray-500">
-                {correctAnswers}/{totalQuestions} Correct
+    <div className="min-h-screen bg-background">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Header Card */}
+        <Card className="mb-6 shadow-lg border-0 overflow-hidden bg-card">
+          <div className="bg-gradient-to-r from-primary to-primary/90 p-4 sm:p-6 text-white">
+            <div className="text-center mb-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
+                <i className="fas fa-clipboard-check text-xl sm:text-2xl"></i>
               </div>
+              <h1 className="text-xl sm:text-2xl font-bold mb-1">Review Answers</h1>
+              <p className="text-sm sm:text-base opacity-90">
+                {getCategoryName(quiz.categoryIds as number[])}
+              </p>
             </div>
           </div>
 
-          {/* Summary */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium text-blue-900">Quiz Completed</h3>
-                <p className="text-sm text-blue-800">
-                  Review all {questions.length} questions below
-                </p>
+          <CardContent className="p-4 sm:p-6">
+            {/* Score Summary */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="text-center py-3 bg-muted/50 rounded-lg">
+                <div className="text-2xl sm:text-3xl font-bold text-primary mb-1">{score}%</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Overall Score</div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => generateLectureMutation.mutate()}
-                  disabled={generateLectureMutation.isPending}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white relative"
-                  size="sm"
-                >
-                  {generateLectureMutation.isPending ? (
-                    <>
-                      <LoadingSpinner size="sm" variant="white" />
-                      <span className="ml-2">Generating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-graduation-cap mr-2"></i>
-                      Generate Study Notes
-                    </>
-                  )}
-                </Button>
+              <div className="text-center py-3 bg-muted/50 rounded-lg">
+                <div className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
+                  {correctAnswers}/{totalQuestions}
+                </div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Correct Answers</div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button
+                onClick={() => generateLectureMutation.mutate()}
+                disabled={generateLectureMutation.isPending}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+              >
+                {generateLectureMutation.isPending ? (
+                  <>
+                    <LoadingSpinner size="sm" variant="white" />
+                    <span className="ml-2">Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-graduation-cap mr-2"></i>
+                    Generate Study Notes
+                  </>
+                )}
+              </Button>
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setLocation(`/app/results/${quizId}`)}
-                  size="sm"
+                  className="w-full"
                 >
                   <i className="fas fa-chart-bar mr-2"></i>
                   View Results
                 </Button>
-                <Button variant="outline" onClick={() => setLocation('/app')} size="sm">
+                <Button variant="outline" onClick={() => setLocation('/app')} className="w-full">
                   <i className="fas fa-home mr-2"></i>
                   Dashboard
                 </Button>
               </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
+
+        {/* Questions Section Header */}
+        <div className="mb-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+            All Questions ({questions.length})
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Review your answers and explanations below
+          </p>
         </div>
 
         {/* All Questions */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {questions.map((question, index) => {
             const userAnswer = userAnswers.find((a) => a.questionId === question.id);
             const isCorrect = userAnswer?.answer === question.correctAnswer;
 
             return (
-              <Card key={question.id} className="material-shadow border border-gray-100">
-                <CardHeader className="p-6 border-b border-gray-100">
+              <Card key={question.id} className="shadow-sm border">
+                <CardHeader className="p-4 sm:p-6 border-b">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-medium text-gray-900">
+                    <CardTitle className="text-base sm:text-lg font-medium text-foreground">
                       Question {index + 1}
                     </CardTitle>
                     <Badge variant={isCorrect ? 'default' : 'destructive'}>
@@ -366,32 +379,42 @@ export default function Review() {
                   </div>
                 </CardHeader>
 
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   {/* Question Text */}
-                  <div className="mb-6">
-                    <p className="text-lg text-gray-900 leading-relaxed">{question.text}</p>
+                  <div className="mb-4 sm:mb-6">
+                    <p className="text-base sm:text-lg text-foreground leading-relaxed">
+                      {question.text}
+                    </p>
                   </div>
 
                   {/* Answer Options */}
-                  <div className="space-y-3 mb-6">
+                  <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                     {question.options.map((option) => {
                       const status = getOptionStatus(option.id, question, userAnswer);
                       return (
                         <div key={option.id} className={getOptionClasses(status)}>
-                          <div className="flex items-center space-x-3">
-                            <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-sm font-bold">
+                          <div className="flex items-start sm:items-center gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-xs sm:text-sm font-bold mt-0.5 sm:mt-0">
                               {String.fromCharCode(65 + option.id)}
                             </div>
-                            <div className="flex-1">
-                              <span className="font-medium">{option.text}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium text-sm sm:text-base">
+                                {option.text}
+                              </span>
                               {status === 'correct-selected' && (
-                                <span className="ml-2 text-sm">✓ Your answer (Correct)</span>
+                                <span className="block sm:inline sm:ml-2 text-xs sm:text-sm mt-1 sm:mt-0">
+                                  ✓ Your answer (Correct)
+                                </span>
                               )}
                               {status === 'incorrect-selected' && (
-                                <span className="ml-2 text-sm">✗ Your answer (Incorrect)</span>
+                                <span className="block sm:inline sm:ml-2 text-xs sm:text-sm mt-1 sm:mt-0">
+                                  ✗ Your answer (Incorrect)
+                                </span>
                               )}
                               {status === 'correct' && userAnswer?.answer !== option.id && (
-                                <span className="ml-2 text-sm">✓ Correct answer</span>
+                                <span className="block sm:inline sm:ml-2 text-xs sm:text-sm mt-1 sm:mt-0">
+                                  ✓ Correct answer
+                                </span>
                               )}
                             </div>
                           </div>
@@ -402,9 +425,13 @@ export default function Review() {
 
                   {/* Explanation */}
                   {question.explanation && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="font-medium text-blue-900 mb-2">Explanation</h4>
-                      <p className="text-blue-800 leading-relaxed">{question.explanation}</p>
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 sm:p-4">
+                      <h4 className="font-medium text-primary mb-2 text-sm sm:text-base">
+                        Explanation
+                      </h4>
+                      <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+                        {question.explanation}
+                      </p>
                     </div>
                   )}
                 </CardContent>
