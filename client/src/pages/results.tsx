@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DetailedResultsAnalysis from '@/components/DetailedResultsAnalysis';
-import { getScoreColor, getScoreBgColor } from '@/lib/questions';
+import { getScoreColor } from '@/lib/questions';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { queryKeys } from '@/lib/queryClient';
 import type { Quiz, Category } from '@shared/schema';
