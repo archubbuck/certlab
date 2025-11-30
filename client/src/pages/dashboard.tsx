@@ -5,12 +5,14 @@ import { useAuth } from '@/lib/auth-provider';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { clientStorage } from '@/lib/client-storage';
 import { useToast } from '@/hooks/use-toast';
+import { useSkillsAssessment } from '@/hooks/useSkillsAssessment';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TokenBalance } from '@/components/TokenBalance';
 import { InsufficientTokensDialog } from '@/components/InsufficientTokensDialog';
 import { CertificationSelectionDialog } from '@/components/CertificationSelectionDialog';
-import { getPersonalizedMessage } from '@/data/motivational-messages';
+import SkillsBasedRecommendations from '@/components/SkillsBasedRecommendations';
+import { getPersonalizedMessageWithAssessment } from '@/data/motivational-messages';
 import {
   BookOpen,
   PlayCircle,
@@ -39,15 +41,21 @@ export default function Dashboard() {
   const [pendingCategoryId, setPendingCategoryId] = useState<number | null>(null);
   const [pendingCategoryName, setPendingCategoryName] = useState<string>('');
 
+  // Get skills assessment for personalization
+  const { skillsAssessment, welcomeMessage, preferences } = useSkillsAssessment();
+
   // Get user stats
   const { data: stats } = useQuery<UserStats>({
     queryKey: queryKeys.user.stats(currentUser?.id),
     enabled: !!currentUser?.id,
   });
 
-  // Get personalized motivational message based on user stats
-  // useMemo ensures the message is stable and only recalculated when stats change
-  const motivationalMessage = useMemo(() => getPersonalizedMessage(stats), [stats]);
+  // Get personalized motivational message based on user stats and skills assessment
+  // useMemo ensures the message is stable and only recalculated when stats or assessment change
+  const motivationalMessage = useMemo(
+    () => getPersonalizedMessageWithAssessment(stats, skillsAssessment),
+    [stats, skillsAssessment]
+  );
 
   // Get recent quizzes
   const { data: recentQuizzes = [] } = useQuery<Quiz[]>({
@@ -233,10 +241,12 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
+        {/* Welcome Section - Personalized based on Skills Assessment */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Welcome back, {currentUser?.firstName || 'Student'}!
+            {preferences.isAssessmentComplete
+              ? welcomeMessage
+              : `Welcome back, ${currentUser?.firstName || 'Student'}!`}
           </h1>
           <div className="flex items-center gap-2 text-muted-foreground mb-2">
             <Calendar className="w-4 h-4" />
@@ -351,6 +361,9 @@ export default function Dashboard() {
 
           {/* Right Column */}
           <div className="space-y-6">
+            {/* Skills-Based Personalized Recommendations */}
+            <SkillsBasedRecommendations maxRecommendations={3} />
+
             {/* Recent Activity */}
             <Card>
               <CardHeader>
