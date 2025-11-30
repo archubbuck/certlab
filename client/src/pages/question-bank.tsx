@@ -414,7 +414,7 @@ export default function QuestionBankPage() {
 
   const QuestionForm = ({ isEdit = false }: { isEdit?: boolean }) => (
     <div
-      className="space-y-4 max-h-[60vh] overflow-y-auto pr-2"
+      className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 sm:pr-2"
       role="region"
       aria-label={isEdit ? 'Edit question form' : 'Add question form'}
       tabIndex={0}
@@ -431,7 +431,7 @@ export default function QuestionBankPage() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="categoryId">Category *</Label>
           <Select
@@ -488,13 +488,14 @@ export default function QuestionBankPage() {
                 value={index.toString()}
                 id={`option-radio-${index}`}
                 aria-label={`Mark option ${index + 1} as correct answer`}
+                className="shrink-0"
               />
               <Input
                 id={`option-text-${index}`}
                 placeholder={`Option ${index + 1}`}
                 value={formData.options[index]}
                 onChange={(e) => handleOptionChange(index, e.target.value)}
-                className="flex-1"
+                className="flex-1 min-w-0"
                 aria-label={`Option ${index + 1} text`}
               />
             </div>
@@ -505,7 +506,7 @@ export default function QuestionBankPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="difficultyLevel">Difficulty Level</Label>
           <Select
@@ -551,9 +552,10 @@ export default function QuestionBankPage() {
         />
       </div>
 
-      <DialogFooter className="pt-4 border-t">
+      <DialogFooter className="pt-4 border-t flex-col sm:flex-row gap-2">
         <Button
           variant="outline"
+          className="w-full sm:w-auto"
           onClick={() => {
             if (isEdit) {
               setShowEditDialog(false);
@@ -566,6 +568,7 @@ export default function QuestionBankPage() {
           Cancel
         </Button>
         <Button
+          className="w-full sm:w-auto"
           onClick={() => handleFormSubmit(isEdit)}
           disabled={createQuestionMutation.isPending || updateQuestionMutation.isPending}
         >
@@ -584,13 +587,13 @@ export default function QuestionBankPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
+              <div className="p-2 bg-blue-100 rounded-lg shrink-0">
                 <HelpCircle className="h-6 w-6 text-blue-600" />
               </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
                   <span role="img" aria-hidden="true">
                     📚
                   </span>{' '}
@@ -601,7 +604,7 @@ export default function QuestionBankPage() {
                 </p>
               </div>
             </div>
-            <Button onClick={handleAddQuestion}>
+            <Button onClick={handleAddQuestion} className="w-full sm:w-auto shrink-0">
               <PlusCircle className="h-4 w-4 mr-2" />
               Add Question
             </Button>
@@ -724,14 +727,107 @@ export default function QuestionBankPage() {
           </Card>
         ) : (
           <>
-            <Card>
-              <CardHeader>
-                <CardTitle>Questions</CardTitle>
-                <CardDescription>
-                  Showing {paginatedQuestions.length} of {filteredQuestions.length} questions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+            {/* Questions Header */}
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold">Questions</h2>
+              <p className="text-sm text-muted-foreground">
+                Showing {paginatedQuestions.length} of {filteredQuestions.length} questions
+              </p>
+            </div>
+
+            {/* Mobile Card Layout - visible on small screens */}
+            <div className="md:hidden space-y-4">
+              {paginatedQuestions.map((question) => (
+                <Card key={question.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {/* Question Text */}
+                      <p className="text-sm font-medium line-clamp-3" title={question.text}>
+                        {question.text}
+                      </p>
+
+                      {/* Category and Difficulty Row */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">{getCategoryName(question.categoryId)}</Badge>
+                        {getDifficultyBadge(question.difficultyLevel)}
+                      </div>
+
+                      {/* Tags */}
+                      {Array.isArray(question.tags) && question.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {question.tags.slice(0, 3).map((tag, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                          {question.tags.length > 3 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{question.tags.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-1 pt-2 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewQuestion(question)}
+                          aria-label="View question"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditQuestion(question)}
+                          aria-label="Edit question"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive"
+                              aria-label="Delete question"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Question?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this question? This action cannot be
+                                undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                              <AlertDialogCancel className="w-full sm:w-auto">
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteQuestionMutation.mutate(question.id)}
+                                className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Desktop Table Layout - visible on medium screens and up */}
+            <Card className="hidden md:block">
+              <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -821,28 +917,34 @@ export default function QuestionBankPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Previous</span>
+                    <span className="sm:hidden">Prev</span>
+                  </Button>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap px-2">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <span className="sm:hidden">Next</span>
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
               </div>
             )}
           </>
@@ -850,7 +952,7 @@ export default function QuestionBankPage() {
 
         {/* Add Question Dialog */}
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <PlusCircle className="h-5 w-5 text-blue-600" />
@@ -864,7 +966,7 @@ export default function QuestionBankPage() {
 
         {/* Edit Question Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Edit className="h-5 w-5 text-blue-600" />
@@ -878,7 +980,7 @@ export default function QuestionBankPage() {
 
         {/* View Question Dialog */}
         <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Eye className="h-5 w-5 text-blue-600" />
@@ -889,10 +991,10 @@ export default function QuestionBankPage() {
               <div className="space-y-4">
                 <div>
                   <Label className="text-muted-foreground">Question</Label>
-                  <p className="mt-1">{selectedQuestion.text}</p>
+                  <p className="mt-1 text-sm sm:text-base">{selectedQuestion.text}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground">Category</Label>
                     <p className="mt-1">{getCategoryName(selectedQuestion.categoryId)}</p>
@@ -909,9 +1011,9 @@ export default function QuestionBankPage() {
                     {selectedQuestion.options?.map((option, index) => (
                       <div
                         key={option.id}
-                        className={`p-2 rounded border ${
+                        className={`p-2 sm:p-3 rounded border text-sm ${
                           selectedQuestion.correctAnswer === index
-                            ? 'bg-green-50 border-green-300'
+                            ? 'bg-green-50 border-green-300 dark:bg-green-950 dark:border-green-700'
                             : 'bg-muted'
                         }`}
                       >
@@ -925,7 +1027,7 @@ export default function QuestionBankPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground">Difficulty</Label>
                     <div className="mt-1">
@@ -955,9 +1057,10 @@ export default function QuestionBankPage() {
                   </div>
                 )}
 
-                <DialogFooter className="pt-4 border-t">
+                <DialogFooter className="pt-4 border-t flex-col sm:flex-row gap-2">
                   <Button
                     variant="outline"
+                    className="w-full sm:w-auto"
                     onClick={() => {
                       setShowViewDialog(false);
                       handleEditQuestion(selectedQuestion);
@@ -966,7 +1069,9 @@ export default function QuestionBankPage() {
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
-                  <Button onClick={() => setShowViewDialog(false)}>Close</Button>
+                  <Button className="w-full sm:w-auto" onClick={() => setShowViewDialog(false)}>
+                    Close
+                  </Button>
                 </DialogFooter>
               </div>
             )}
