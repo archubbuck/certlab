@@ -12,7 +12,6 @@ import {
   Target,
   GraduationCap,
   Coins,
-  ShoppingCart,
 } from 'lucide-react';
 import { cn, getInitials, getUserDisplayName } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
