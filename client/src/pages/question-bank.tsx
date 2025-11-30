@@ -589,7 +589,7 @@ export default function QuestionBankPage() {
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg shrink-0">
+              <div className="p-2 bg-blue-100 rounded-lg shrink-0" aria-hidden="true">
                 <HelpCircle className="h-6 w-6 text-blue-600" />
               </div>
               <div className="min-w-0">
@@ -742,7 +742,9 @@ export default function QuestionBankPage() {
                   <CardContent className="p-4">
                     <div className="space-y-3">
                       {/* Question text */}
-                      <p className="text-sm font-medium line-clamp-2">{question.text}</p>
+                      <p className="text-sm font-medium line-clamp-2" title={question.text}>
+                        {question.text}
+                      </p>
 
                       {/* Category and Difficulty badges */}
                       <div className="flex flex-wrap items-center gap-2">
@@ -786,7 +788,12 @@ export default function QuestionBankPage() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-destructive">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive"
+                              aria-label="Delete question"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
