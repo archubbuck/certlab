@@ -1219,7 +1219,7 @@ class ClientStorage implements IClientStorage {
         rollbackSucceeded = false;
         console.error(
           `Critical: Failed to rollback purchase ${purchaseId} after token deduction failure. ` +
-            `Manual intervention required: purchase record exists but tokens were not deducted.`
+            `Manual intervention required: purchase record exists but token balance was not updated.`
         );
       }
 
@@ -1227,7 +1227,7 @@ class ClientStorage implements IClientStorage {
         success: false,
         newBalance: currentBalance,
         message: rollbackSucceeded
-          ? 'Failed to update token balance. Please try again.'
+          ? 'Purchase failed due to a system error. Please try again.'
           : 'A transaction error occurred. Please contact support if the issue persists.',
         requiresIntervention: !rollbackSucceeded,
       };
