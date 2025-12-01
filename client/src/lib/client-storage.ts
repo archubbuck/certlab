@@ -1146,6 +1146,7 @@ class ClientStorage implements IClientStorage {
     purchase?: MarketplacePurchase;
     newBalance: number;
     message?: string;
+    requiresIntervention?: boolean;
   }> {
     // Get user to validate and get current balance
     const user = await this.getUser(userId);
@@ -1210,18 +1211,25 @@ class ClientStorage implements IClientStorage {
       await this.updateUser(userId, { tokenBalance: newBalance });
     } catch (error) {
       // Token deduction failed, rollback the purchase
+      let rollbackSucceeded = true;
       try {
         await indexedDBService.delete(STORES.marketplacePurchases, purchaseId);
       } catch {
         // Rollback failed - log for manual intervention
+        rollbackSucceeded = false;
         console.error(
-          `Critical: Failed to rollback purchase ${purchaseId} after token deduction failure`
+          `Critical: Failed to rollback purchase ${purchaseId} after token deduction failure. ` +
+            `Manual intervention required: purchase record exists but tokens were not deducted.`
         );
       }
+
       return {
         success: false,
         newBalance: currentBalance,
-        message: 'Failed to update token balance. Please try again.',
+        message: rollbackSucceeded
+          ? 'Failed to update token balance. Please try again.'
+          : 'A transaction error occurred. Please contact support if the issue persists.',
+        requiresIntervention: !rollbackSucceeded,
       };
     }
 

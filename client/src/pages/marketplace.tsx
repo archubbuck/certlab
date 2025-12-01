@@ -50,60 +50,6 @@ interface StudyMaterial {
 }
 
 // ============================================================================
-// Study Materials Data
-// ============================================================================
-
-/**
- * Available study materials for the marketplace.
- * TODO: This data should eventually come from IndexedDB storage via clientStorage,
- * following the pattern in study-notes.tsx and dashboard.tsx
- */
-const STUDY_MATERIALS: StudyMaterial[] = [
-  {
-    id: 'cissp-questions-500',
-    name: 'CISSP Question Pack',
-    type: 'CISSP Questions',
-    tokens: 500,
-    description:
-      'Comprehensive question bank with 500 practice questions covering all CISSP domains.',
-    featured: true,
-  },
-  { id: 'cism-questions-500', name: 'CISM Question Pack', type: 'CISM Questions', tokens: 500 },
-  {
-    id: 'security-plus-400',
-    name: 'Security+ Question Pack',
-    type: 'Security+ Questions',
-    tokens: 400,
-  },
-  { id: 'cissp-study-guide', name: 'CISSP Study Guide', type: 'CISSP Study Guide', tokens: 200 },
-  { id: 'cism-flashcards', name: 'CISM Flashcards', type: 'CISM Flashcards', tokens: 150 },
-  {
-    id: 'cism-questions-400',
-    name: 'CISM Question Pack (Basic)',
-    type: 'CISM Questions',
-    tokens: 400,
-  },
-  {
-    id: 'security-plus-200',
-    name: 'Security+ Starter Pack',
-    type: 'Security+ Questions',
-    tokens: 200,
-  },
-  {
-    id: 'cissp-flashcards',
-    name: 'CISSP Flashcards',
-    type: 'CISSP Flashcards',
-    tokens: 175,
-  },
-];
-
-/** Featured material for prominent display */
-const FEATURED_MATERIAL = STUDY_MATERIALS.find((m) => m.featured);
-
-/** Non-featured materials for the grid display */
-const GRID_MATERIALS = STUDY_MATERIALS.filter((m) => !m.featured);
-
-// ============================================================================
 // Components
 // ============================================================================
 
@@ -469,12 +415,15 @@ export default function Marketplace() {
     if (!currentUser?.id || !selectedMaterial) return;
 
     const tokensNeeded = selectedMaterial.tokens - tokenBalance;
-    const amountToAdd = Math.max(tokensNeeded, 50); // Add at least 50 tokens
+    const amountToAdd = Math.max(tokensNeeded, MIN_TOKENS_TO_ADD);
 
     try {
       await clientStorage.addTokens(currentUser.id, amountToAdd);
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.tokenBalance(currentUser.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user() });
+      // Wait for query invalidation to complete before showing purchase dialog
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.user.tokenBalance(currentUser.id) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.auth.user() }),
+      ]);
 
       toast({
         title: 'Tokens Added',
@@ -684,7 +633,7 @@ export default function Marketplace() {
               <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg">
                 <span>Your balance after purchase:</span>
                 <span className="font-semibold">
-                  {tokenBalance - (selectedMaterial?.tokens || 0)} tokens
+                  {Math.max(0, tokenBalance - (selectedMaterial?.tokens || 0))} tokens
                 </span>
               </div>
             </AlertDialogDescription>
