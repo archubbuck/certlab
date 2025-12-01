@@ -63,6 +63,7 @@
     "drizzle-orm": "^0.44.7",
     "drizzle-zod": "^0.7.0",
     "embla-carousel-react": "^8.6.0",
+    "firebase": "^12.6.0",
     "framer-motion": "^12.23.24",
     "input-otp": "^1.4.2",
     "js-yaml": "^4.1.0",
@@ -85,6 +86,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/vite": "^4.1.17",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -109,7 +111,6 @@
     "postcss": "^8.4.47",
     "prettier": "^3.7.1",
     "tailwindcss": "^4.1.17",
-    "@tailwindcss/vite": "^4.1.17",
     "tsx": "^4.19.1",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.48.0",

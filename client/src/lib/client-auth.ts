@@ -1,7 +1,7 @@
 /**
  * Client-side authentication system
  * Uses browser storage for authentication state
- * 
+ *
  * Security notes for client-side password hashing:
  * - Uses PBKDF2 with 100,000 iterations via Web Crypto API
  * - Generates a unique 128-bit salt for each password using crypto.getRandomValues()
@@ -17,6 +17,13 @@ import { clientStorage } from './client-storage';
 import type { User } from '@shared/schema';
 import { indexedDBService, STORES } from './indexeddb';
 import { AuthError, AuthErrorCode, logError, isStorageError } from './errors';
+import {
+  initializeFirebase,
+  isFirebaseConfigured,
+  signInWithGoogle as firebaseSignInWithGoogle,
+  signOutFromGoogle,
+  type FirebaseUser,
+} from './firebase';
 
 // Session timeout for password-less accounts (24 hours in milliseconds)
 const PASSWORDLESS_SESSION_TIMEOUT_MS = 24 * 60 * 60 * 1000;
@@ -49,7 +56,9 @@ function generateSalt(): Uint8Array {
  * Converts Uint8Array to hex string
  */
 function arrayToHex(array: Uint8Array): string {
-  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(array)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 /**
@@ -58,26 +67,26 @@ function arrayToHex(array: Uint8Array): string {
 function hexToArray(hex: string): Uint8Array {
   const matches = hex.match(/.{1,2}/g);
   if (!matches) return new Uint8Array(0);
-  return new Uint8Array(matches.map(byte => parseInt(byte, 16)));
+  return new Uint8Array(matches.map((byte) => parseInt(byte, 16)));
 }
 
 /**
  * Hash password using PBKDF2 with the provided salt and iterations
  * Returns the hash as a hex string
  */
-async function pbkdf2Hash(password: string, salt: Uint8Array, iterations: number = PBKDF2_ITERATIONS): Promise<string> {
+async function pbkdf2Hash(
+  password: string,
+  salt: Uint8Array,
+  iterations: number = PBKDF2_ITERATIONS
+): Promise<string> {
   const encoder = new TextEncoder();
   const passwordBuffer = encoder.encode(password);
-  
+
   // Import password as key material
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    passwordBuffer,
-    'PBKDF2',
-    false,
-    ['deriveBits']
-  );
-  
+  const keyMaterial = await crypto.subtle.importKey('raw', passwordBuffer, 'PBKDF2', false, [
+    'deriveBits',
+  ]);
+
   // Derive bits using PBKDF2
   // Note: Create a standalone ArrayBuffer from the Uint8Array to satisfy
   // TypeScript 5.9+ stricter typing (Uint8Array.buffer is ArrayBufferLike, not ArrayBuffer)
@@ -92,7 +101,7 @@ async function pbkdf2Hash(password: string, salt: Uint8Array, iterations: number
     keyMaterial,
     HASH_LENGTH * 8 // length in bits
   );
-  
+
   return arrayToHex(new Uint8Array(derivedBits));
 }
 
@@ -128,42 +137,45 @@ async function hashPassword(password: string): Promise<string> {
  * Supports both legacy SHA-256 hashes and new PBKDF2 hashes
  * Uses constant-time comparison to prevent timing attacks
  */
-async function verifyPassword(password: string, storedHash: string): Promise<{ valid: boolean; needsRehash: boolean }> {
+async function verifyPassword(
+  password: string,
+  storedHash: string
+): Promise<{ valid: boolean; needsRehash: boolean }> {
   // Check if this is a PBKDF2 hash (format: "pbkdf2:iterations:salt:hash")
   if (storedHash.startsWith('pbkdf2:')) {
     const parts = storedHash.split(':');
     if (parts.length !== 4) {
       return { valid: false, needsRehash: false };
     }
-    
+
     const [, iterationsStr, saltHex, expectedHash] = parts;
     const iterations = parseInt(iterationsStr, 10);
-    
+
     // Validate iterations is a positive integer within reasonable bounds
     // Minimum 1000 iterations, maximum 10 million (prevents DoS)
     if (isNaN(iterations) || iterations < 1000 || iterations > 10000000) {
       return { valid: false, needsRehash: false };
     }
-    
+
     // Validate salt length (should be 16 bytes = 32 hex characters) and format
     if (saltHex.length !== SALT_LENGTH * 2 || !/^[0-9a-f]+$/i.test(saltHex)) {
       return { valid: false, needsRehash: false };
     }
-    
+
     const salt = hexToArray(saltHex);
-    
+
     // Use the shared pbkdf2Hash function with stored iterations
     const computedHash = await pbkdf2Hash(password, salt, iterations);
-    
+
     // Use constant-time comparison to prevent timing attacks
     const valid = constantTimeCompare(computedHash, expectedHash);
-    
+
     // Check if we need to rehash (e.g., if iterations have increased)
     const needsRehash = valid && iterations < PBKDF2_ITERATIONS;
-    
+
     return { valid, needsRehash };
   }
-  
+
   // Legacy SHA-256 hash (64 character hex string)
   // These need to be migrated to PBKDF2
   if (storedHash.length === 64 && /^[0-9a-f]+$/.test(storedHash)) {
@@ -171,14 +183,14 @@ async function verifyPassword(password: string, storedHash: string): Promise<{ v
     const data = encoder.encode(password);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
+    const computedHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
     // Use constant-time comparison to prevent timing attacks
     const valid = constantTimeCompare(computedHash, storedHash);
     // Legacy hashes always need rehashing to PBKDF2
     return { valid, needsRehash: valid };
   }
-  
+
   // Unknown hash format
   return { valid: false, needsRehash: false };
 }
@@ -272,7 +284,12 @@ class ClientAuth {
     return true;
   }
 
-  async register(email: string, password: string, firstName?: string, lastName?: string): Promise<AuthResponse> {
+  async register(
+    email: string,
+    password: string,
+    firstName?: string,
+    lastName?: string
+  ): Promise<AuthResponse> {
     try {
       // Validate email format
       if (!EMAIL_REGEX.test(email)) {
@@ -309,7 +326,7 @@ class ClientAuth {
 
       // Set as current user
       await clientStorage.setCurrentUserId(user.id);
-      
+
       // Set session timestamp
       await this.setSessionTimestamp(isPasswordless);
 
@@ -325,12 +342,12 @@ class ClientAuth {
       return { success: true, user: sanitizedUser };
     } catch (error) {
       logError('register', error, { email, hasPassword: !!password });
-      
+
       if (isStorageError(error)) {
         const authError = new AuthError(AuthErrorCode.STORAGE_ERROR);
         return { success: false, message: authError.message, errorCode: authError.code };
       }
-      
+
       const authError = new AuthError(AuthErrorCode.REGISTRATION_FAILED);
       return { success: false, message: authError.message, errorCode: authError.code };
     }
@@ -353,7 +370,7 @@ class ClientAuth {
       if (!user.passwordHash) {
         // Set as current user
         await clientStorage.setCurrentUserId(user.id);
-        
+
         // Set session timestamp for password-less account
         await this.setSessionTimestamp(true);
 
@@ -386,7 +403,7 @@ class ClientAuth {
 
       // Set as current user
       await clientStorage.setCurrentUserId(user.id);
-      
+
       // Set session timestamp for password-protected account
       await this.setSessionTimestamp(false);
 
@@ -402,12 +419,12 @@ class ClientAuth {
       return { success: true, user: sanitizedUser };
     } catch (error) {
       logError('login', error, { email });
-      
+
       if (isStorageError(error)) {
         const authError = new AuthError(AuthErrorCode.STORAGE_ERROR);
         return { success: false, message: authError.message, errorCode: authError.code };
       }
-      
+
       const authError = new AuthError(AuthErrorCode.LOGIN_FAILED);
       return { success: false, message: authError.message, errorCode: authError.code };
     }
@@ -419,6 +436,8 @@ class ClientAuth {
       logSecurityEvent('LOGOUT', { userId });
       await clientStorage.clearCurrentUser();
       await this.clearSessionInfo();
+      // Also sign out from Google if applicable
+      await this.signOutFromGoogle();
       return { success: true };
     } catch (error) {
       logError('logout', error);
@@ -485,12 +504,12 @@ class ClientAuth {
       return { success: true, user: sanitizedUser };
     } catch (error) {
       logError('updateProfile', error, { updates: Object.keys(updates) });
-      
+
       if (isStorageError(error)) {
         const authError = new AuthError(AuthErrorCode.STORAGE_ERROR);
         return { success: false, message: authError.message, errorCode: authError.code };
       }
-      
+
       const authError = new AuthError(AuthErrorCode.PROFILE_UPDATE_FAILED);
       return { success: false, message: authError.message, errorCode: authError.code };
     }
@@ -576,12 +595,12 @@ class ClientAuth {
       return { success: true, user: sanitizedUser };
     } catch (error) {
       logError('changePassword', error);
-      
+
       if (isStorageError(error)) {
         const authError = new AuthError(AuthErrorCode.STORAGE_ERROR);
         return { success: false, message: authError.message, errorCode: authError.code };
       }
-      
+
       const authError = new AuthError(AuthErrorCode.PASSWORD_CHANGE_FAILED);
       return { success: false, message: authError.message, errorCode: authError.code };
     }
@@ -590,9 +609,9 @@ class ClientAuth {
   async getAllUsers(): Promise<(Omit<User, 'passwordHash'> & { hasPassword: boolean })[]> {
     try {
       const users = await clientStorage.getAllUsers();
-      
+
       // Return users without password hashes, but include hasPassword flag
-      return users.map(user => {
+      return users.map((user) => {
         const { passwordHash, ...sanitizedUser } = user;
         return { ...sanitizedUser, hasPassword: !!passwordHash };
       });
@@ -638,7 +657,7 @@ class ClientAuth {
 
       // Set as current user
       await clientStorage.setCurrentUserId(user.id);
-      
+
       // Set session timestamp for password-less account
       await this.setSessionTimestamp(true);
 
@@ -650,14 +669,170 @@ class ClientAuth {
       return { success: true, user: sanitizedUser };
     } catch (error) {
       logError('loginPasswordless', error, { email });
-      
+
       if (isStorageError(error)) {
         const authError = new AuthError(AuthErrorCode.STORAGE_ERROR);
         return { success: false, message: authError.message, errorCode: authError.code };
       }
-      
+
       const authError = new AuthError(AuthErrorCode.LOGIN_FAILED);
       return { success: false, message: authError.message, errorCode: authError.code };
+    }
+  }
+
+  /**
+   * Check if Google authentication is available
+   * @returns true if Firebase is configured and Google auth is available
+   */
+  isGoogleAuthAvailable(): boolean {
+    return isFirebaseConfigured();
+  }
+
+  /**
+   * Initialize Firebase for Google authentication
+   * Should be called early in the app lifecycle
+   * @returns true if Firebase was successfully initialized
+   */
+  initializeGoogleAuth(): boolean {
+    return initializeFirebase();
+  }
+
+  /**
+   * Sign in or register with Google
+   * If the user already exists, logs them in
+   * If the user doesn't exist, creates a new account
+   * @returns AuthResponse with the user on success
+   */
+  async signInWithGoogle(): Promise<AuthResponse> {
+    try {
+      // Initialize Firebase if not already done
+      if (!this.initializeGoogleAuth()) {
+        const authError = new AuthError(AuthErrorCode.LOGIN_FAILED);
+        return {
+          success: false,
+          message: 'Google authentication is not configured. Please check Firebase settings.',
+          errorCode: authError.code,
+        };
+      }
+
+      // Sign in with Google via Firebase
+      const credential = await firebaseSignInWithGoogle();
+      const firebaseUser: FirebaseUser = credential.user;
+
+      if (!firebaseUser.email) {
+        const authError = new AuthError(AuthErrorCode.LOGIN_FAILED);
+        return {
+          success: false,
+          message: 'Google account does not have an email address.',
+          errorCode: authError.code,
+        };
+      }
+
+      // Check if user already exists in our database
+      let user = await clientStorage.getUserByEmail(firebaseUser.email);
+
+      if (user) {
+        // User exists, update profile image if changed
+        if (firebaseUser.photoURL && user.profileImageUrl !== firebaseUser.photoURL) {
+          user = await clientStorage.updateUser(user.id, {
+            profileImageUrl: firebaseUser.photoURL,
+          });
+        }
+
+        // Log Google sign-in for existing user
+        logSecurityEvent('GOOGLE_LOGIN_SUCCESS', {
+          userId: user?.id,
+          email: firebaseUser.email,
+          isNewUser: false,
+        });
+      } else {
+        // Create new user with Google profile
+        const nameParts = (firebaseUser.displayName || '').split(' ');
+        const firstName = nameParts[0] || null;
+        const lastName = nameParts.slice(1).join(' ') || null;
+
+        user = await clientStorage.createUser({
+          email: firebaseUser.email,
+          passwordHash: null, // Google users don't have a password
+          firstName,
+          lastName,
+          profileImageUrl: firebaseUser.photoURL || null,
+          role: 'user',
+          tenantId: 1,
+        });
+
+        // Log Google registration
+        logSecurityEvent('GOOGLE_REGISTRATION_SUCCESS', {
+          userId: user.id,
+          email: firebaseUser.email,
+          isNewUser: true,
+        });
+      }
+
+      if (!user) {
+        const authError = new AuthError(AuthErrorCode.LOGIN_FAILED);
+        return {
+          success: false,
+          message: 'Failed to create or retrieve user account.',
+          errorCode: authError.code,
+        };
+      }
+
+      // Set as current user
+      await clientStorage.setCurrentUserId(user.id);
+
+      // Set session timestamp (Google accounts are treated similar to password-less)
+      await this.setSessionTimestamp(true);
+
+      // Return without password hash
+      const { passwordHash: _, ...sanitizedUser } = user;
+      return { success: true, user: sanitizedUser };
+    } catch (error) {
+      logError('signInWithGoogle', error);
+
+      // Handle specific Firebase errors
+      if (error instanceof Error) {
+        const errorMessage = error.message.toLowerCase();
+        if (errorMessage.includes('popup-closed-by-user') || errorMessage.includes('cancelled')) {
+          return {
+            success: false,
+            message: 'Google sign-in was cancelled.',
+            errorCode: AuthErrorCode.LOGIN_FAILED,
+          };
+        }
+        if (errorMessage.includes('network')) {
+          return {
+            success: false,
+            message: 'Network error. Please check your connection and try again.',
+            errorCode: AuthErrorCode.LOGIN_FAILED,
+          };
+        }
+      }
+
+      if (isStorageError(error)) {
+        const authError = new AuthError(AuthErrorCode.STORAGE_ERROR);
+        return { success: false, message: authError.message, errorCode: authError.code };
+      }
+
+      const authError = new AuthError(AuthErrorCode.LOGIN_FAILED);
+      return {
+        success: false,
+        message: 'Failed to sign in with Google. Please try again.',
+        errorCode: authError.code,
+      };
+    }
+  }
+
+  /**
+   * Sign out from Google (Firebase) in addition to local logout
+   * This should be called when a Google-authenticated user logs out
+   */
+  async signOutFromGoogle(): Promise<void> {
+    try {
+      await signOutFromGoogle();
+    } catch (error) {
+      logError('signOutFromGoogle', error);
+      // Don't throw - local logout should still proceed
     }
   }
 }
