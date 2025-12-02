@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,8 @@ import { useAuth } from '@/lib/auth-provider';
 import { clientStorage } from '@/lib/client-storage';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, FileText, Trophy, AlertCircle, CheckCircle } from 'lucide-react';
+import { useLearningPreferences } from '@/hooks/useLearningPreferences';
+import { Clock, FileText, Trophy, AlertCircle, CheckCircle, Star, Target } from 'lucide-react';
 import type { Category, PracticeTest, PracticeTestAttempt, Quiz } from '@shared/schema';
 
 interface PracticeTestWithStats extends PracticeTest {
@@ -77,9 +78,27 @@ export default function PracticeTestMode() {
   const [isCreating, setIsCreating] = useState(false);
   const { user: currentUser } = useAuth();
 
+  // Get user's learning preferences
+  const { filterCategoriesByGoals, isCategoryInGoals, hasCertificationGoals, certificationGoals } =
+    useLearningPreferences();
+
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: queryKeys.categories.all(),
   });
+
+  // Prioritize categories based on user's certification goals
+  // Categories matching goals appear first with a visual indicator
+  const sortedCategories = useMemo(() => {
+    if (!hasCertificationGoals) return categories;
+
+    return [...categories].sort((a, b) => {
+      const aInGoals = isCategoryInGoals(a);
+      const bInGoals = isCategoryInGoals(b);
+      if (aInGoals && !bInGoals) return -1;
+      if (!aInGoals && bInGoals) return 1;
+      return 0;
+    });
+  }, [categories, hasCertificationGoals, isCategoryInGoals]);
 
   // Fetch practice tests from API
   const { data: practiceTests = [], isLoading: isLoadingTests } = useQuery<PracticeTestWithStats[]>(
@@ -231,14 +250,32 @@ export default function PracticeTestMode() {
           <div className="flex gap-3">
             <Select value={selectedTest} onValueChange={setSelectedTest}>
               <SelectTrigger className="flex-1 bg-white dark:bg-gray-900 border-blue-200 dark:border-blue-700 focus:ring-blue-500">
-                <SelectValue placeholder="Choose a certification" />
+                <SelectValue
+                  placeholder={
+                    hasCertificationGoals ? 'Your certifications' : 'Choose a certification'
+                  }
+                />
               </SelectTrigger>
               <SelectContent className="z-50">
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id.toString()}>
-                    {category.name}
-                  </SelectItem>
-                ))}
+                {hasCertificationGoals && (
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-b mb-1">
+                    <Target className="inline-block h-3 w-3 mr-1" />
+                    Based on your goals
+                  </div>
+                )}
+                {sortedCategories.map((category) => {
+                  const isRecommended = isCategoryInGoals(category);
+                  return (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      <span className="flex items-center gap-2">
+                        {category.name}
+                        {isRecommended && hasCertificationGoals && (
+                          <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                        )}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Button

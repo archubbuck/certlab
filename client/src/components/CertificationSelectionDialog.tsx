@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Dialog,
@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { queryKeys } from '@/lib/queryClient';
-import { PlayCircle, BookOpen } from 'lucide-react';
+import { useLearningPreferences } from '@/hooks/useLearningPreferences';
+import { PlayCircle, BookOpen, Star, Target } from 'lucide-react';
 import type { Category } from '@shared/schema';
 
 const LAST_CERTIFICATION_KEY = 'certlab_last_certification';
@@ -32,11 +33,27 @@ export function CertificationSelectionDialog({
 }: CertificationSelectionDialogProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
 
+  // Get user's learning preferences
+  const { isCategoryInGoals, hasCertificationGoals } = useLearningPreferences();
+
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: queryKeys.categories.all(),
   });
 
-  // Load last selected certification from localStorage
+  // Sort categories: recommended (matching goals) first
+  const sortedCategories = useMemo(() => {
+    if (!hasCertificationGoals) return categories;
+
+    return [...categories].sort((a, b) => {
+      const aInGoals = isCategoryInGoals(a);
+      const bInGoals = isCategoryInGoals(b);
+      if (aInGoals && !bInGoals) return -1;
+      if (!aInGoals && bInGoals) return 1;
+      return 0;
+    });
+  }, [categories, hasCertificationGoals, isCategoryInGoals]);
+
+  // Load last selected certification from localStorage, or default to first goal-aligned category
   useEffect(() => {
     if (open && categories.length > 0) {
       try {
@@ -46,6 +63,9 @@ export function CertificationSelectionDialog({
           categories.some((c) => c.id.toString() === lastCertificationId)
         ) {
           setSelectedCategoryId(lastCertificationId);
+        } else if (hasCertificationGoals && sortedCategories.length > 0) {
+          // Default to first recommended category based on goals
+          setSelectedCategoryId(sortedCategories[0].id.toString());
         } else {
           // Default to first category if no last selection or if the last selection is no longer valid
           setSelectedCategoryId(categories[0].id.toString());
@@ -55,7 +75,7 @@ export function CertificationSelectionDialog({
         setSelectedCategoryId(categories[0].id.toString());
       }
     }
-  }, [open, categories]);
+  }, [open, categories, sortedCategories, hasCertificationGoals]);
 
   const handleStartQuiz = () => {
     if (!selectedCategoryId) return;
@@ -88,13 +108,17 @@ export function CertificationSelectionDialog({
             Select Certification
           </DialogTitle>
           <DialogDescription>
-            Choose which certification you want to practice. Your selection will be remembered for
-            future sessions.
+            {hasCertificationGoals
+              ? 'Certifications matching your goals are highlighted. Your selection will be remembered.'
+              : 'Choose which certification you want to practice. Your selection will be remembered for future sessions.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
-          <Label className="text-sm font-medium mb-3 block">Available Certifications</Label>
+          <Label className="text-sm font-medium mb-3 block flex items-center gap-2">
+            {hasCertificationGoals && <Target className="h-4 w-4 text-primary" />}
+            {hasCertificationGoals ? 'Recommended for You' : 'Available Certifications'}
+          </Label>
 
           {categories.length === 0 ? (
             <div className="text-center py-4 text-muted-foreground">
@@ -107,30 +131,45 @@ export function CertificationSelectionDialog({
               onValueChange={setSelectedCategoryId}
               className="space-y-3"
             >
-              {categories.map((category) => (
-                <div
-                  key={category.id}
-                  className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedCategoryId === category.id.toString()
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                  }`}
-                >
-                  <RadioGroupItem
-                    value={category.id.toString()}
-                    id={`cert-${category.id}`}
-                    className="shrink-0"
-                  />
-                  <Label htmlFor={`cert-${category.id}`} className="flex-1 cursor-pointer">
-                    <div className="font-medium">{category.name}</div>
-                    {category.description && (
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {category.description}
+              {sortedCategories.map((category) => {
+                const isRecommended = isCategoryInGoals(category);
+                return (
+                  <div
+                    key={category.id}
+                    className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedCategoryId === category.id.toString()
+                        ? 'border-primary bg-primary/5'
+                        : isRecommended && hasCertificationGoals
+                          ? 'border-yellow-300 dark:border-yellow-600 bg-yellow-50/50 dark:bg-yellow-900/20 hover:border-primary/50'
+                          : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                    }`}
+                  >
+                    <RadioGroupItem
+                      value={category.id.toString()}
+                      id={`cert-${category.id}`}
+                      className="shrink-0"
+                    />
+                    <Label htmlFor={`cert-${category.id}`} className="flex-1 cursor-pointer">
+                      <div className="font-medium flex items-center gap-2">
+                        {category.name}
+                        {isRecommended && hasCertificationGoals && (
+                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        )}
                       </div>
-                    )}
-                  </Label>
-                </div>
-              ))}
+                      {category.description && (
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {category.description}
+                        </div>
+                      )}
+                      {isRecommended && hasCertificationGoals && (
+                        <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-0.5">
+                          Matches your certification goals
+                        </div>
+                      )}
+                    </Label>
+                  </div>
+                );
+              })}
             </RadioGroup>
           )}
         </div>

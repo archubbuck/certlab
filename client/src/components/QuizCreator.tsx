@@ -1,30 +1,41 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { useAuth } from "@/lib/auth-provider";
-import { queryClient, queryKeys } from "@/lib/queryClient";
-import { clientStorage } from "@/lib/client-storage";
-import { useToast } from "@/hooks/use-toast";
-import { InsufficientTokensDialog } from "@/components/InsufficientTokensDialog";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Sparkles } from "lucide-react";
-import type { Category, Subcategory } from "@shared/schema";
+import { useState, useMemo, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/lib/auth-provider';
+import { queryClient, queryKeys } from '@/lib/queryClient';
+import { clientStorage } from '@/lib/client-storage';
+import { useToast } from '@/hooks/use-toast';
+import { useLearningPreferences } from '@/hooks/useLearningPreferences';
+import { InsufficientTokensDialog } from '@/components/InsufficientTokensDialog';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Star, Target } from 'lucide-react';
+import type { Category, Subcategory } from '@shared/schema';
 
 export default function QuizCreator() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  
+
+  // Get user's learning preferences
+  const { isCategoryInGoals, hasCertificationGoals, filterCategoriesByGoals } =
+    useLearningPreferences();
+
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
-  const [timeLimit, setTimeLimit] = useState("30");
+  const [timeLimit, setTimeLimit] = useState('30');
   const [showInsufficientTokensDialog, setShowInsufficientTokensDialog] = useState(false);
-  
+
   interface QuizCreationData {
     title: string;
     categoryIds: number[];
@@ -32,7 +43,7 @@ export default function QuizCreator() {
     questionCount: number;
     timeLimit?: number;
   }
-  
+
   const [pendingQuizData, setPendingQuizData] = useState<QuizCreationData | null>(null);
   const [requiredTokens, setRequiredTokens] = useState(0);
   const [currentTokenBalance, setCurrentTokenBalance] = useState(0);
@@ -41,6 +52,29 @@ export default function QuizCreator() {
     queryKey: queryKeys.categories.all(),
   });
 
+  // Sort categories to show recommended ones first
+  const sortedCategories = useMemo(() => {
+    if (!hasCertificationGoals) return categories;
+
+    return [...categories].sort((a, b) => {
+      const aInGoals = isCategoryInGoals(a);
+      const bInGoals = isCategoryInGoals(b);
+      if (aInGoals && !bInGoals) return -1;
+      if (!aInGoals && bInGoals) return 1;
+      return 0;
+    });
+  }, [categories, hasCertificationGoals, isCategoryInGoals]);
+
+  // Auto-select recommended categories on first load
+  useEffect(() => {
+    if (hasCertificationGoals && categories.length > 0 && selectedCategories.length === 0) {
+      const recommendedCategories = filterCategoriesByGoals(categories);
+      if (recommendedCategories.length > 0) {
+        setSelectedCategories(recommendedCategories.map((c) => c.id));
+      }
+    }
+  }, [hasCertificationGoals, categories, filterCategoriesByGoals, selectedCategories.length]);
+
   const { data: subcategories = [] } = useQuery<Subcategory[]>({
     queryKey: queryKeys.subcategories.all(),
     enabled: selectedCategories.length > 0,
@@ -48,13 +82,13 @@ export default function QuizCreator() {
 
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: any) => {
-      if (!currentUser?.id) throw new Error("Not authenticated");
-      
+      if (!currentUser?.id) throw new Error('Not authenticated');
+
       const tokenCost = clientStorage.calculateQuizTokenCost(quizData.questionCount);
-      
+
       // Check and consume tokens
       const tokenResult = await clientStorage.consumeTokens(currentUser.id, tokenCost);
-      
+
       if (!tokenResult.success) {
         // Get current balance and show dialog
         const balance = await clientStorage.getUserTokenBalance(currentUser.id);
@@ -62,39 +96,39 @@ export default function QuizCreator() {
         setRequiredTokens(tokenCost);
         setPendingQuizData(quizData);
         setShowInsufficientTokensDialog(true);
-        throw new Error("INSUFFICIENT_TOKENS"); // Special error to handle differently
+        throw new Error('INSUFFICIENT_TOKENS'); // Special error to handle differently
       }
-      
+
       // Create the quiz
       const quiz = await clientStorage.createQuiz({
         userId: currentUser.id,
         ...quizData,
       });
-      
+
       return { quiz, tokenResult, tokenCost };
     },
     onSuccess: ({ quiz, tokenResult, tokenCost }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.all(currentUser?.id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.user.tokenBalance(currentUser?.id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.user() });
-      
+
       toast({
-        title: "Quiz Created",
+        title: 'Quiz Created',
         description: `Used ${tokenCost} tokens. New balance: ${tokenResult.newBalance}`,
       });
-      
+
       setLocation(`/app/quiz/${quiz.id}`);
     },
     onError: (error: any) => {
       // Don't show error toast for insufficient tokens - dialog handles it
-      if (error?.message === "INSUFFICIENT_TOKENS") {
+      if (error?.message === 'INSUFFICIENT_TOKENS') {
         return;
       }
-      
+
       toast({
-        title: "Error",
-        description: error?.message || "Failed to create quiz. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: error?.message || 'Failed to create quiz. Please try again.',
+        variant: 'destructive',
       });
     },
   });
@@ -103,12 +137,12 @@ export default function QuizCreator() {
     if (checked) {
       setSelectedCategories([...selectedCategories, categoryId]);
     } else {
-      setSelectedCategories(selectedCategories.filter(id => id !== categoryId));
+      setSelectedCategories(selectedCategories.filter((id) => id !== categoryId));
       const categorySubcategories = subcategories
-        .filter(sub => sub.categoryId === categoryId)
-        .map(sub => sub.id);
+        .filter((sub) => sub.categoryId === categoryId)
+        .map((sub) => sub.id);
       setSelectedSubcategories(
-        selectedSubcategories.filter(id => !categorySubcategories.includes(id))
+        selectedSubcategories.filter((id) => !categorySubcategories.includes(id))
       );
     }
   };
@@ -117,35 +151,38 @@ export default function QuizCreator() {
     if (checked) {
       setSelectedSubcategories([...selectedSubcategories, subcategoryId]);
     } else {
-      setSelectedSubcategories(selectedSubcategories.filter(id => id !== subcategoryId));
+      setSelectedSubcategories(selectedSubcategories.filter((id) => id !== subcategoryId));
     }
   };
 
   const handleStartQuiz = () => {
     if (selectedCategories.length === 0) {
       toast({
-        title: "Error",
-        description: "Please select at least one category.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please select at least one category.',
+        variant: 'destructive',
       });
       return;
     }
 
     if (!currentUser) {
       toast({
-        title: "Error",
-        description: "Please log in to create a quiz.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please log in to create a quiz.',
+        variant: 'destructive',
       });
       return;
     }
 
     const quizData = {
-      title: `${categories.filter(c => selectedCategories.includes(c.id)).map(c => c.name).join(", ")} Learning Session`,
+      title: `${categories
+        .filter((c) => selectedCategories.includes(c.id))
+        .map((c) => c.name)
+        .join(', ')} Learning Session`,
       categoryIds: selectedCategories,
       subcategoryIds: selectedSubcategories.length > 0 ? selectedSubcategories : undefined,
       questionCount: 15,
-      timeLimit: timeLimit === "0" ? undefined : parseInt(timeLimit),
+      timeLimit: timeLimit === '0' ? undefined : parseInt(timeLimit),
     };
 
     createQuizMutation.mutate(quizData);
@@ -159,7 +196,7 @@ export default function QuizCreator() {
     }
   };
 
-  const filteredSubcategories = subcategories.filter(sub => 
+  const filteredSubcategories = subcategories.filter((sub) =>
     selectedCategories.includes(sub.categoryId)
   );
 
@@ -180,53 +217,86 @@ export default function QuizCreator() {
 
       <CardContent className="p-6">
         <div className="mb-6">
-          <Label className="text-sm font-medium text-gray-700 mb-3 block">
-            Select Certification Categories
+          <Label className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3 block flex items-center gap-2">
+            {hasCertificationGoals && <Target className="h-4 w-4 text-primary" />}
+            {hasCertificationGoals ? 'Recommended Categories' : 'Select Certification Categories'}
           </Label>
+          {hasCertificationGoals && (
+            <p className="text-xs text-muted-foreground mb-3">
+              Categories matching your certification goals are highlighted.
+            </p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {categories.map((category) => (
-              <div
-                key={category.id}
-                className="relative border rounded-lg p-4 cursor-pointer transition-all material-shadow-hover border-gray-200 hover:border-primary hover:bg-primary hover:bg-opacity-5"
-                onClick={() => handleCategoryToggle(category.id, !selectedCategories.includes(category.id))}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <i className={`${category.icon} text-primary`}></i>
-                    <div>
-                      <h3 className="font-medium text-gray-900">
-                        {category.name}
-                      </h3>
-                      <p className="text-xs text-gray-500">{category.description}</p>
+            {sortedCategories.map((category) => {
+              const isRecommended = isCategoryInGoals(category);
+              return (
+                <div
+                  key={category.id}
+                  className={`relative border rounded-lg p-4 cursor-pointer transition-all material-shadow-hover ${
+                    selectedCategories.includes(category.id)
+                      ? 'border-primary bg-primary/5'
+                      : isRecommended && hasCertificationGoals
+                        ? 'border-yellow-300 dark:border-yellow-600 bg-yellow-50/50 dark:bg-yellow-900/20 hover:border-primary'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary hover:bg-opacity-5'
+                  }`}
+                  onClick={() =>
+                    handleCategoryToggle(category.id, !selectedCategories.includes(category.id))
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <i className={`${category.icon} text-primary`}></i>
+                      <div>
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                          {category.name}
+                          {isRecommended && hasCertificationGoals && (
+                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                          )}
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {category.description}
+                        </p>
+                        {isRecommended && hasCertificationGoals && (
+                          <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-0.5">
+                            Matches your goals
+                          </p>
+                        )}
+                      </div>
                     </div>
+                    <Checkbox
+                      checked={selectedCategories.includes(category.id)}
+                      onCheckedChange={(checked) =>
+                        handleCategoryToggle(category.id, checked as boolean)
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                    />
                   </div>
-                  <Checkbox
-                    checked={selectedCategories.includes(category.id)}
-                    onCheckedChange={(checked) => handleCategoryToggle(category.id, checked as boolean)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {filteredSubcategories.length > 0 && (
           <div className="mb-6">
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">
+            <Label className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3 block">
               Select Subcategories (Optional)
             </Label>
-            <div className="space-y-2 max-h-48 overflow-y-auto bg-gray-50 rounded-lg p-3">
+            <div className="space-y-2 max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
               {filteredSubcategories.map((subcategory) => (
                 <label
                   key={subcategory.id}
-                  className="flex items-center space-x-3 cursor-pointer hover:bg-white rounded p-2 transition-colors"
+                  className="flex items-center space-x-3 cursor-pointer hover:bg-white dark:hover:bg-gray-700/50 rounded p-2 transition-colors"
                 >
                   <Checkbox
                     checked={selectedSubcategories.includes(subcategory.id)}
-                    onCheckedChange={(checked) => handleSubcategoryToggle(subcategory.id, checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      handleSubcategoryToggle(subcategory.id, checked as boolean)
+                    }
                   />
-                  <span className="text-sm text-gray-700">{subcategory.name}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {subcategory.name}
+                  </span>
                 </label>
               ))}
             </div>
@@ -264,10 +334,22 @@ export default function QuizCreator() {
           </div>
           <div className="bg-white dark:bg-gray-900/50 p-3 rounded border border-blue-100 dark:border-blue-800">
             <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
-              <li><i className="fas fa-check text-green-500 dark:text-green-400 mr-2"></i>Questions from your selected certifications</li>
-              <li><i className="fas fa-check text-green-500 dark:text-green-400 mr-2"></i>Immediate feedback with explanations</li>
-              <li><i className="fas fa-check text-green-500 dark:text-green-400 mr-2"></i>Progress tracking across all areas</li>
-              <li><i className="fas fa-check text-green-500 dark:text-green-400 mr-2"></i>Mastery score updates in real-time</li>
+              <li>
+                <i className="fas fa-check text-green-500 dark:text-green-400 mr-2"></i>Questions
+                from your selected certifications
+              </li>
+              <li>
+                <i className="fas fa-check text-green-500 dark:text-green-400 mr-2"></i>Immediate
+                feedback with explanations
+              </li>
+              <li>
+                <i className="fas fa-check text-green-500 dark:text-green-400 mr-2"></i>Progress
+                tracking across all areas
+              </li>
+              <li>
+                <i className="fas fa-check text-green-500 dark:text-green-400 mr-2"></i>Mastery
+                score updates in real-time
+              </li>
               <li>
                 <i className="fas fa-chart-line text-blue-500 dark:text-blue-400 mr-2"></i>
                 <span className="font-medium">15 questions per session</span>

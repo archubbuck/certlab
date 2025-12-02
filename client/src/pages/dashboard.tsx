@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-provider';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { clientStorage } from '@/lib/client-storage';
 import { useToast } from '@/hooks/use-toast';
+import { useLearningPreferences } from '@/hooks/useLearningPreferences';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TokenBalance } from '@/components/TokenBalance';
@@ -21,9 +22,7 @@ import {
   Calendar,
   History,
   ChartBar,
-  Crown,
-  Sparkles,
-  ArrowRight,
+  CheckCircle,
 } from 'lucide-react';
 import type { UserStats, Quiz, Category } from '@shared/schema';
 
@@ -38,6 +37,15 @@ export default function Dashboard() {
   const [currentTokenBalance, setCurrentTokenBalance] = useState(0);
   const [pendingCategoryId, setPendingCategoryId] = useState<number | null>(null);
   const [pendingCategoryName, setPendingCategoryName] = useState<string>('');
+
+  // Get user's learning preferences for personalized content
+  const {
+    isTodayStudyDay,
+    hasCertificationGoals,
+    certificationGoals,
+    dailyStudyTimeMinutes,
+    hasStudyPreferences,
+  } = useLearningPreferences();
 
   // Get user stats
   const { data: stats } = useQuery<UserStats>({
@@ -241,8 +249,32 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 text-muted-foreground mb-2">
             <Calendar className="w-4 h-4" />
             <span>{getCurrentDateTime()}</span>
+            {hasStudyPreferences && isTodayStudyDay && (
+              <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                <CheckCircle className="w-3 h-3" />
+                Study Day
+              </span>
+            )}
           </div>
           <p className="text-lg text-muted-foreground italic">{motivationalMessage}</p>
+          {hasCertificationGoals && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="text-xs text-muted-foreground">Your goals:</span>
+              {certificationGoals.slice(0, 3).map((goal) => (
+                <span
+                  key={goal}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium"
+                >
+                  {goal}
+                </span>
+              ))}
+              {certificationGoals.length > 3 && (
+                <span className="text-xs text-muted-foreground">
+                  +{certificationGoals.length - 3} more
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Main Content Grid */}
