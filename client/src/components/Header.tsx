@@ -58,6 +58,10 @@ export default function Header() {
   });
 
   const handleSignOut = async () => {
+    // Navigate to home page BEFORE logout to prevent 404 flash
+    // This ensures we're already on the landing page when auth state changes
+    setLocation('/');
+
     try {
       await logout();
       toast({
@@ -69,9 +73,6 @@ export default function Header() {
         title: 'Signed out',
         description: 'You have been logged out of your account.',
       });
-    } finally {
-      // Navigate to home page after logout (client-side navigation, no page reload)
-      setLocation('/');
     }
   };
 
