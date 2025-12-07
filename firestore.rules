@@ -34,6 +34,9 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
+    // Note: Admin checks require a document read for each operation.
+    // In production, consider using Firebase Auth custom claims for better performance:
+    // https://firebase.google.com/docs/auth/admin/custom-claims
     function isAdmin() {
       return isAuthenticated() && 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';

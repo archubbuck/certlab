@@ -15,9 +15,17 @@
  * ## Sync Metadata
  *
  * Stored in IndexedDB settings:
- * - `lastSyncTimestamp`: Last successful sync timestamp
+ * - `lastSyncTimestamp`: Last successful sync timestamp (milliseconds since epoch)
  * - `syncStatus`: 'never' | 'in-progress' | 'completed' | 'error'
- * - `syncedItems`: Map of item IDs to sync timestamps
+ * - `syncedCollections`: List of collections that have been synced
+ *
+ * ## Migration Metadata Fields
+ *
+ * Each migrated document includes metadata fields:
+ * - `syncedFromLocal`: Boolean flag indicating this document was migrated from IndexedDB
+ * - `localSyncTimestamp`: Firestore Timestamp of when migration occurred
+ *
+ * These fields help track migration history and enable debugging.
  *
  * @module firestore-migration
  */
@@ -36,10 +44,18 @@ import type { User, Quiz, UserProgress, UserBadge, UserGameStats } from '@shared
 
 export type SyncStatus = 'never' | 'in-progress' | 'completed' | 'error';
 
+/**
+ * Sync metadata stored in IndexedDB
+ * Tracks synchronization status and history
+ */
 export interface SyncMetadata {
+  /** Last successful sync timestamp in milliseconds since epoch */
   lastSyncTimestamp: number;
+  /** Current synchronization status */
   syncStatus: SyncStatus;
+  /** List of collections that have been synced */
   syncedCollections: string[];
+  /** Error message if sync failed */
   errorMessage?: string;
 }
 

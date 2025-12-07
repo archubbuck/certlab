@@ -68,7 +68,7 @@ export function isFirestoreInitialized(): boolean {
  */
 export function getFirestoreInstance(): Firestore {
   if (!firestoreInstance) {
-    throw new Error('Firestore is not initialized. Call initializeFirestore() first.');
+    throw new Error('Firestore is not initialized. Call initializeFirestoreService() first.');
   }
   return firestoreInstance;
 }
