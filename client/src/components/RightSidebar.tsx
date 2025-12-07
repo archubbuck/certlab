@@ -92,11 +92,12 @@ function UserPanel() {
         description:
           'You have been logged out locally, but there was a problem completing the sign out process.',
       });
+    } finally {
+      // Always close panel and navigate after logout
+      // Note: Toast remains visible during navigation to home page
+      closePanel();
+      setLocation('/');
     }
-    // Always close panel and navigate after logout
-    // Note: Toast remains visible during navigation to home page
-    closePanel();
-    setLocation('/');
   };
 
   const handleNavigate = (path: string) => {
