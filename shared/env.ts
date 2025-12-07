@@ -138,11 +138,10 @@ export function validateServerEnv(): ServerEnv {
 /**
  * Gets the base path for the application.
  *
- * Priority:
- * 1. VITE_BASE_PATH environment variable if set
- * 2. '/' (root path) as default for Firebase Hosting
+ * Returns VITE_BASE_PATH environment variable if set, otherwise defaults to '/' (root path)
+ * for Firebase Hosting deployment. NODE_ENV does not affect the base path.
  *
- * @returns The base path for the application
+ * @returns The base path for the application (defaults to '/')
  */
 export function getBasePath(): string {
   const env = validateBuildEnv();
