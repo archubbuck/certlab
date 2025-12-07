@@ -60,6 +60,8 @@ export default function Header() {
   const handleSignOut = async () => {
     // Navigate to home page BEFORE logout to prevent 404 flash
     // This ensures we're already on the landing page when auth state changes
+    // Note: auth-provider's logout() always clears user state (setUser(null))
+    // regardless of storage operation success, so user is always logged out
     setLocation('/');
 
     try {
