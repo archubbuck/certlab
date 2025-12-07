@@ -24,6 +24,11 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  sendPasswordResetEmail,
+  sendEmailVerification,
   type Auth,
   type User as FirebaseUser,
   type UserCredential,
@@ -171,6 +176,136 @@ export async function signInWithGoogle(): Promise<UserCredential> {
 
       // For other errors, include the original message
       throw new Error(`Google sign-in failed: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Sign up with email and password
+ * @param email User's email address
+ * @param password User's password
+ * @param displayName Optional display name
+ * @returns UserCredential on success
+ * @throws Error if Firebase is not configured or sign-up fails
+ */
+export async function signUpWithEmail(
+  email: string,
+  password: string,
+  displayName?: string
+): Promise<UserCredential> {
+  if (!auth) {
+    throw new Error('Firebase is not initialized. Please set the required environment variables.');
+  }
+
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+
+    // Update display name if provided
+    if (displayName && result.user) {
+      await updateProfile(result.user, { displayName });
+    }
+
+    // Send email verification
+    if (result.user) {
+      await sendEmailVerification(result.user);
+    }
+
+    return result;
+  } catch (error) {
+    if (error instanceof Error) {
+      const errorCode = 'code' in error ? (error as { code: string }).code : undefined;
+
+      console.error('[Firebase] Email sign-up error:', {
+        code: errorCode,
+        message: error.message,
+      });
+
+      if (errorCode === 'auth/email-already-in-use') {
+        throw new Error('An account with this email already exists.');
+      }
+      if (errorCode === 'auth/invalid-email') {
+        throw new Error('Invalid email address.');
+      }
+      if (errorCode === 'auth/weak-password') {
+        throw new Error('Password is too weak. Please use at least 6 characters.');
+      }
+
+      throw new Error(`Sign-up failed: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Sign in with email and password
+ * @param email User's email address
+ * @param password User's password
+ * @returns UserCredential on success
+ * @throws Error if Firebase is not configured or sign-in fails
+ */
+export async function signInWithEmail(email: string, password: string): Promise<UserCredential> {
+  if (!auth) {
+    throw new Error('Firebase is not initialized. Please set the required environment variables.');
+  }
+
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result;
+  } catch (error) {
+    if (error instanceof Error) {
+      const errorCode = 'code' in error ? (error as { code: string }).code : undefined;
+
+      console.error('[Firebase] Email sign-in error:', {
+        code: errorCode,
+        message: error.message,
+      });
+
+      if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password') {
+        throw new Error('Invalid email or password.');
+      }
+      if (errorCode === 'auth/invalid-email') {
+        throw new Error('Invalid email address.');
+      }
+      if (errorCode === 'auth/user-disabled') {
+        throw new Error('This account has been disabled.');
+      }
+
+      throw new Error(`Sign-in failed: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Send password reset email
+ * @param email User's email address
+ * @throws Error if Firebase is not configured or operation fails
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+  if (!auth) {
+    throw new Error('Firebase is not initialized. Please set the required environment variables.');
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    if (error instanceof Error) {
+      const errorCode = 'code' in error ? (error as { code: string }).code : undefined;
+
+      console.error('[Firebase] Password reset error:', {
+        code: errorCode,
+        message: error.message,
+      });
+
+      if (errorCode === 'auth/user-not-found') {
+        throw new Error('No account found with this email address.');
+      }
+      if (errorCode === 'auth/invalid-email') {
+        throw new Error('Invalid email address.');
+      }
+
+      throw new Error(`Password reset failed: ${error.message}`);
     }
     throw error;
   }
