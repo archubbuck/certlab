@@ -365,5 +365,5 @@ After deployment, verify:
 
 - **README.md** - Architecture and features
 - **MIGRATION_STATUS.md** - Migration progress
-- **GitHub Pages Docs** - https://docs.github.com/en/pages
+- **Firebase Hosting Docs** - https://firebase.google.com/docs/hosting
 - **Vite Docs** - https://vitejs.dev/
