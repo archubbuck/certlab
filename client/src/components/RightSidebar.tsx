@@ -79,6 +79,11 @@ function UserPanel() {
   const { toast } = useToast();
 
   const handleSignOut = async () => {
+    // Close panel and navigate to home page BEFORE logout to prevent 404 flash
+    // This ensures we're already on the landing page when auth state changes
+    closePanel();
+    setLocation('/');
+
     try {
       await logout();
       toast({
@@ -92,11 +97,6 @@ function UserPanel() {
         description:
           'You have been logged out locally, but there was a problem completing the sign out process.',
       });
-    } finally {
-      // Always close panel and navigate after logout
-      // Note: Toast remains visible during navigation to home page
-      closePanel();
-      setLocation('/');
     }
   };
 
