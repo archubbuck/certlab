@@ -81,6 +81,8 @@ function UserPanel() {
   const handleSignOut = async () => {
     // Close panel and navigate to home page BEFORE logout to prevent 404 flash
     // This ensures we're already on the landing page when auth state changes
+    // Note: auth-provider's logout() always clears user state (setUser(null))
+    // regardless of storage operation success, so user is always logged out
     closePanel();
     setLocation('/');
 
