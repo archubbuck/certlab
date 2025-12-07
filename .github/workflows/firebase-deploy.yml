@@ -28,6 +28,10 @@ jobs:
       - name: Type Check
         run: npm run check
 
+      - name: Validate Firebase Config
+        run: npm run check:firebase
+        continue-on-error: true
+
       - name: Build
         run: npm run build:firebase
         env:
@@ -38,6 +42,10 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+
+      - name: Deploy Firestore Rules
+        run: npx firebase deploy --only firestore:rules,firestore:indexes --project ${{ secrets.FIREBASE_PROJECT_ID }} --token ${{ secrets.FIREBASE_TOKEN }}
+        continue-on-error: true
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0.10.0
