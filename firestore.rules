@@ -1,0 +1,145 @@
+rules_version = '2';
+
+/**
+ * Cloud Firestore Security Rules for CertLab
+ * 
+ * These rules implement per-user data isolation and ensure that users can only
+ * access their own data. All reads and writes require authentication.
+ * 
+ * Data Structure:
+ * /users/{userId} - User profile and settings
+ * /users/{userId}/quizzes/{quizId} - Quiz attempts
+ * /users/{userId}/progress/{progressId} - Learning progress
+ * /users/{userId}/badges/{badgeId} - Earned badges
+ * /users/{userId}/gameStats/{statId} - Game statistics
+ * /users/{userId}/challenges/{challengeId} - Challenge attempts
+ * /users/{userId}/practiceTests/{testId} - Practice test attempts
+ * /users/{userId}/studyNotes/{noteId} - Personal study notes
+ * /categories - Shared categories (read-only for users)
+ * /subcategories - Shared subcategories (read-only for users)
+ * /questions - Shared question bank (read-only for users)
+ * /badges - Badge definitions (read-only for users)
+ * /lectures - Study materials (read-only for users)
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Note: Admin checks require a document read for each operation.
+    // In production, consider using Firebase Auth custom claims for better performance:
+    // https://firebase.google.com/docs/auth/admin/custom-claims
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // User profile documents
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isOwner(userId);
+      
+      // Users can create their profile on first sign-up
+      allow create: if isOwner(userId) && 
+                      request.resource.data.keys().hasAll(['email', 'createdAt']) &&
+                      request.resource.data.email == request.auth.token.email;
+      
+      // Users can update their own profile (but not role or tenantId without admin)
+      allow update: if isOwner(userId) && 
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'tenantId']) || 
+                       isAdmin());
+      
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+    
+    // User's personal data collections (quizzes, progress, etc.)
+    match /users/{userId}/{collection}/{documentId} {
+      // Users can read/write their own data
+      allow read, write: if isOwner(userId);
+    }
+    
+    // User's nested collections (for subcollections)
+    match /users/{userId}/{collection}/{documentId}/{subcollection}/{subdocumentId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Shared read-only content (categories, questions, badges, lectures)
+    match /categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    match /subcategories/{subcategoryId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    match /questions/{questionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    match /badges/{badgeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    match /lectures/{lectureId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Study groups (collaborative feature)
+    match /studyGroups/{groupId} {
+      // Anyone authenticated can read study groups
+      allow read: if isAuthenticated();
+      
+      // Only group creator or admin can update
+      allow update, delete: if isAuthenticated() && 
+                              (resource.data.createdBy == request.auth.uid || isAdmin());
+      
+      // Any authenticated user can create a study group
+      allow create: if isAuthenticated() && 
+                      request.resource.data.createdBy == request.auth.uid;
+    }
+    
+    // Study group members
+    match /studyGroups/{groupId}/members/{memberId} {
+      // Group members can read membership
+      allow read: if isAuthenticated();
+      
+      // Users can join groups (create membership)
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid;
+      
+      // Users can leave groups (delete their own membership)
+      allow delete: if isAuthenticated() && 
+                      resource.data.userId == request.auth.uid;
+      
+      // Group creator or admin can manage members
+      allow update, delete: if isAuthenticated() && 
+                              (get(/databases/$(database)/documents/studyGroups/$(groupId)).data.createdBy == request.auth.uid || 
+                               isAdmin());
+    }
+    
+    // System settings (admin only)
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

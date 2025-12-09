@@ -4,10 +4,11 @@
  * Firebase Configuration Checker
  * 
  * This script helps verify that Firebase environment variables are properly configured.
- * Run this script to check if Google Sign-In will work in your deployment.
+ * Run this script to check if Firebase Authentication and Firestore will work in your deployment.
  * 
  * Usage:
  *   node scripts/check-firebase-config.js
+ *   npm run check:firebase
  * 
  * Or to check specific environment variables:
  *   VITE_FIREBASE_API_KEY=xxx VITE_FIREBASE_AUTH_DOMAIN=xxx ... node scripts/check-firebase-config.js
@@ -23,6 +24,11 @@ const optionalVars = [
   'VITE_FIREBASE_STORAGE_BUCKET',
   'VITE_FIREBASE_MESSAGING_SENDER_ID',
   'VITE_FIREBASE_APP_ID'
+];
+
+const featureFlags = [
+  'VITE_ENABLE_CLOUD_SYNC',
+  'VITE_USE_FIREBASE_EMULATOR'
 ];
 
 console.log('\n🔍 Checking Firebase Configuration...\n');
@@ -72,7 +78,7 @@ requiredVars.forEach(varName => {
 });
 
 // Check optional variables
-console.log('\n📋 Optional Variables (recommended):\n');
+console.log('\n📋 Optional Variables (recommended for Firestore):\n');
 optionalVars.forEach(varName => {
   const value = process.env[varName];
   if (!value || value.trim() === '') {
@@ -82,32 +88,44 @@ optionalVars.forEach(varName => {
   }
 });
 
+// Check feature flags
+console.log('\n🚩 Feature Flags:\n');
+featureFlags.forEach(varName => {
+  const value = process.env[varName];
+  const displayValue = value || 'not set (uses default)';
+  console.log(`ℹ️  ${varName}: ${displayValue}`);
+});
+
 // Summary
 console.log('\n' + '━'.repeat(60));
 console.log('\n📊 Summary:\n');
 
 if (hasErrors) {
   console.log('❌ Configuration is INCOMPLETE');
-  console.log('   Google Sign-In will NOT work.');
+  console.log('   Firebase Authentication and Firestore will NOT work.');
   console.log('\n💡 Next steps:');
   console.log('   1. Set the missing required environment variables');
-  console.log('   2. See GOOGLE_AUTH_SETUP.md for detailed instructions');
+  console.log('   2. See FIREBASE_SETUP.md for detailed instructions');
   console.log('   3. For GitHub Actions, add these as repository secrets');
+  console.log('   4. Deploy Firestore rules: npm run deploy:firestore:rules');
   process.exit(1);
 } else if (hasWarnings) {
   console.log('⚠️  Configuration is COMPLETE but has warnings');
-  console.log('   Google Sign-In might work, but check the warnings above.');
+  console.log('   Firebase might work, but check the warnings above.');
   console.log('\n💡 Recommended:');
   console.log('   - Review the warnings above');
   console.log('   - Verify values in Firebase Console');
-  console.log('   - See GOOGLE_AUTH_SETUP.md for guidance');
+  console.log('   - See FIREBASE_SETUP.md for complete setup');
+  console.log('   - Deploy Firestore rules: npm run deploy:firestore:rules');
   process.exit(0);
 } else {
   console.log('✅ Configuration is COMPLETE');
-  console.log('   Google Sign-In should work!');
+  console.log('   Firebase Authentication and Firestore should work!');
   console.log('\n💡 Additional checks:');
-  console.log('   1. Verify Google Sign-In is enabled in Firebase Console');
-  console.log('   2. Verify your domain is in authorized domains');
-  console.log('   3. See GOOGLE_AUTH_SETUP.md for more details');
+  console.log('   1. Create Firestore database in Firebase Console');
+  console.log('   2. Deploy Firestore rules: npm run deploy:firestore:rules');
+  console.log('   3. Enable Email/Password and Google sign-in methods');
+  console.log('   4. Add your domain to authorized domains');
+  console.log('   5. See FIREBASE_SETUP.md for complete instructions');
   process.exit(0);
 }
