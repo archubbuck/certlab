@@ -326,6 +326,7 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 |----------|-------------|
 | [FIREBASE_SETUP.md](FIREBASE_SETUP.md) | Firebase configuration for cloud sync |
 | [DYNATRACE_SETUP.md](DYNATRACE_SETUP.md) | Dynatrace observability and monitoring setup |
+| [DYNATRACE_EXAMPLES.md](DYNATRACE_EXAMPLES.md) | Practical examples of Dynatrace integration |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System design, data flow, and technical decisions |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute, code style, and PR process |
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Detailed deployment instructions |

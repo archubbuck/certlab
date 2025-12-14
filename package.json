@@ -26,6 +26,7 @@
     "deploy:all": "npm run build:firebase && firebase deploy",
     "emulators:start": "firebase emulators:start",
     "emulators:exec": "firebase emulators:exec",
+    "dynatrace:snippet": "node scripts/generate-dynatrace-snippet.js",
     "prepare": "husky"
   },
   "lint-staged": {
