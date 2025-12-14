@@ -1,14 +1,15 @@
 /**
  * Client-side storage service
  *
- * Implements the IClientStorage interface using IndexedDB as the storage backend.
- * This follows the adapter pattern defined in the shared storage-interface.ts,
- * allowing the client to use the same data access patterns as the server
- * while using browser-native storage instead of PostgreSQL.
+ * Implements the IClientStorage interface using IndexedDB as a local cache.
+ * This follows the adapter pattern defined in the shared storage-interface.ts.
+ *
+ * Note: This is currently used as the primary storage layer. Future versions
+ * will integrate with Firebase/Firestore as the backend with IndexedDB as cache.
  *
  * ## Architecture
  *
- * This service acts as the primary data access layer for the client-side
+ * This service acts as the data access layer for the client-side
  * application, providing:
  *
  * - CRUD operations for all data entities (users, quizzes, categories, etc.)

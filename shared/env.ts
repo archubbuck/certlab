@@ -35,17 +35,22 @@ export const buildEnvSchema = z.object({
 });
 
 /**
+ * @deprecated CertLab now uses Firebase/Firestore exclusively as its backend.
+ * These variables are maintained for backward compatibility only.
+ *
  * Server/script environment variables schema.
- * These are used by server-side scripts like import scripts.
+ * These were used by legacy server-side scripts.
  */
 export const serverEnvSchema = z.object({
   /**
+   * @deprecated No longer used. Firebase Auth handles session management.
    * Session secret for secure session management.
    * Optional - only needed for server-side session handling.
    */
   SESSION_SECRET: z.string().optional(),
 
   /**
+   * @deprecated No longer used. CertLab uses Firebase/Firestore as backend.
    * Database connection string.
    * Optional - only needed for database operations in server scripts.
    * Use requireDatabaseUrl() for scripts that require database access.
@@ -114,6 +119,9 @@ export function validateBuildEnv(): BuildEnv {
 }
 
 /**
+ * @deprecated CertLab now uses Firebase/Firestore exclusively as its backend.
+ * This function is maintained for backward compatibility only.
+ *
  * Validates and returns server environment variables.
  * Used in server scripts and runtime configuration.
  *
@@ -154,6 +162,9 @@ export function getBasePath(): string {
 }
 
 /**
+ * @deprecated CertLab now uses Firebase/Firestore exclusively as its backend.
+ * This function is maintained for backward compatibility only.
+ *
  * Validates that required database environment is present.
  * Throws a descriptive error if DATABASE_URL is missing or invalid.
  *
