@@ -76,12 +76,14 @@ certlab/
 │   │   ├── components/        # Reusable UI components
 │   │   ├── pages/             # Page components (routes)
 │   │   ├── lib/               # Core utilities and services
-│   │   │   ├── client-storage.ts    # IndexedDB storage layer
-│   │   │   ├── indexeddb.ts         # Low-level IndexedDB service
-│   │   │   ├── seed-data.ts         # Initial data seeding
-│   │   │   ├── auth-provider.tsx    # Authentication context
-│   │   │   ├── queryClient.ts       # TanStack Query setup
-│   │   │   └── theme-provider.tsx   # Theme management
+│   │   │   ├── firebase.ts           # Firebase initialization
+│   │   │   ├── firestore-service.ts  # Firestore operations
+│   │   │   ├── indexeddb.ts          # Local cache service
+│   │   │   ├── client-storage.ts     # Storage layer (transitional)
+│   │   │   ├── seed-data.ts          # Initial data seeding
+│   │   │   ├── auth-provider.tsx     # Firebase Auth context
+│   │   │   ├── queryClient.ts        # TanStack Query setup
+│   │   │   └── theme-provider.tsx    # Theme management
 │   │   ├── hooks/             # Custom React hooks
 │   │   ├── data/              # Static data files
 │   │   ├── test/              # Test setup and utilities
@@ -94,9 +96,12 @@ certlab/
 │   ├── schema.ts              # Data model definitions
 │   └── storage-interface.ts   # Storage API interface
 ├── scripts/                   # Utility scripts
+├── firebase.json              # Firebase Hosting configuration
+├── firestore.rules            # Firestore security rules
+├── firestore.indexes.json     # Firestore database indexes
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml         # GitHub Actions deployment
+│       └── firebase-deploy.yml  # Firebase deployment workflow
 ├── vite.config.ts             # Vite build configuration
 ├── vitest.config.ts           # Vitest test configuration
 ├── tailwind.config.ts         # Tailwind CSS configuration
