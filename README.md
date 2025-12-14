@@ -6,9 +6,9 @@ CertLab is a modern certification study platform with optional cloud sync. Study
 
 ## 🌟 Features
 
-- **Hybrid Storage**: Local IndexedDB cache with optional Firebase cloud sync
-- **Offline-First**: Works completely offline after initial load
-- **Cloud Backup**: Optional account creation for multi-device sync and backup
+- **Firebase Backend**: Google Firebase for cloud storage and authentication
+- **Offline-First**: Local IndexedDB cache for offline access
+- **Cloud Backup**: Multi-device sync and backup via Firebase/Firestore
 - **Firebase Authentication**: Secure sign-in with email/password or Google
 - **Adaptive Learning**: Quiz difficulty adapts to your performance
 - **Achievement System**: Earn badges and track your progress
@@ -92,61 +92,51 @@ npm test
 ### First Time Setup
 
 1. Open the app in your browser
-2. Choose your mode:
-   - **Local-Only**: Click "Get Started" (no account needed)
-   - **Cloud Sync**: Click "Sign Up" to create a Firebase account
+2. Click "Sign Up" to create a Firebase account
 3. Initial sample data (categories, questions, badges) will be automatically seeded
 4. Select your certification goals and start learning!
+5. Your data automatically syncs to Firebase and caches locally for offline access
 
-### Firebase Setup (Optional)
+### Firebase Setup (Required)
 
-For cloud sync and multi-device access, set up Firebase:
+CertLab uses Google Firebase as its backend. Set up Firebase to run the app:
 
 1. **Create Firebase Project**: Follow [FIREBASE_SETUP.md](FIREBASE_SETUP.md)
 2. **Configure Environment**: Copy `.env.example` to `.env.local` and add your Firebase credentials
 3. **Deploy Rules**: Run `npm run deploy:firestore` to deploy security rules
-4. **Start Using**: Sign up in the app to enable cloud sync
+4. **Start Using**: Sign up in the app to start learning
 
 See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for detailed instructions.
 
 ## 🏗️ Architecture
 
-### Hybrid Storage Model
+### Firebase Backend
 
-CertLab uses a hybrid architecture supporting both local-only and cloud-sync modes:
+CertLab uses Google Firebase as its exclusive backend:
 
 | Technology | Purpose |
 |------------|---------|
 | **React 18** | UI framework |
 | **TypeScript** | Type safety |
-| **IndexedDB** | Local cache and offline storage |
-| **Firebase/Firestore** | Optional cloud sync and backup |
-| **Firebase Auth** | Optional authentication (email/Google) |
+| **Firebase/Firestore** | Cloud database (backend) |
+| **Firebase Auth** | User authentication (email/Google) |
+| **IndexedDB** | Local cache for offline support |
 | **TanStack Query** | State management and caching |
 | **Vite** | Build tool |
 | **TailwindCSS** | Styling |
 
-### Storage Modes
-
-**Local-Only Mode** (default):
-- No account required
-- All data in browser's IndexedDB
-- Works completely offline
-- No cloud dependencies
-
-**Cloud Sync Mode** (optional):
-- Requires Firebase account
-- IndexedDB as local cache
-- Firestore as source of truth
-- Multi-device sync
-- Automatic cloud backup
-- Offline-first (queues changes when offline)
-
 ### Data Flow
 
 ```
-User Action → React Component → TanStack Query → Storage API → IndexedDB
+User Action → React Component → TanStack Query → Firebase/Firestore
+                                                      ↓
+                                                 IndexedDB Cache
 ```
+
+**Offline Support:**
+- Data cached locally in IndexedDB for offline access
+- Changes sync automatically when back online
+- Firestore is the source of truth
 
 For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -220,19 +210,12 @@ For more details, see [TENANT_SWITCHING.md](TENANT_SWITCHING.md).
 
 ## 🔒 Security & Privacy
 
-### Local-Only Mode
-- **Local Only**: Your data never leaves your browser
-- **Password Hashing**: Passwords hashed using PBKDF2 via Web Crypto API
-- **No Tracking**: No analytics or external tracking
-- **Private**: Single-user per browser, no data sharing
-- **Offline**: Works completely without internet after initial load
-
-### Cloud Sync Mode (Optional)
 - **Firebase Auth**: Industry-standard authentication
 - **Firestore Security Rules**: Per-user data isolation
 - **Encryption**: TLS in transit, Google Cloud encryption at rest
 - **Privacy**: Your data is yours - not shared or sold
-- **Offline-First**: Works offline, syncs when online
+- **Offline-First**: Works offline with local cache, syncs when online
+- **Password Hashing**: Secure password hashing via Firebase Auth
 
 ## 🌐 Deployment
 
@@ -319,38 +302,31 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 
 ## ⚠️ Limitations
 
-### Local-Only Mode
-
-| Limitation | Description |
-|------------|-------------|
-| **Single User** | One user per browser/profile |
-| **Browser-Bound** | Data doesn't sync across devices |
-| **Local Storage** | Data tied to browser (can be cleared) |
-
-### Both Modes
-
 | Limitation | Description |
 |------------|-------------|
 | **No AI Features** | Original AI lecture generation removed |
 | **No Payments** | Credit system and payments removed |
-| **Study Groups** | Local to device (no real-time collaboration) |
+| **Study Groups** | No real-time collaboration features |
+| **Firebase Required** | Requires Firebase account and internet for initial setup |
 
-### Cloud Sync Benefits
+## ✅ Features
 
-With Firebase/Firestore enabled:
-- ✅ Multi-device sync
-- ✅ Cloud backup
-- ✅ Data persistence across browser clears
-- ✅ Access from any device
+| Feature | Description |
+|---------|-------------|
+| **Multi-device sync** | Access your data from any device |
+| **Cloud backup** | Data persists in Firebase/Firestore |
+| **Offline access** | Local cache keeps app working offline |
+| **Secure** | Per-user data isolation with Firebase security rules |
 
-## 🔄 Migration from Server Version
+## 🔄 Migration from Previous Versions
 
-If migrating from the original server-based version:
+If migrating from version 1.x (PostgreSQL-based):
 
 1. Export your data from the old version
-2. Deploy the new client-side version
-3. Import your data using the Data Import page
-4. Note: Some features like AI lectures are no longer available
+2. Set up Firebase following [FIREBASE_SETUP.md](FIREBASE_SETUP.md)
+3. Deploy the new Firebase-based version
+4. Import your data using the Data Import page
+5. Note: Some features like AI lectures are no longer available
 
 For more details, see [CHANGELOG.md](CHANGELOG.md).
 
