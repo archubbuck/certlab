@@ -18,3 +18,6 @@ ui-debug.log
 .env
 .env.local
 .env.production
+
+# Generated files
+dynatrace-snippet.html
