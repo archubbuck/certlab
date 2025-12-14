@@ -132,7 +132,7 @@ class FirestoreStorage implements IClientStorage {
     try {
       // Get all user profile documents
       const users = await getSharedDocuments<User>('users');
-      return users.map(convertTimestamps);
+      return users.map((user) => convertTimestamps<User>(user));
     } catch (error) {
       logError('getAllUsers', error);
       return [];
@@ -146,7 +146,7 @@ class FirestoreStorage implements IClientStorage {
   async getTenants(): Promise<Tenant[]> {
     try {
       const tenants = await getSharedDocuments<Tenant>('tenants');
-      return tenants.map(convertTimestamps);
+      return tenants.map((tenant) => convertTimestamps<Tenant>(tenant));
     } catch (error) {
       logError('getTenants', error);
       return [];
@@ -293,7 +293,7 @@ class FirestoreStorage implements IClientStorage {
     try {
       const categories = await getSharedDocuments<Category>('categories');
       const filtered = tenantId ? categories.filter((c) => c.tenantId === tenantId) : categories;
-      return filtered.map(convertTimestamps);
+      return filtered.map((cat) => convertTimestamps<Category>(cat));
     } catch (error) {
       logError('getCategories', error, { tenantId });
       return [];
@@ -361,7 +361,7 @@ class FirestoreStorage implements IClientStorage {
         filtered = filtered.filter((s) => s.tenantId === tenantId);
       }
 
-      return filtered.map(convertTimestamps);
+      return filtered.map((sub) => convertTimestamps<Subcategory>(sub));
     } catch (error) {
       logError('getSubcategories', error, { categoryId, tenantId });
       return [];
@@ -433,13 +433,15 @@ class FirestoreStorage implements IClientStorage {
         );
       }
       if (difficultyLevels && difficultyLevels.length > 0) {
-        filtered = filtered.filter((q) => difficultyLevels.includes(q.difficultyLevel));
+        filtered = filtered.filter(
+          (q) => q.difficultyLevel !== null && difficultyLevels.includes(q.difficultyLevel)
+        );
       }
       if (tenantId !== undefined) {
         filtered = filtered.filter((q) => q.tenantId === tenantId);
       }
 
-      return filtered.map(convertTimestamps);
+      return filtered.map((q) => convertTimestamps<Question>(q));
     } catch (error) {
       logError('getQuestionsByCategories', error, { categoryIds });
       return [];
@@ -469,10 +471,7 @@ class FirestoreStorage implements IClientStorage {
         subcategoryId: question.subcategoryId || null,
         difficultyLevel: question.difficultyLevel || 1,
         tenantId: question.tenantId || 1,
-        source: question.source || null,
-        referenceUrl: question.referenceUrl || null,
         tags: question.tags || [],
-        createdAt: new Date(),
         ...question,
       } as Question;
 
@@ -512,7 +511,9 @@ class FirestoreStorage implements IClientStorage {
   async getQuestionsByTenant(tenantId: number): Promise<Question[]> {
     try {
       const questions = await getSharedDocuments<Question>('questions');
-      return questions.filter((q) => q.tenantId === tenantId).map(convertTimestamps);
+      return questions
+        .filter((q) => q.tenantId === tenantId)
+        .map((q) => convertTimestamps<Question>(q));
     } catch (error) {
       logError('getQuestionsByTenant', error, { tenantId });
       return [];
@@ -534,15 +535,17 @@ class FirestoreStorage implements IClientStorage {
         userId,
         title: quiz.title || 'Untitled Quiz',
         categoryIds: quiz.categoryIds || [],
-        questions: quiz.questions || [],
+        subcategoryIds: quiz.subcategoryIds || [],
+        questionIds: quiz.questionIds || [],
+        questionCount: quiz.questionCount || 0,
         answers: quiz.answers || [],
         score: quiz.score || null,
         totalQuestions: quiz.totalQuestions || 0,
         correctAnswers: quiz.correctAnswers || 0,
-        timeSpent: quiz.timeSpent || null,
         completedAt: quiz.completedAt || null,
-        createdAt: new Date(),
+        startedAt: new Date(),
         tenantId: quiz.tenantId || 1,
+        mode: quiz.mode || 'study',
         ...quiz,
       } as Quiz;
 
@@ -571,7 +574,7 @@ class FirestoreStorage implements IClientStorage {
     try {
       const quizzes = await getUserDocuments<Quiz>(userId, 'quizzes');
       const filtered = tenantId ? quizzes.filter((q) => q.tenantId === tenantId) : quizzes;
-      return filtered.map(convertTimestamps);
+      return filtered.map((q) => convertTimestamps<Quiz>(q));
     } catch (error) {
       logError('getUserQuizzes', error, { userId, tenantId });
       return [];
@@ -596,9 +599,11 @@ class FirestoreStorage implements IClientStorage {
   async getQuizQuestions(quizId: number): Promise<Question[]> {
     try {
       const quiz = await this.getQuiz(quizId);
-      if (!quiz || !quiz.questions || quiz.questions.length === 0) return [];
+      if (!quiz || !quiz.questionIds || (quiz.questionIds as any[]).length === 0) return [];
 
-      const questions = await Promise.all(quiz.questions.map((qId) => this.getQuestion(qId)));
+      const questions = await Promise.all(
+        (quiz.questionIds as any[]).map((qId: number) => this.getQuestion(qId))
+      );
       return questions.filter((q): q is Question => q !== undefined);
     } catch (error) {
       logError('getQuizQuestions', error, { quizId });
@@ -648,7 +653,7 @@ class FirestoreStorage implements IClientStorage {
     try {
       const progress = await getUserDocuments<UserProgress>(userId, 'progress');
       const filtered = tenantId ? progress.filter((p) => p.tenantId === tenantId) : progress;
-      return filtered.map(convertTimestamps);
+      return filtered.map((p) => convertTimestamps<UserProgress>(p));
     } catch (error) {
       logError('getUserProgress', error, { userId, tenantId });
       return [];
@@ -670,10 +675,10 @@ class FirestoreStorage implements IClientStorage {
         userId,
         categoryId,
         tenantId: tenantId || 1,
-        questionsAttempted: progress.questionsAttempted || existing?.questionsAttempted || 0,
-        questionsCorrect: progress.questionsCorrect || existing?.questionsCorrect || 0,
-        lastStudiedAt: progress.lastStudiedAt || new Date(),
-        createdAt: existing?.createdAt || new Date(),
+        questionsCompleted: progress.questionsCompleted || existing?.questionsCompleted || 0,
+        totalQuestions: progress.totalQuestions || existing?.totalQuestions || 0,
+        averageScore: progress.averageScore || existing?.averageScore || 0,
+        lastQuizDate: progress.lastQuizDate || existing?.lastQuizDate || null,
         ...progress,
       } as UserProgress;
 
@@ -744,12 +749,14 @@ class FirestoreStorage implements IClientStorage {
       const lecture: Lecture = {
         id,
         userId,
+        tenantId: tenantId || 1,
         quizId,
         title,
         content,
         topics,
         categoryId,
-        tenantId: tenantId || 1,
+        subcategoryId: null,
+        isRead: false,
         createdAt: new Date(),
       };
 
@@ -765,7 +772,7 @@ class FirestoreStorage implements IClientStorage {
     try {
       const lectures = await getUserDocuments<Lecture>(userId, 'lectures');
       const filtered = tenantId ? lectures.filter((l) => l.tenantId === tenantId) : lectures;
-      return filtered.map(convertTimestamps);
+      return filtered.map((l) => convertTimestamps<Lecture>(l));
     } catch (error) {
       logError('getUserLectures', error, { userId, tenantId });
       return [];
@@ -802,18 +809,18 @@ class FirestoreStorage implements IClientStorage {
       const updated: MasteryScore = {
         id: existing?.id || Date.now(),
         userId,
+        tenantId: 1,
         categoryId,
         subcategoryId,
-        attemptCount: (existing?.attemptCount || 0) + 1,
-        correctCount: (existing?.correctCount || 0) + (isCorrect ? 1 : 0),
-        masteryLevel: 0,
-        lastAttemptAt: new Date(),
-        createdAt: existing?.createdAt || new Date(),
+        totalAnswers: (existing?.totalAnswers || 0) + 1,
+        correctAnswers: (existing?.correctAnswers || 0) + (isCorrect ? 1 : 0),
+        rollingAverage: 0,
+        lastUpdated: new Date(),
       };
 
-      // Calculate mastery level (0-100)
-      updated.masteryLevel =
-        updated.attemptCount > 0 ? (updated.correctCount / updated.attemptCount) * 100 : 0;
+      // Calculate rolling average (0-100)
+      updated.rollingAverage =
+        updated.totalAnswers > 0 ? (updated.correctAnswers / updated.totalAnswers) * 100 : 0;
 
       await setUserDocument(userId, 'masteryScores', key, updated);
     } catch (error) {
@@ -824,8 +831,8 @@ class FirestoreStorage implements IClientStorage {
   async getUserMasteryScores(userId: string, tenantId?: number): Promise<MasteryScore[]> {
     try {
       const scores = await getUserDocuments<MasteryScore>(userId, 'masteryScores');
-      // Note: MasteryScore doesn't have tenantId, filter by category tenantId if needed
-      return scores.map(convertTimestamps);
+      const filtered = tenantId ? scores.filter((s) => s.tenantId === tenantId) : scores;
+      return filtered.map((s) => convertTimestamps<MasteryScore>(s));
     } catch (error) {
       logError('getUserMasteryScores', error, { userId });
       return [];
@@ -837,7 +844,7 @@ class FirestoreStorage implements IClientStorage {
       const scores = await this.getUserMasteryScores(userId, tenantId);
       if (scores.length === 0) return 0;
 
-      const total = scores.reduce((sum, s) => sum + s.masteryLevel, 0);
+      const total = scores.reduce((sum, s) => sum + s.rollingAverage, 0);
       return total / scores.length;
     } catch (error) {
       logError('calculateOverallMasteryScore', error, { userId });
@@ -856,7 +863,7 @@ class FirestoreStorage implements IClientStorage {
       for (const score of scores) {
         const existing = categoryMap.get(score.categoryId) || { total: 0, count: 0 };
         categoryMap.set(score.categoryId, {
-          total: existing.total + score.masteryLevel,
+          total: existing.total + score.rollingAverage,
           count: existing.count + 1,
         });
       }
@@ -878,7 +885,7 @@ class FirestoreStorage implements IClientStorage {
   async getBadges(): Promise<Badge[]> {
     try {
       const badges = await getSharedDocuments<Badge>('badges');
-      return badges.map(convertTimestamps);
+      return badges.map((b) => convertTimestamps<Badge>(b));
     } catch (error) {
       logError('getBadges', error);
       return [];
@@ -889,7 +896,7 @@ class FirestoreStorage implements IClientStorage {
     try {
       const badges = await getUserDocuments<UserBadge>(userId, 'userBadges');
       const filtered = tenantId ? badges.filter((b) => b.tenantId === tenantId) : badges;
-      return filtered.map(convertTimestamps);
+      return filtered.map((b) => convertTimestamps<UserBadge>(b));
     } catch (error) {
       logError('getUserBadges', error, { userId, tenantId });
       return [];
@@ -959,12 +966,16 @@ class FirestoreStorage implements IClientStorage {
       const updated: UserGameStats = {
         id: existing?.id || Date.now(),
         userId,
-        totalXp: updates.totalXp ?? existing?.totalXp ?? 0,
+        tenantId: updates.tenantId ?? existing?.tenantId ?? 1,
+        totalPoints: updates.totalPoints ?? existing?.totalPoints ?? 0,
         level: updates.level ?? existing?.level ?? 1,
         currentStreak: updates.currentStreak ?? existing?.currentStreak ?? 0,
         longestStreak: updates.longestStreak ?? existing?.longestStreak ?? 0,
-        lastActivityAt: updates.lastActivityAt || new Date(),
+        lastActivityDate: updates.lastActivityDate || existing?.lastActivityDate || null,
+        totalBadgesEarned: updates.totalBadgesEarned ?? existing?.totalBadgesEarned ?? 0,
+        nextLevelPoints: updates.nextLevelPoints ?? existing?.nextLevelPoints ?? 100,
         createdAt: existing?.createdAt || new Date(),
+        updatedAt: new Date(),
         ...updates,
       } as UserGameStats;
 
@@ -986,7 +997,7 @@ class FirestoreStorage implements IClientStorage {
       const filtered = userId
         ? challenges.filter((c) => !c.userId || c.userId === userId)
         : challenges;
-      return filtered.map(convertTimestamps);
+      return filtered.map((c) => convertTimestamps<Challenge>(c));
     } catch (error) {
       logError('getChallenges', error, { userId });
       return [];
@@ -1008,14 +1019,20 @@ class FirestoreStorage implements IClientStorage {
       const id = Date.now();
       const newChallenge: Challenge = {
         id,
+        userId: challenge.userId || '',
         title: challenge.title || 'New Challenge',
         description: challenge.description || null,
-        categoryId: challenge.categoryId || 0,
-        questionCount: challenge.questionCount || 10,
-        difficultyLevel: challenge.difficultyLevel || 1,
-        timeLimit: challenge.timeLimit || null,
+        categoryId: challenge.categoryId || null,
+        subcategoryId: challenge.subcategoryId || null,
+        questionsCount: challenge.questionsCount || 5,
+        difficulty: challenge.difficulty || 1,
+        timeLimit: challenge.timeLimit || 5,
         type: challenge.type || 'daily',
-        userId: challenge.userId || null,
+        targetScore: challenge.targetScore || 80,
+        streakMultiplier: challenge.streakMultiplier || 1,
+        pointsReward: challenge.pointsReward || 50,
+        isActive: challenge.isActive ?? true,
+        availableAt: challenge.availableAt || new Date(),
         expiresAt: challenge.expiresAt || null,
         createdAt: new Date(),
         ...challenge,
@@ -1032,7 +1049,7 @@ class FirestoreStorage implements IClientStorage {
   async getChallengeAttempts(userId: string): Promise<ChallengeAttempt[]> {
     try {
       const attempts = await getUserDocuments<ChallengeAttempt>(userId, 'challengeAttempts');
-      return attempts.map(convertTimestamps);
+      return attempts.map((a) => convertTimestamps<ChallengeAttempt>(a));
     } catch (error) {
       logError('getChallengeAttempts', error, { userId });
       return [];
@@ -1071,7 +1088,7 @@ class FirestoreStorage implements IClientStorage {
   async getStudyGroups(): Promise<StudyGroup[]> {
     try {
       const groups = await getSharedDocuments<StudyGroup>('studyGroups');
-      return groups.map(convertTimestamps);
+      return groups.map((g) => convertTimestamps<StudyGroup>(g));
     } catch (error) {
       logError('getStudyGroups', error);
       return [];
@@ -1093,13 +1110,18 @@ class FirestoreStorage implements IClientStorage {
       const id = Date.now();
       const newGroup: StudyGroup = {
         id,
+        tenantId: group.tenantId || 1,
         name: group.name || 'New Study Group',
         description: group.description || null,
-        categoryId: group.categoryId || null,
+        categoryIds: group.categoryIds || [],
         createdBy: group.createdBy || this.currentUserId || '',
         isPublic: group.isPublic ?? true,
-        maxMembers: group.maxMembers || null,
+        maxMembers: group.maxMembers || 20,
+        level: group.level || 'Intermediate',
+        isActive: group.isActive ?? true,
         createdAt: new Date(),
+        updatedAt: new Date(),
+        meetingSchedule: group.meetingSchedule || null,
         ...group,
       } as StudyGroup;
 
@@ -1141,6 +1163,8 @@ class FirestoreStorage implements IClientStorage {
         userId,
         role: 'member',
         joinedAt: new Date(),
+        lastActiveAt: null,
+        contributionScore: 0,
       };
 
       await setSharedDocument('studyGroupMembers', id, member);
@@ -1170,7 +1194,7 @@ class FirestoreStorage implements IClientStorage {
   async getPracticeTests(): Promise<PracticeTest[]> {
     try {
       const tests = await getSharedDocuments<PracticeTest>('practiceTests');
-      return tests.map(convertTimestamps);
+      return tests.map((t) => convertTimestamps<PracticeTest>(t));
     } catch (error) {
       logError('getPracticeTests', error);
       return [];
@@ -1192,14 +1216,20 @@ class FirestoreStorage implements IClientStorage {
       const id = Date.now();
       const newTest: PracticeTest = {
         id,
-        title: test.title || 'New Practice Test',
+        tenantId: test.tenantId || 1,
+        name: test.name || 'New Practice Test',
         description: test.description || null,
-        categoryId: test.categoryId || 0,
+        categoryIds: test.categoryIds || [],
         questionCount: test.questionCount || 50,
         timeLimit: test.timeLimit || 60,
         passingScore: test.passingScore || 70,
-        difficulty: test.difficulty || 'intermediate',
+        difficulty: test.difficulty || 'Medium',
+        isOfficial: test.isOfficial || false,
+        questionPool: test.questionPool || null,
+        createdBy: test.createdBy || null,
+        isActive: test.isActive ?? true,
         createdAt: new Date(),
+        updatedAt: new Date(),
         ...test,
       } as PracticeTest;
 
@@ -1215,7 +1245,7 @@ class FirestoreStorage implements IClientStorage {
     try {
       const attempts = await getUserDocuments<PracticeTestAttempt>(userId, 'practiceTestAttempts');
       const filtered = testId ? attempts.filter((a) => a.testId === testId) : attempts;
-      return filtered.map(convertTimestamps);
+      return filtered.map((a) => convertTimestamps<PracticeTestAttempt>(a));
     } catch (error) {
       logError('getPracticeTestAttempts', error, { userId, testId });
       return [];
@@ -1232,12 +1262,13 @@ class FirestoreStorage implements IClientStorage {
       const id = Date.now();
       const newAttempt: PracticeTestAttempt = {
         id,
+        tenantId: attempt.tenantId || 1,
         userId,
         testId: attempt.testId || 0,
         quizId: attempt.quizId || null,
         score: attempt.score || null,
         timeSpent: attempt.timeSpent || null,
-        passed: attempt.passed || null,
+        isPassed: attempt.isPassed || false,
         completedAt: attempt.completedAt || null,
         startedAt: new Date(),
         ...attempt,
@@ -1280,7 +1311,7 @@ class FirestoreStorage implements IClientStorage {
   async getUserTokenBalance(userId: string): Promise<number> {
     try {
       const stats = await this.getUserGameStats(userId);
-      return stats?.totalXp || 0; // Using XP as tokens for now
+      return stats?.totalPoints || 0; // Using points as tokens for now
     } catch (error) {
       logError('getUserTokenBalance', error, { userId });
       return 0;
@@ -1290,8 +1321,8 @@ class FirestoreStorage implements IClientStorage {
   async addTokens(userId: string, amount: number): Promise<number> {
     try {
       const stats = await this.getUserGameStats(userId);
-      const newBalance = (stats?.totalXp || 0) + amount;
-      await this.updateUserGameStats(userId, { totalXp: newBalance });
+      const newBalance = (stats?.totalPoints || 0) + amount;
+      await this.updateUserGameStats(userId, { totalPoints: newBalance });
       return newBalance;
     } catch (error) {
       logError('addTokens', error, { userId, amount });
@@ -1314,7 +1345,7 @@ class FirestoreStorage implements IClientStorage {
       }
 
       const newBalance = currentBalance - amount;
-      await this.updateUserGameStats(userId, { totalXp: newBalance });
+      await this.updateUserGameStats(userId, { totalPoints: newBalance });
       return { success: true, newBalance };
     } catch (error) {
       logError('consumeTokens', error, { userId, amount });

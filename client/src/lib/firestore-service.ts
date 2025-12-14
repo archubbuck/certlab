@@ -240,7 +240,7 @@ export async function updateUserDocument<T extends DocumentData>(
   try {
     const db = getFirestoreInstance();
     const docRef = doc(db, 'users', userId, collectionName, documentId);
-    await updateDoc(docRef, data);
+    await updateDoc(docRef, data as any);
   } catch (error) {
     logError('updateUserDocument', error, { userId, collectionName, documentId });
     throw error;
