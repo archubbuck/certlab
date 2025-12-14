@@ -1358,9 +1358,16 @@ class FirestoreStorage implements IClientStorage {
 
   async importData(jsonData: string): Promise<void> {
     try {
-      // Import is complex and requires careful handling
-      // For MVP, we'll throw an error
-      throw new Error('Import not yet implemented for Firestore storage');
+      // TODO: Implement data import for Firestore
+      // This requires careful handling of:
+      // 1. Data validation and sanitization
+      // 2. Conflict resolution with existing data
+      // 3. Firestore batch operations for efficiency
+      // 4. Transaction handling for data integrity
+      // Tracked in: Future enhancement for data import/export
+      throw new Error(
+        'Import not yet implemented for Firestore storage. Please use local-only mode for data import.'
+      );
     } catch (error) {
       logError('importData', error);
       throw error;
@@ -1372,9 +1379,17 @@ class FirestoreStorage implements IClientStorage {
       const userId = this.currentUserId;
       if (!userId) throw new Error('No user logged in');
 
-      // Clear user data (not shared data)
-      // This is a destructive operation, implement with care
-      throw new Error('Clear all data not yet implemented for Firestore storage');
+      // TODO: Implement data clearing for Firestore
+      // This is a destructive operation that requires:
+      // 1. Confirmation dialogs in UI
+      // 2. Batch deletion of all user subcollections
+      // 3. Preservation of user profile document
+      // 4. Proper error handling and rollback
+      // Note: For now, users can sign out to start fresh
+      // Tracked in: Future enhancement for data management
+      throw new Error(
+        'Clear all data not yet implemented for Firestore storage. Sign out to start with a clean slate.'
+      );
     } catch (error) {
       logError('clearAllData', error);
       throw error;

@@ -179,9 +179,22 @@ class StorageRouter implements IClientStorage {
 
   async setCurrentUserId(userId: string): Promise<void> {
     // Set in both storages to keep them in sync
-    await clientStorage.setCurrentUserId(userId);
+    // Note: This is a best-effort sync. If one fails, the other still succeeds.
+    // The storage mode will determine which is authoritative.
+    try {
+      await clientStorage.setCurrentUserId(userId);
+    } catch (error) {
+      logError('setCurrentUserId.local', error);
+      // Continue to try Firestore even if local fails
+    }
+
     if (firestoreAvailable) {
-      await firestoreStorage.setCurrentUserId(userId);
+      try {
+        await firestoreStorage.setCurrentUserId(userId);
+      } catch (error) {
+        logError('setCurrentUserId.firestore', error);
+        // Local storage has the user ID, so we can continue
+      }
     }
   }
 
