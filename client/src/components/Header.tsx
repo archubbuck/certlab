@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { CloudSyncIndicator } from '@/components/CloudSyncIndicator';
 import { Badge } from '@/components/ui/badge';
 import {
   NavigationMenu,
@@ -344,6 +345,13 @@ export default function Header() {
 
           {/* User Profile & Theme Toggle */}
           <div className="flex items-center space-x-2 flex-shrink-0">
+            {/* Cloud Sync Indicator */}
+            {currentUser && (
+              <div className="hidden md:block">
+                <CloudSyncIndicator />
+              </div>
+            )}
+
             {/* Desktop Theme Toggle */}
             <div className="hidden md:block">
               <ThemeToggle />
