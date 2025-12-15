@@ -25,6 +25,10 @@ Feature-specific documentation:
 
 - **[tenant-switching.md](features/tenant-switching.md)** - Multi-tenancy feature documentation
 
+### Project Organization
+
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Complete repository structure guide
+
 ### Additional Documentation
 
 - **[user-manual.md](user-manual.md)** - End-user guide and feature walkthrough
@@ -65,6 +69,7 @@ Want to contribute? See:
 
 | Topic | Document | Description |
 |-------|----------|-------------|
+| **Organization** | [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | Repository structure guide |
 | **Setup** | [setup/firebase.md](setup/firebase.md) | Configure cloud sync |
 | **Setup** | [setup/deployment.md](setup/deployment.md) | Deploy to production |
 | **Architecture** | [architecture/overview.md](architecture/overview.md) | System design |

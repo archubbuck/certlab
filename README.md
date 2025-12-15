@@ -324,6 +324,7 @@ For detailed deployment instructions, see [docs/setup/deployment.md](docs/setup/
 
 | Document | Description |
 |----------|-------------|
+| [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) | Repository organization and structure guide |
 | [docs/setup/firebase.md](docs/setup/firebase.md) | Firebase configuration for cloud sync |
 | [docs/setup/google-auth.md](docs/setup/google-auth.md) | Google OAuth setup for authentication |
 | [docs/setup/dynatrace.md](docs/setup/dynatrace.md) | Dynatrace observability and monitoring setup |
