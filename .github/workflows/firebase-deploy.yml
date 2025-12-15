@@ -55,16 +55,17 @@ jobs:
         run: |
           # Create temporary credentials file
           CREDS_FILE=$(mktemp)
-          printf '%s\n' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDS_FILE"
+          cat > "$CREDS_FILE" <<< "$FIREBASE_SERVICE_ACCOUNT"
           export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_FILE"
           
           # Deploy Firestore rules and indexes
-          npx firebase-tools deploy --only firestore:rules,firestore:indexes --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
+          npx firebase-tools deploy --only firestore:rules,firestore:indexes --project "$FIREBASE_PROJECT_ID" --non-interactive
           
           # Securely clean up credentials file
           shred -u "$CREDS_FILE" 2>/dev/null || rm -f "$CREDS_FILE"
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0.10.0
