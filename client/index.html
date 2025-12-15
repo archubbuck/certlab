@@ -55,15 +55,19 @@
       var beaconUrl = '%VITE_DYNATRACE_BEACON_URL%';
       var enabled = '%VITE_ENABLE_DYNATRACE%';
       
-      // Check if Dynatrace is enabled and configured
+      // Check if Dynatrace is configured
       // Vite leaves %VITE_*% unchanged if env var is not set
       var isConfigured = envId && appId && beaconUrl && 
                          !envId.includes('%') && 
                          !appId.includes('%') && 
                          !beaconUrl.includes('%');
-      var isEnabled = enabled === 'true' || enabled === '%VITE_ENABLE_DYNATRACE%';
       
-      if (isConfigured && isEnabled) {
+      // Check if Dynatrace is explicitly enabled
+      // Default to enabled if configured (enabled var still has % means not set)
+      var isExplicitlyDisabled = enabled === 'false';
+      var isEnabled = isConfigured && !isExplicitlyDisabled;
+      
+      if (isEnabled) {
         // Load Dynatrace RUM agent asynchronously
         var dt = document.createElement('script');
         dt.type = 'text/javascript';
@@ -73,16 +77,13 @@
         
         var s = document.getElementsByTagName('script')[0];
         s.parentNode.insertBefore(dt, s);
-        
-        console.log('[Dynatrace] RUM agent loading from:', dt.src);
-      } else if (!isConfigured) {
-        // Only log in development mode (production won't see this)
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-          console.log('[Dynatrace] Not configured. Set VITE_DYNATRACE_* environment variables to enable.');
+      } else if (isExplicitlyDisabled) {
+        // Only log when explicitly disabled
+        if (typeof console !== 'undefined' && console.log) {
+          console.log('[Dynatrace] Disabled via VITE_ENABLE_DYNATRACE=false');
         }
-      } else {
-        console.log('[Dynatrace] Disabled via VITE_ENABLE_DYNATRACE=false');
       }
+      // When not configured, don't log anything to avoid console noise in production
     })();
     </script>
     <!-- End Dynatrace RUM Monitoring -->
