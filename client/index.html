@@ -55,28 +55,49 @@
       var beaconUrl = '%VITE_DYNATRACE_BEACON_URL%';
       var enabled = '%VITE_ENABLE_DYNATRACE%';
       
-      // Check if Dynatrace is configured
-      // Vite leaves %VITE_*% unchanged if env var is not set
-      var isConfigured = envId && appId && beaconUrl && 
-                         !envId.includes('%') && 
-                         !appId.includes('%') && 
-                         !beaconUrl.includes('%');
+      // Check if environment variables were actually set (Vite leaves placeholders unchanged if not set)
+      var ENV_ID_PLACEHOLDER = '%VITE_DYNATRACE_ENVIRONMENT_ID%';
+      var APP_ID_PLACEHOLDER = '%VITE_DYNATRACE_APPLICATION_ID%';
+      var BEACON_URL_PLACEHOLDER = '%VITE_DYNATRACE_BEACON_URL%';
       
-      // Check if Dynatrace is explicitly enabled
-      // Default to enabled if configured (enabled var still has % means not set)
+      var isConfigured = envId !== ENV_ID_PLACEHOLDER && 
+                         appId !== APP_ID_PLACEHOLDER && 
+                         beaconUrl !== BEACON_URL_PLACEHOLDER;
+      
+      // Check if Dynatrace is explicitly disabled
       var isExplicitlyDisabled = enabled === 'false';
       var isEnabled = isConfigured && !isExplicitlyDisabled;
       
       if (isEnabled) {
+        // Validate beacon URL format (must be HTTPS)
+        if (!/^https:\/\/[a-zA-Z0-9.-]+\.dynatrace\.com\/bf$/.test(beaconUrl) &&
+            !/^https:\/\/[a-zA-Z0-9.-]+\.live\.dynatrace\.com\/bf$/.test(beaconUrl)) {
+          if (typeof console !== 'undefined' && console.error) {
+            console.error('[Dynatrace] Invalid beacon URL format. Must be HTTPS Dynatrace domain.');
+          }
+          return;
+        }
+        
+        // Validate application ID format (should be APPLICATION-* or similar)
+        if (!/^[A-Z0-9_-]+$/.test(appId)) {
+          if (typeof console !== 'undefined' && console.error) {
+            console.error('[Dynatrace] Invalid application ID format.');
+          }
+          return;
+        }
+        
         // Load Dynatrace RUM agent asynchronously
         var dt = document.createElement('script');
         dt.type = 'text/javascript';
         dt.async = true;
         dt.crossOrigin = 'anonymous';
-        dt.src = beaconUrl + '/jstag/' + appId;
+        // Use setAttribute to safely set the src without string concatenation risks
+        dt.setAttribute('src', beaconUrl + '/jstag/' + appId);
         
         var s = document.getElementsByTagName('script')[0];
-        s.parentNode.insertBefore(dt, s);
+        if (s && s.parentNode) {
+          s.parentNode.insertBefore(dt, s);
+        }
       } else if (isExplicitlyDisabled) {
         // Only log when explicitly disabled
         if (typeof console !== 'undefined' && console.log) {
