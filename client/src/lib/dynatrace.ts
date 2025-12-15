@@ -70,13 +70,8 @@ export function getDynatraceConfig(): DynatraceConfig | null {
   const environmentId = import.meta.env.VITE_DYNATRACE_ENVIRONMENT_ID;
   const applicationId = import.meta.env.VITE_DYNATRACE_APPLICATION_ID;
   const beaconUrl = import.meta.env.VITE_DYNATRACE_BEACON_URL;
-  const scriptUrl = import.meta.env.VITE_DYNATRACE_SCRIPT_URL;
-
   // Parse boolean environment variables (they come as strings)
-  // Only default to 'true' if any Dynatrace variables are configured
-  const hasAnyConfig = environmentId || applicationId || beaconUrl || scriptUrl;
-  const enabled =
-    String(import.meta.env.VITE_ENABLE_DYNATRACE || (hasAnyConfig ? 'true' : 'false')) === 'true';
+  const enabled = String(import.meta.env.VITE_ENABLE_DYNATRACE || 'true') === 'true';
   const devMode = String(import.meta.env.VITE_DYNATRACE_DEV_MODE || 'false') === 'true';
   const appName = import.meta.env.VITE_DYNATRACE_APP_NAME || 'CertLab';
   const actionPrefix = import.meta.env.VITE_DYNATRACE_ACTION_PREFIX;
@@ -84,19 +79,15 @@ export function getDynatraceConfig(): DynatraceConfig | null {
   // Check if we're in development mode and dev mode is disabled
   const isDevelopment = import.meta.env.DEV;
   if (isDevelopment && !devMode) {
-    // Only log if Dynatrace is actually configured
-    if (hasAnyConfig) {
-      console.log(
-        '[Dynatrace] Disabled in development mode (set VITE_DYNATRACE_DEV_MODE=true to enable)'
-      );
-    }
+    console.log(
+      '[Dynatrace] Disabled in development mode (set VITE_DYNATRACE_DEV_MODE=true to enable)'
+    );
     return null;
   }
 
   // Validate required configuration (empty string is falsy but explicitly allowed)
   if (!environmentId || !applicationId || (beaconUrl !== '' && !beaconUrl)) {
-    // Only warn if user explicitly enabled Dynatrace or provided partial configuration
-    if (enabled && hasAnyConfig) {
+    if (enabled) {
       console.warn('[Dynatrace] Configuration incomplete. Missing required environment variables.');
       console.warn(
         'Required: VITE_DYNATRACE_ENVIRONMENT_ID, VITE_DYNATRACE_APPLICATION_ID, VITE_DYNATRACE_BEACON_URL'
