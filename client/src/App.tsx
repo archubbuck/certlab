@@ -11,6 +11,8 @@ import { AuthenticatedLayout } from '@/components/AuthenticatedLayout';
 import PageLoader from '@/components/PageLoader';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { ConfigurationError } from '@/components/ConfigurationError';
+import { validateRequiredConfiguration } from '@/lib/config-validator';
 // Landing page is eagerly loaded for fast first paint (initial route)
 import Landing from '@/pages/landing';
 import { lazy, Suspense, useEffect } from 'react';
@@ -140,12 +142,20 @@ function AppContent() {
 }
 
 function App() {
+  // Validate required configuration in production
+  const configValidation = validateRequiredConfiguration();
+
   useEffect(() => {
     // Seed initial data on first load
     import('./lib/seed-data').then(({ ensureDataSeeded }) => {
       ensureDataSeeded();
     });
   }, []);
+
+  // If configuration is invalid, show error page and block app
+  if (!configValidation.isValid) {
+    return <ConfigurationError errors={configValidation.errors} />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
