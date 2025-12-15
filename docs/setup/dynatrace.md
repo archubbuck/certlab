@@ -684,7 +684,7 @@ trackExperiment('Quiz-UI-Redesign', 'Variant-A');
 
 For issues specific to CertLab's Dynatrace integration:
 
-1. Check this guide and [ARCHITECTURE.md](ARCHITECTURE.md)
+1. Check this guide and [../architecture/overview.md](../architecture/overview.md)
 2. Review console logs for Dynatrace errors
 3. Open an issue: https://github.com/archubbuck/certlab/issues
 4. Tag with: `observability`, `dynatrace`

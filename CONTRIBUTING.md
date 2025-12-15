@@ -187,7 +187,7 @@ export function QuizCard({ quiz, onStart }: QuizCardProps) {
 
 ### State Management
 
-Choose the right state management approach for your use case. See [STATE_MANAGEMENT.md](STATE_MANAGEMENT.md) for detailed guidance.
+Choose the right state management approach for your use case. See [docs/architecture/state-management.md](docs/architecture/state-management.md) for detailed guidance.
 
 | Use Case | Approach |
 |----------|----------|

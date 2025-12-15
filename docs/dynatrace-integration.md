@@ -181,8 +181,8 @@ Setup instructions in `DYNATRACE_SETUP.md`.
 
 | Document | Purpose | Audience |
 |----------|---------|----------|
-| [DYNATRACE_SETUP.md](DYNATRACE_SETUP.md) | Complete setup guide | DevOps, Admins |
-| [DYNATRACE_EXAMPLES.md](DYNATRACE_EXAMPLES.md) | Code examples | Developers |
+| [setup/dynatrace.md](setup/dynatrace.md) | Complete setup guide | DevOps, Admins |
+| [dynatrace-examples.md](dynatrace-examples.md) | Code examples | Developers |
 | [README.md](README.md#dynatrace-observability-optional) | Overview | Everyone |
 | [ARCHITECTURE.md](ARCHITECTURE.md#observability) | Architecture details | Technical leads |
 

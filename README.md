@@ -102,12 +102,12 @@ npm test
 
 For cloud sync and multi-device access, set up Firebase:
 
-1. **Create Firebase Project**: Follow [FIREBASE_SETUP.md](FIREBASE_SETUP.md)
+1. **Create Firebase Project**: Follow [docs/setup/firebase.md](docs/setup/firebase.md)
 2. **Configure Environment**: Copy `.env.example` to `.env.local` and add your Firebase credentials
 3. **Deploy Rules**: Run `npm run deploy:firestore` to deploy security rules
 4. **Start Using**: Sign up in the app to enable cloud sync
 
-See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for detailed instructions.
+See [docs/setup/firebase.md](docs/setup/firebase.md) for detailed instructions.
 
 ### Dynatrace Observability (Optional)
 
@@ -118,7 +118,7 @@ For production monitoring and analytics, configure Dynatrace:
 3. **Deploy Monitoring**: Dynatrace automatically begins collecting metrics after deployment
 4. **Set Up Dashboards**: Configure monitoring dashboards and alerts
 
-See [DYNATRACE_SETUP.md](DYNATRACE_SETUP.md) for detailed instructions.
+See [docs/setup/dynatrace.md](docs/setup/dynatrace.md) for detailed instructions.
 
 **Benefits**:
 - Real user monitoring (RUM) for actual user experience tracking
@@ -155,7 +155,7 @@ CertLab uses a hybrid architecture supporting both local-only and cloud-sync mod
 **Cloud Sync Mode** (in development):
 - Firebase infrastructure foundation complete (60%)
 - Storage layer integration in progress
-- See [FIREBASE_IMPLEMENTATION_STATUS.md](FIREBASE_IMPLEMENTATION_STATUS.md) for details
+- See [docs/architecture/firebase-status.md](docs/architecture/firebase-status.md) for details
 
 ### Data Flow
 
@@ -163,7 +163,7 @@ CertLab uses a hybrid architecture supporting both local-only and cloud-sync mod
 User Action → React Component → TanStack Query → Storage API → IndexedDB
 ```
 
-For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
+For detailed architecture information, see [docs/architecture/overview.md](docs/architecture/overview.md).
 
 ## 📚 Usage
 
@@ -231,7 +231,7 @@ CertLab supports multiple isolated learning environments:
 2. Select a different tenant (Default Organization, CISSP Training, etc.)
 3. Each tenant has its own categories, questions, and progress
 
-For more details, see [TENANT_SWITCHING.md](TENANT_SWITCHING.md).
+For more details, see [docs/features/tenant-switching.md](docs/features/tenant-switching.md).
 
 ## 🔒 Security & Privacy
 
@@ -280,7 +280,7 @@ npx firebase use --add
 npm run deploy:firebase
 ```
 
-For detailed Firebase deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).
+For detailed Firebase deployment instructions, see [docs/setup/deployment.md](docs/setup/deployment.md).
 
 ### Alternative Platforms
 
@@ -301,7 +301,7 @@ npm run build
 # All files are in: ./dist/
 ```
 
-For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).
+For detailed deployment instructions, see [docs/setup/deployment.md](docs/setup/deployment.md).
 
 ## 🛠️ Technology Stack
 
@@ -324,16 +324,18 @@ For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE
 
 | Document | Description |
 |----------|-------------|
-| [FIREBASE_SETUP.md](FIREBASE_SETUP.md) | Firebase configuration for cloud sync |
-| [DYNATRACE_SETUP.md](DYNATRACE_SETUP.md) | Dynatrace observability and monitoring setup |
-| [DYNATRACE_EXAMPLES.md](DYNATRACE_EXAMPLES.md) | Practical examples of Dynatrace integration |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | System design, data flow, and technical decisions |
+| [docs/setup/firebase.md](docs/setup/firebase.md) | Firebase configuration for cloud sync |
+| [docs/setup/google-auth.md](docs/setup/google-auth.md) | Google OAuth setup for authentication |
+| [docs/setup/dynatrace.md](docs/setup/dynatrace.md) | Dynatrace observability and monitoring setup |
+| [docs/setup/deployment.md](docs/setup/deployment.md) | Detailed deployment instructions |
+| [docs/architecture/overview.md](docs/architecture/overview.md) | System design, data flow, and technical decisions |
+| [docs/architecture/state-management.md](docs/architecture/state-management.md) | State management patterns and practices |
+| [docs/features/tenant-switching.md](docs/features/tenant-switching.md) | Multi-tenancy feature documentation |
+| [docs/user-manual.md](docs/user-manual.md) | End-user feature guide |
+| [docs/dynatrace-examples.md](docs/dynatrace-examples.md) | Practical examples of Dynatrace integration |
+| [docs/known-issues.md](docs/known-issues.md) | Known issues and planned improvements |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute, code style, and PR process |
-| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Detailed deployment instructions |
-| [TENANT_SWITCHING.md](TENANT_SWITCHING.md) | Multi-tenancy feature documentation |
 | [CHANGELOG.md](CHANGELOG.md) | Version history and changes |
-| [CertLab_User_Manual.md](CertLab_User_Manual.md) | End-user feature guide |
-| [ISSUES.md](ISSUES.md) | Known issues and planned improvements |
 
 ## ⚠️ Limitations
 

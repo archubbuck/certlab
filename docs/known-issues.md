@@ -27,7 +27,7 @@ As of November 2025, the following categories of issues have been addressed:
 
 ### Notable Resolutions
 
-- **State Management Documentation**: Created comprehensive documentation ([STATE_MANAGEMENT.md](STATE_MANAGEMENT.md)) explaining when to use each state management approach
+- **State Management Documentation**: Created comprehensive documentation ([architecture/state-management.md](architecture/state-management.md)) explaining when to use each state management approach
 - **Test Infrastructure**: Added Vitest testing framework
 - **Linting Configuration**: Added ESLint and Prettier configuration with pre-commit hooks
 - **TypeScript Errors**: Fixed pre-existing TypeScript errors across client components

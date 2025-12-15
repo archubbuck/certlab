@@ -531,8 +531,8 @@ console.log('Dynatrace config:', getDynatraceConfig());
 
 ## Additional Resources
 
-- [DYNATRACE_SETUP.md](DYNATRACE_SETUP.md) - Complete setup guide
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture with observability
+- [setup/dynatrace.md](setup/dynatrace.md) - Complete setup guide
+- [architecture/overview.md](architecture/overview.md) - System architecture with observability
 - [Dynatrace JavaScript API](https://www.dynatrace.com/support/help/platform-modules/digital-experience/web-applications/support/javascript-api)
 - [Dynatrace Best Practices](https://www.dynatrace.com/support/help/how-to-use-dynatrace/real-user-monitoring/best-practices/)
 
