@@ -55,9 +55,7 @@ jobs:
         run: |
           # Create temporary credentials file
           CREDS_FILE=$(mktemp)
-          cat > "$CREDS_FILE" <<EOF
-          $FIREBASE_SERVICE_ACCOUNT
-          EOF
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDS_FILE"
           export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_FILE"
           
           # Deploy Firestore rules and indexes
