@@ -503,7 +503,7 @@ When in doubt:
 
 ## Related Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture overview
+- [overview.md](overview.md) - System architecture overview
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Development guidelines
 - [lib/queryClient.ts](client/src/lib/queryClient.ts) - Query configuration and key patterns
 - [lib/auth-provider.tsx](client/src/lib/auth-provider.tsx) - Authentication context example

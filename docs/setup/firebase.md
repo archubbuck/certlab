@@ -3,7 +3,7 @@
 This guide walks you through setting up Firebase for CertLab's optional cloud sync features.
 
 > **Note**: Firebase setup is **optional**. CertLab works fully offline using IndexedDB for local storage.
-> Firebase integration is currently in development (60% complete - see [FIREBASE_IMPLEMENTATION_STATUS.md](FIREBASE_IMPLEMENTATION_STATUS.md)).
+> Firebase integration is currently in development (60% complete - see [../architecture/firebase-status.md](../architecture/firebase-status.md)).
 
 ## Table of Contents
 

@@ -228,7 +228,7 @@ CertLab uses a client-side authentication system:
 
 CertLab uses four complementary state management approaches, each suited for specific use cases.
 
-> **For detailed guidance on when to use each approach, see [STATE_MANAGEMENT.md](STATE_MANAGEMENT.md)**
+> **For detailed guidance on when to use each approach, see [state-management.md](state-management.md)**
 
 ### Quick Reference
 
@@ -421,7 +421,7 @@ VITE_ENABLE_DYNATRACE=true
 VITE_DYNATRACE_DEV_MODE=false  # Disabled in dev by default
 ```
 
-For detailed setup instructions, see [DYNATRACE_SETUP.md](DYNATRACE_SETUP.md).
+For detailed setup instructions, see [../setup/dynatrace.md](../setup/dynatrace.md).
 
 ### Dashboards and Alerts
 
@@ -436,7 +436,7 @@ For detailed setup instructions, see [DYNATRACE_SETUP.md](DYNATRACE_SETUP.md).
 - Drop in user sessions (< 10 per hour during business hours)
 - High quiz failure rate (< 70% completion)
 
-See [DYNATRACE_SETUP.md](DYNATRACE_SETUP.md) for complete dashboard and alerting configuration.
+See [../setup/dynatrace.md](../setup/dynatrace.md) for complete dashboard and alerting configuration.
 
 ## Build and Deployment
 
@@ -556,5 +556,5 @@ async getNewStoreItems(userId: string) {
 
 - [README.md](README.md) - Getting started and features
 - [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute
-- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Deployment instructions
-- [TENANT_SWITCHING.md](TENANT_SWITCHING.md) - Multi-tenant feature details
+- [../setup/deployment.md](../setup/deployment.md) - Deployment instructions
+- [../features/tenant-switching.md](../features/tenant-switching.md) - Multi-tenant feature details

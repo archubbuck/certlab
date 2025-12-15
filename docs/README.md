@@ -1,0 +1,76 @@
+# CertLab Documentation
+
+This directory contains all technical documentation for the CertLab project.
+
+## 📁 Documentation Structure
+
+### Setup Guides (`setup/`)
+Step-by-step instructions for configuring and deploying CertLab:
+
+- **[firebase.md](setup/firebase.md)** - Firebase configuration for cloud sync
+- **[google-auth.md](setup/google-auth.md)** - Google OAuth authentication setup
+- **[dynatrace.md](setup/dynatrace.md)** - Dynatrace observability and monitoring
+- **[dependabot.md](setup/dependabot.md)** - Automated dependency management
+- **[deployment.md](setup/deployment.md)** - Deployment to Firebase Hosting and other platforms
+
+### Architecture (`architecture/`)
+Technical design and system architecture documentation:
+
+- **[overview.md](architecture/overview.md)** - System design, data flow, and technical decisions
+- **[state-management.md](architecture/state-management.md)** - State management patterns and best practices
+- **[firebase-status.md](architecture/firebase-status.md)** - Firebase integration implementation status
+
+### Features (`features/`)
+Feature-specific documentation:
+
+- **[tenant-switching.md](features/tenant-switching.md)** - Multi-tenancy feature documentation
+
+### Additional Documentation
+
+- **[user-manual.md](user-manual.md)** - End-user guide and feature walkthrough
+- **[dynatrace-examples.md](dynatrace-examples.md)** - Practical Dynatrace integration examples
+- **[dynatrace-integration.md](dynatrace-integration.md)** - Dynatrace integration summary
+- **[test-report.md](test-report.md)** - Testing coverage and results
+- **[favicon-options.md](favicon-options.md)** - Favicon design options
+- **[known-issues.md](known-issues.md)** - Known issues and planned improvements
+
+## 📖 Root-Level Documentation
+
+Essential project documents in the repository root:
+
+- **[../README.md](../README.md)** - Project overview and quick start guide
+- **[../CONTRIBUTING.md](../CONTRIBUTING.md)** - Contribution guidelines and development workflow
+- **[../CHANGELOG.md](../CHANGELOG.md)** - Version history and release notes
+- **[../SECURITY.md](../SECURITY.md)** - Security policy and vulnerability reporting
+- **[../LICENSE](../LICENSE)** - MIT License
+
+## 🚀 Getting Started
+
+New to CertLab? Start here:
+
+1. **[../README.md](../README.md)** - Project overview and quick start
+2. **[setup/deployment.md](setup/deployment.md)** - Deploy your own instance
+3. **[architecture/overview.md](architecture/overview.md)** - Understand the architecture
+4. **[user-manual.md](user-manual.md)** - Learn how to use CertLab
+
+## 🤝 Contributing
+
+Want to contribute? See:
+
+- **[../CONTRIBUTING.md](../CONTRIBUTING.md)** - Contribution guidelines
+- **[architecture/state-management.md](architecture/state-management.md)** - State management patterns
+- **[known-issues.md](known-issues.md)** - Known issues that need fixing
+
+## 🔗 Quick Links
+
+| Topic | Document | Description |
+|-------|----------|-------------|
+| **Setup** | [setup/firebase.md](setup/firebase.md) | Configure cloud sync |
+| **Setup** | [setup/deployment.md](setup/deployment.md) | Deploy to production |
+| **Architecture** | [architecture/overview.md](architecture/overview.md) | System design |
+| **Features** | [user-manual.md](user-manual.md) | User guide |
+| **Development** | [../CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute |
+
+---
+
+**Questions?** Check [known-issues.md](known-issues.md) or open an issue on GitHub.
