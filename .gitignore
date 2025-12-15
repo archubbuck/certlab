@@ -21,3 +21,6 @@ ui-debug.log
 
 # Generated files
 dynatrace-snippet.html
+
+# Temporary files
+.ui-sync-timestamp
