@@ -18,6 +18,8 @@ export function TokenBalance() {
   const { data: tokenData } = useQuery({
     queryKey: queryKeys.user.tokenBalance(user?.id),
     enabled: !!user?.id,
+    staleTime: 0, // Always refetch when invalidated
+    refetchOnMount: true, // Always get fresh balance on mount
   });
 
   const addTokensMutation = useMutation({
