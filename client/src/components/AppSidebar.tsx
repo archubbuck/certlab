@@ -110,7 +110,7 @@ export function AppSidebar() {
             <Box className="size-6" />
           </div>
           <div>
-            <h2 className="font-bold text-lg text-sidebar-foreground tracking-wide">CLAY OS</h2>
+            <h2 className="font-bold text-lg text-sidebar-foreground tracking-wide">CertLab</h2>
           </div>
         </div>
       </SidebarHeader>

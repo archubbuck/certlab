@@ -10,6 +10,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { AppSidebar } from '@/components/AppSidebar';
 import { RightSidebar } from '@/components/RightSidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
+import type { UserStats } from '@shared/schema';
 
 interface AuthenticatedLayoutProps {
   children: ReactNode;
@@ -21,6 +24,21 @@ function AuthenticatedHeader() {
   const { open: isLeftSidebarOpen, setOpen: setLeftSidebarOpen } = useSidebar();
   const previousLeftSidebarState = useRef<boolean>(true);
   const wasRightSidebarOpen = useRef<boolean>(false);
+
+  // Get user stats for level and XP
+  const { data: stats } = useQuery<UserStats>({
+    queryKey: queryKeys.user.stats(currentUser?.id),
+    enabled: !!currentUser?.id,
+  });
+
+  // Calculate level and XP based on total quizzes and average score
+  // Level = Math.floor(totalQuizzes / 10) + 1
+  const level = stats ? Math.floor((stats.totalQuizzes || 0) / 10) + 1 : 1;
+  const currentXP = stats
+    ? ((stats.totalQuizzes || 0) % 10) * 250 + Math.floor((stats.averageScore || 0) * 5)
+    : 0;
+  const xpGoal = level * 1000; // Each level requires progressively more XP
+  const xpProgress = (currentXP / xpGoal) * 100;
 
   // Collapse left sidebar when right sidebar opens, restore when it closes
   useEffect(() => {
@@ -40,44 +58,25 @@ function AuthenticatedHeader() {
     <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">
       <SidebarTrigger className="rounded-xl" />
 
-      <div className="flex flex-1 items-center justify-center max-w-2xl mx-auto">
-        {/* Centered Search Bar */}
-        <form
-          className="relative w-full"
-          onSubmit={(e) => {
-            e.preventDefault();
-            // TODO: Implement search functionality
-          }}
-          role="search"
-        >
-          <input
-            type="search"
-            placeholder="Search dashboard..."
-            aria-label="Search dashboard"
-            className="w-full px-4 py-2 pr-10 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <button
-            type="submit"
-            aria-label="Submit search"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-          </button>
-        </form>
+      {/* Level and XP Progress Bar */}
+      <div className="flex items-center gap-3 flex-1 max-w-md">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-lg">
+          {level}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-baseline justify-between mb-1">
+            <span className="text-sm font-semibold">Level {level}</span>
+            <span className="text-xs text-muted-foreground">{currentXP} XP</span>
+          </div>
+          <div className="text-xs text-muted-foreground mb-1">SCHOLAR</div>
+          <div className="relative w-full bg-secondary rounded-full h-2">
+            <div
+              className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-300"
+              style={{ width: `${Math.min(xpProgress, 100)}%` }}
+            ></div>
+          </div>
+          <div className="text-xs text-muted-foreground text-right mt-0.5">{xpGoal} XP GOAL</div>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
