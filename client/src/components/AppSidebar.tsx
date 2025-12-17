@@ -49,7 +49,7 @@ const getNavigationItems = (isAdmin: boolean) => {
         {
           title: 'Wallet',
           icon: Wallet,
-          url: '/app/profile', // TODO: Create dedicated wallet page
+          url: '/app/wallet',
         },
         {
           title: 'Profile',
