@@ -232,8 +232,8 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-primary-foreground/80 mb-1">DAILY GOAL</p>
                 <p className="text-4xl font-bold">
-                  {stats?.totalQuizzes > 0
-                    ? Math.min(Math.round((stats?.totalQuizzes / 10) * 100), 100)
+                  {stats?.totalQuizzes && stats.totalQuizzes > 0
+                    ? Math.min(Math.round((stats.totalQuizzes / 10) * 100), 100)
                     : 0}
                   %
                 </p>
