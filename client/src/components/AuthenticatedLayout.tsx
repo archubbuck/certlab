@@ -1,11 +1,12 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Bell } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
 import { getInitials } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-provider';
 import { RightSidebarProvider, useRightSidebar } from '@/lib/right-sidebar-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AppSidebar } from '@/components/AppSidebar';
 import { RightSidebar } from '@/components/RightSidebar';
@@ -13,6 +14,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/com
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { calculateLevelAndXP } from '@/lib/level-utils';
+import { useLocation } from 'wouter';
 import type { UserStats } from '@shared/schema';
 
 interface AuthenticatedLayoutProps {
@@ -25,6 +27,7 @@ function AuthenticatedHeader() {
   const { open: isLeftSidebarOpen, setOpen: setLeftSidebarOpen } = useSidebar();
   const previousLeftSidebarState = useRef<boolean>(true);
   const wasRightSidebarOpen = useRef<boolean>(false);
+  const [location] = useLocation();
 
   // Get user stats for level and XP
   const { data: stats } = useQuery<UserStats>({
@@ -40,6 +43,16 @@ function AuthenticatedHeader() {
     : 0;
   const xpGoal = level * 1000; // Each level requires progressively more XP
   const xpProgress = (currentXP / xpGoal) * 100;
+
+  // Get search placeholder based on current page
+  const getSearchPlaceholder = () => {
+    if (location === '/app' || location === '/app/dashboard') return 'Search dashboard...';
+    if (location.startsWith('/app/marketplace')) return 'Search marketplace...';
+    if (location.startsWith('/app/practice-tests')) return 'Search courses...';
+    if (location.startsWith('/app/wallet')) return 'Search wallet...';
+    if (location.startsWith('/app/profile')) return 'Search profile...';
+    return 'Search...';
+  };
 
   // Collapse left sidebar when right sidebar opens, restore when it closes
   useEffect(() => {
@@ -59,8 +72,20 @@ function AuthenticatedHeader() {
     <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">
       <SidebarTrigger className="rounded-xl" />
 
+      {/* Search Bar - CLAY OS Style */}
+      <div className="flex-1 max-w-md">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            type="search"
+            placeholder={getSearchPlaceholder()}
+            className="pl-10 bg-background border-border rounded-full"
+          />
+        </div>
+      </div>
+
       {/* Level and XP Progress Bar */}
-      <div className="flex items-center gap-3 flex-1 max-w-md">
+      <div className="hidden lg:flex items-center gap-3 max-w-xs">
         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-lg">
           {level}
         </div>
