@@ -3,7 +3,8 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-provider';
-import { apiRequest, queryClient, queryKeys } from '@/lib/queryClient';
+import { queryClient, queryKeys } from '@/lib/queryClient';
+import { clientStorage } from '@/lib/client-storage';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { Zap, RotateCcw, Shuffle, BarChart3 } from 'lucide-react';
@@ -13,7 +14,7 @@ export default function QuickActionsCard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, refreshUser } = useAuth();
 
   const { data: masteryScores = [] } = useQuery<MasteryScore[]>({
     queryKey: queryKeys.user.mastery(currentUser?.id),
@@ -27,22 +28,46 @@ export default function QuickActionsCard() {
   // Quick quiz creation mutation
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: any) => {
-      const response = await apiRequest({
-        method: 'POST',
-        endpoint: '/api/quiz',
-        data: quizData,
+      if (!currentUser?.id) throw new Error('Not authenticated');
+
+      const tokenCost = clientStorage.calculateQuizTokenCost(quizData.questionCount);
+
+      // Check and consume tokens
+      const tokenResult = await clientStorage.consumeTokens(currentUser.id, tokenCost);
+
+      if (!tokenResult.success) {
+        throw new Error(
+          `Insufficient tokens. You need ${tokenCost} tokens but only have ${tokenResult.newBalance}.`
+        );
+      }
+
+      // Create the quiz
+      const quiz = await clientStorage.createQuiz({
+        userId: currentUser.id,
+        ...quizData,
       });
-      return response.json();
+
+      return { quiz, tokenResult, tokenCost };
     },
-    onSuccess: (quiz) => {
+    onSuccess: async ({ quiz, tokenResult, tokenCost }) => {
+      // Refresh user state in auth provider to keep it in sync
+      await refreshUser();
+
       queryClient.invalidateQueries({ queryKey: queryKeys.user.all(currentUser?.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.subscription.status() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.tokenBalance(currentUser?.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user() });
+
+      toast({
+        title: 'Quiz Created',
+        description: `Used ${tokenCost} tokens. New balance: ${tokenResult.newBalance}`,
+      });
+
       setLocation(`/app/quiz/${quiz.id}`);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to create quiz. Please try again.',
+        description: error?.message || 'Failed to create quiz. Please try again.',
         variant: 'destructive',
       });
     },
@@ -217,7 +242,7 @@ export default function QuickActionsCard() {
           <Button
             key={action.id}
             variant="ghost"
-            className={`w-full justify-start h-auto p-4 rounded-md transition-all duration-300 hover:shadow-md ${
+            className={`w-full justify-start h-auto p-4 rounded-md transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${
               action.id === 'weakest'
                 ? 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/50 text-red-700 dark:text-red-300 hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/70 dark:hover:to-red-800/70'
                 : action.id === 'random'

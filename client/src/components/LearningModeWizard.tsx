@@ -13,15 +13,13 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/lib/auth-provider';
-import { apiRequest, queryClient, queryKeys } from '@/lib/queryClient';
+import { queryClient, queryKeys } from '@/lib/queryClient';
+import { clientStorage } from '@/lib/client-storage';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowRight,
   ArrowLeft,
-  Clock,
   Target,
   Settings,
   Brain,
@@ -29,7 +27,6 @@ import {
   Trophy,
   CheckCircle,
   Timer,
-  Users,
   BookOpen,
 } from 'lucide-react';
 import type { Category, Subcategory } from '@shared/schema';
@@ -48,7 +45,7 @@ interface SessionConfig {
 export default function LearningModeWizard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, refreshUser } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [sessionConfig, setSessionConfig] = useState<SessionConfig>({
@@ -71,27 +68,46 @@ export default function LearningModeWizard() {
 
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: any) => {
-      const response = await apiRequest({ method: 'POST', endpoint: '/api/quiz', data: quizData });
-      return response.json();
-    },
-    onSuccess: (quiz) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.all(currentUser?.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.subscription.status() });
+      if (!currentUser?.id) throw new Error('Not authenticated');
 
-      if (quiz.adaptiveInfo && quiz.adaptiveInfo.increasePercentage > 0) {
-        toast({
-          title: 'Adaptive Learning Activated',
-          description: `Question count increased by ${quiz.adaptiveInfo.increasePercentage}% based on your performance`,
-          variant: 'default',
-        });
+      const tokenCost = clientStorage.calculateQuizTokenCost(quizData.questionCount);
+
+      // Check and consume tokens
+      const tokenResult = await clientStorage.consumeTokens(currentUser.id, tokenCost);
+
+      if (!tokenResult.success) {
+        throw new Error(
+          `Insufficient tokens. You need ${tokenCost} tokens but only have ${tokenResult.newBalance}.`
+        );
       }
+
+      // Create the quiz
+      const quiz = await clientStorage.createQuiz({
+        userId: currentUser.id,
+        ...quizData,
+      });
+
+      return { quiz, tokenResult, tokenCost };
+    },
+    onSuccess: async ({ quiz, tokenResult, tokenCost }) => {
+      // Refresh user state in auth provider to keep it in sync
+      await refreshUser();
+
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.all(currentUser?.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.tokenBalance(currentUser?.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user() });
+
+      toast({
+        title: 'Quiz Created',
+        description: `Used ${tokenCost} tokens. New balance: ${tokenResult.newBalance}`,
+      });
 
       setLocation(`/app/quiz/${quiz.id}`);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to create session. Please try again.',
+        description: error?.message || 'Failed to create session. Please try again.',
         variant: 'destructive',
       });
     },
@@ -270,7 +286,7 @@ export default function LearningModeWizard() {
                       <div
                         className={`p-4 rounded-2xl transition-all duration-300 ${
                           sessionConfig.mode === mode
-                            ? 'bg-gradient-to-br from-primary to-primary/70 text-white shadow-lg'
+                            ? 'bg-gradient-to-br from-primary to-primary/70 text-white shadow-lg scale-110'
                             : 'bg-gradient-to-br from-muted to-muted/70 text-muted-foreground group-hover:from-primary/20 group-hover:to-primary/10 group-hover:text-primary'
                         }`}
                       >
