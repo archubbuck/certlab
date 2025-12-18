@@ -213,11 +213,11 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
-        // Using sticky positioning with h-screen to keep sidebar at exactly 100vh
-        // The sidebar stays visible at top while scrolling and never exceeds viewport height
+        // Using sticky positioning with h-svh to keep sidebar at exactly small viewport height
+        // The sidebar stays visible at top while scrolling and adapts to dynamic mobile viewport changes
         className={cn(
           'group peer hidden text-sidebar-foreground md:flex',
-          'sticky top-0 z-10 h-screen w-[--sidebar-width] flex-shrink-0 transition-[width] duration-200 ease-linear',
+          'sticky top-0 z-10 h-svh w-[--sidebar-width] flex-shrink-0 transition-[width] duration-200 ease-linear',
           'group-data-[collapsible=offcanvas]:w-0 group-data-[collapsible=offcanvas]:overflow-hidden',
           variant === 'floating' || variant === 'inset'
             ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]'
@@ -302,7 +302,7 @@ const SidebarInset = React.forwardRef<HTMLDivElement, React.ComponentProps<'main
       <main
         ref={ref}
         className={cn(
-          'relative flex w-full flex-1 flex-col bg-background h-screen overflow-hidden',
+          'relative flex w-full flex-1 flex-col bg-background h-svh overflow-hidden',
           'md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow',
           className
         )}
