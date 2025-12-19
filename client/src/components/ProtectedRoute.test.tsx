@@ -14,7 +14,7 @@ vi.mock('@/lib/auth-provider', async () => {
 });
 
 // Mock other dependencies
-vi.mock('./client-auth', () => ({
+vi.mock('@/lib/client-auth', () => ({
   clientAuth: {
     getCurrentUser: vi.fn().mockResolvedValue(null),
     logout: vi.fn().mockResolvedValue({ success: true }),
