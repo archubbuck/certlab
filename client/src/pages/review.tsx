@@ -46,7 +46,7 @@ export default function Review() {
   const [showLectureDialog, setShowLectureDialog] = useState(false);
   const [generatedLecture, setGeneratedLecture] = useState<string>('');
   const [notesSaved, setNotesSaved] = useState(false);
-  const quizId = parseInt(params.id || '0');
+  const quizId = params?.id ? parseInt(params.id) : 0;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser, tenantId } = useAuth();
