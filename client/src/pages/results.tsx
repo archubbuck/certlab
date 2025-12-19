@@ -13,7 +13,7 @@ import type { Quiz, Category } from '@shared/schema';
 export default function Results() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const quizId = parseInt(params.id || '0');
+  const quizId = params?.id ? parseInt(params.id) : 0;
 
   const { data: quiz, isLoading } = useQuery<Quiz>({
     queryKey: queryKeys.quiz.detail(quizId),
