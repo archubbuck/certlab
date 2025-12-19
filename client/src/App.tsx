@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { queryClient } from './lib/queryClient';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -8,9 +8,9 @@ import { AuthProvider, useAuth } from '@/lib/auth-provider';
 import { AchievementNotification } from '@/components/AchievementNotification';
 import { UnhandledRejectionHandler } from '@/components/UnhandledRejectionHandler';
 import { AuthenticatedLayout } from '@/components/AuthenticatedLayout';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import PageLoader from '@/components/PageLoader';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ConfigurationError } from '@/components/ConfigurationError';
 import { validateRequiredConfiguration } from '@/lib/config-validator';
 // Landing page is eagerly loaded for fast first paint (initial route)
@@ -46,20 +46,9 @@ const BASE_PATH =
   import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL.replace(/\/$/, '');
 
 function Router() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const isAdmin = user?.role === 'admin';
-
-  // Determine if current route is an authenticated app route (starts with /app or /admin)
-  const isAppRoute = location.pathname.startsWith('/app') || location.pathname.startsWith('/admin');
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoadingSpinner size="xl" label="Loading application..." />
-      </div>
-    );
-  }
 
   // Landing page should never have authenticated layout
   if (location.pathname === '/' || location.pathname === '') {
@@ -72,56 +61,51 @@ function Router() {
     );
   }
 
-  // For authenticated app routes, show authenticated layout
-  if (isAuthenticated && isAppRoute) {
-    return (
-      <div className="min-h-screen bg-background">
-        {/* Skip to main content link for keyboard navigation */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-background focus:text-foreground focus:px-4 focus:py-2 focus:rounded-md focus:border focus:border-primary focus:shadow-lg"
-        >
-          Skip to main content
-        </a>
-        <AuthenticatedLayout>
-          <ErrorBoundary>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/app" element={<Dashboard />} />
-                <Route path="/app/dashboard" element={<Dashboard />} />
-                <Route path="/app/profile" element={<ProfilePage />} />
-                <Route path="/app/wallet" element={<WalletPage />} />
-                <Route path="/app/quiz/:id" element={<Quiz />} />
-                <Route path="/app/results/:id" element={<Results />} />
-                <Route path="/app/review/:id" element={<Review />} />
-                <Route path="/app/lecture/:id" element={<Lecture />} />
-                <Route path="/app/study-notes" element={<StudyNotesPage />} />
-                <Route path="/app/achievements" element={<Achievements />} />
-                <Route path="/app/accessibility" element={<Accessibility />} />
-                <Route path="/app/practice-tests" element={<PracticeTests />} />
+  // For app routes, use ProtectedRoute to handle authentication
+  // Determine if current route is an authenticated app route (starts with /app or /admin)
+  const isAppRoute = location.pathname.startsWith('/app') || location.pathname.startsWith('/admin');
 
-                <Route path="/app/marketplace" element={<MarketplacePage />} />
-                {isAdmin && <Route path="/app/ui-structure" element={<UIStructurePage />} />}
-                <Route path="/app/credits" element={<CreditsPage />} />
-                <Route path="/app/data-import" element={<DataImportPage />} />
-                <Route path="/app/question-bank" element={<QuestionBankPage />} />
-                {isAdmin && <Route path="/admin" element={<AdminDashboard />} />}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
-        </AuthenticatedLayout>
-      </div>
-    );
-  }
-
-  // For non-authenticated users trying to access app routes, redirect to landing
-  // Use Navigate component for declarative routing
-  if (isAppRoute && !isAuthenticated) {
+  if (isAppRoute) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigate to="/" replace />
-      </div>
+      <ProtectedRoute>
+        <div className="min-h-screen bg-background">
+          {/* Skip to main content link for keyboard navigation */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-background focus:text-foreground focus:px-4 focus:py-2 focus:rounded-md focus:border focus:border-primary focus:shadow-lg"
+          >
+            Skip to main content
+          </a>
+          <AuthenticatedLayout>
+            <ErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/app" element={<Dashboard />} />
+                  <Route path="/app/dashboard" element={<Dashboard />} />
+                  <Route path="/app/profile" element={<ProfilePage />} />
+                  <Route path="/app/wallet" element={<WalletPage />} />
+                  <Route path="/app/quiz/:id" element={<Quiz />} />
+                  <Route path="/app/results/:id" element={<Results />} />
+                  <Route path="/app/review/:id" element={<Review />} />
+                  <Route path="/app/lecture/:id" element={<Lecture />} />
+                  <Route path="/app/study-notes" element={<StudyNotesPage />} />
+                  <Route path="/app/achievements" element={<Achievements />} />
+                  <Route path="/app/accessibility" element={<Accessibility />} />
+                  <Route path="/app/practice-tests" element={<PracticeTests />} />
+
+                  <Route path="/app/marketplace" element={<MarketplacePage />} />
+                  {isAdmin && <Route path="/app/ui-structure" element={<UIStructurePage />} />}
+                  <Route path="/app/credits" element={<CreditsPage />} />
+                  <Route path="/app/data-import" element={<DataImportPage />} />
+                  <Route path="/app/question-bank" element={<QuestionBankPage />} />
+                  {isAdmin && <Route path="/admin" element={<AdminDashboard />} />}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
+          </AuthenticatedLayout>
+        </div>
+      </ProtectedRoute>
     );
   }
 
