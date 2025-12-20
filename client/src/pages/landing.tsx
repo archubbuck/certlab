@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useCallback } from 'react';
+import { useState, lazy, Suspense, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -64,6 +64,13 @@ export default function Landing() {
   const navigate = useNavigate();
   const [showLogin, setShowLogin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Auto-redirect authenticated users to the app
+  useEffect(() => {
+    if (isAuthenticated && !showLogin) {
+      navigate('/app', { replace: true });
+    }
+  }, [isAuthenticated, showLogin, navigate]);
 
   const handleLogin = useCallback(() => {
     setShowLogin(true);

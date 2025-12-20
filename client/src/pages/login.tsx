@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { clientAuth } from '@/lib/client-auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { User as UserIcon, AlertTriangle } from 'lucide-react';
 import { logError, getUserFriendlyMessage, getErrorTitle } from '@/lib/errors';
@@ -65,6 +65,10 @@ export default function Login() {
   const { toast } = useToast();
   const { isAuthenticated, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the location the user was trying to access before being redirected to login
+  const from = (location.state as { from?: string })?.from || '/app';
 
   // Load accounts on mount
   useEffect(() => {
@@ -118,7 +122,7 @@ export default function Login() {
 
       if (result.success) {
         await refreshUser();
-        navigate('/app');
+        navigate(from, { replace: true });
       } else {
         toast({
           title: getErrorTitle(result.errorCode, 'Login Failed'),
@@ -153,8 +157,8 @@ export default function Login() {
       if (result.success) {
         // Refresh the auth context to update isAuthenticated state
         await refreshUser();
-        // Use relative navigation for GitHub Pages compatibility
-        navigate('/app');
+        // Navigate to the page user was trying to access, or /app if registering from landing
+        navigate(from, { replace: true });
       } else {
         toast({
           title: getErrorTitle(result.errorCode, 'Registration Failed'),
@@ -182,7 +186,7 @@ export default function Login() {
 
       if (result.success) {
         await refreshUser();
-        navigate('/app');
+        navigate(from, { replace: true });
       } else {
         toast({
           title: getErrorTitle(result.errorCode, 'Google Sign-In Failed'),
@@ -202,9 +206,9 @@ export default function Login() {
     }
   };
 
-  // If already authenticated, redirect to dashboard
+  // If already authenticated, redirect to app
   if (isAuthenticated) {
-    window.location.href = '/';
+    navigate(from, { replace: true });
     return null;
   }
 
