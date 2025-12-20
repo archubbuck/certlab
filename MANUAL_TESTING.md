@@ -43,7 +43,7 @@ The following cache configuration overrides were removed:
 
 **Expected Behavior:**
 - Default staleTime (30s) provides good balance of freshness and performance
-- `invalidateQueries` on line 123 triggers balance refetch after purchase
+- `invalidateQueries` on line 121 triggers balance refetch after purchase
 - Products cache appropriately without manual override
 
 ### 3. Results Page (`client/src/pages/results.tsx`)
@@ -88,9 +88,9 @@ The following cache configuration overrides were removed:
 ### Default Configuration (in `client/src/lib/queryClient.ts`)
 ```typescript
 {
-  staleTime: staleTime.user,        // 30 seconds (explicit)
+  staleTime: staleTime.user,        // 30 seconds (explicitly set)
   refetchOnWindowFocus: false,       // Explicitly disabled
-  refetchOnMount: undefined,         // Uses React Query default (true, but data serves from cache if not stale)
+  refetchOnMount: (not set),         // Uses React Query default of true (refetches stale queries on mount)
   retry: false,                      // Explicitly disabled
 }
 ```
