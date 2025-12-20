@@ -3,6 +3,28 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from './auth-provider';
 
+// Mock the Firebase module
+vi.mock('./firebase', () => ({
+  isFirebaseConfigured: vi.fn().mockReturnValue(true),
+  initializeFirebase: vi.fn().mockReturnValue(true),
+  onFirebaseAuthStateChanged: vi.fn().mockReturnValue(() => {}),
+  signOutFromGoogle: vi.fn().mockResolvedValue(undefined),
+  getCurrentFirebaseUser: vi.fn().mockReturnValue(null),
+}));
+
+// Mock the storage-factory module
+vi.mock('./storage-factory', () => ({
+  initializeStorage: vi.fn().mockResolvedValue(undefined),
+  setStorageMode: vi.fn().mockResolvedValue(undefined),
+  isCloudSyncAvailable: vi.fn().mockReturnValue(false),
+  storage: {
+    getUser: vi.fn().mockResolvedValue(null),
+    createUser: vi.fn().mockResolvedValue(null),
+    setCurrentUserId: vi.fn().mockResolvedValue(undefined),
+    clearCurrentUser: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 // Mock the client-auth module
 vi.mock('./client-auth', () => ({
   clientAuth: {
@@ -14,6 +36,12 @@ vi.mock('./client-auth', () => ({
 // Mock the errors module
 vi.mock('./errors', () => ({
   logError: vi.fn(),
+}));
+
+// Mock the dynatrace module
+vi.mock('./dynatrace', () => ({
+  identifyUser: vi.fn(),
+  endSession: vi.fn(),
 }));
 
 describe('AuthProvider', () => {
@@ -64,9 +92,7 @@ describe('AuthProvider', () => {
     // Suppress console.error for this test
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(() => render(<TestComponent />)).toThrow(
-      'useAuth must be used within an AuthProvider'
-    );
+    expect(() => render(<TestComponent />)).toThrow('useAuth must be used within an AuthProvider');
 
     consoleSpy.mockRestore();
   });
@@ -114,7 +140,7 @@ describe('AuthProvider', () => {
     // (logout and refreshUser have empty dependency arrays)
     expect(logoutRefs.length).toBe(1);
     expect(refreshUserRefs.length).toBe(1);
-    
+
     // switchTenant may change if user changes, but if user is null it should remain stable
     expect(switchTenantRefs.length).toBe(1);
   });
@@ -161,23 +187,23 @@ describe('AuthProvider', () => {
     await act(async () => {
       screen.getByRole('button').click();
     });
-    
+
     // Verify first re-render happened
     expect(screen.getByTestId('render-count')).toHaveTextContent('1');
-    
+
     await act(async () => {
       screen.getByRole('button').click();
     });
-    
+
     // Verify second re-render happened
     expect(screen.getByTestId('render-count')).toHaveTextContent('2');
-    
+
     // Verify that re-renders actually occurred
     expect(renderCount).toBeGreaterThan(renderCountBeforeClicks);
 
     // All context refs should be the same object (referential equality)
     expect(contextRefs.length).toBeGreaterThan(0);
-    
+
     // Check that all captured contexts are the same reference
     for (let i = 1; i < contextRefs.length; i++) {
       expect(contextRefs[i]).toBe(contextRefs[0]);

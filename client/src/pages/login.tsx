@@ -62,7 +62,7 @@ export default function Login() {
     } catch (error) {
       logError('handleGoogleSignIn', error);
       toast({
-        title: getErrorTitle(undefined, 'Google Sign-In Failed'),
+        title: getErrorTitle(error, 'Google Sign-In Failed'),
         description: getUserFriendlyMessage(error),
         variant: 'destructive',
       });

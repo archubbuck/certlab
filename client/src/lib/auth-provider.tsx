@@ -41,33 +41,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
+  const [initError, setInitError] = useState<Error | null>(null);
 
   // Initialize Firebase and storage on mount
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Initialize storage factory (now always uses Firestore)
-        await initializeStorage();
-
-        // Initialize Firebase (now mandatory)
+        // Check Firebase configuration first (now mandatory)
         if (!isFirebaseConfigured()) {
-          throw new Error('Firebase configuration is required but not found');
+          const error = new Error('Firebase configuration is required but not found');
+          setInitError(error);
+          setIsLoading(false);
+          return;
         }
 
+        // Initialize Firebase before storage
         const initialized = initializeFirebase();
         if (!initialized) {
-          throw new Error('Failed to initialize Firebase');
+          const error = new Error('Failed to initialize Firebase');
+          setInitError(error);
+          setIsLoading(false);
+          return;
         }
 
         setFirebaseInitialized(initialized);
         console.log('[AuthProvider] Firebase initialized successfully');
 
-        // Set loading to false after Firebase init
+        // Initialize storage factory after Firebase is ready
+        await initializeStorage();
+
+        // Set loading to false after successful initialization
         setIsLoading(false);
       } catch (error) {
         logError('initializeAuth', error);
+        setInitError(error instanceof Error ? error : new Error('Unknown initialization error'));
         setIsLoading(false);
-        // Don't continue - Firebase is mandatory
       }
     };
 
@@ -219,6 +227,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }),
     [user, isLoading, logout, refreshUser, switchTenant, firebaseUser]
   );
+
+  // If there was an initialization error, throw it so ErrorBoundary can catch it
+  if (initError) {
+    throw initError;
+  }
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }

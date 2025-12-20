@@ -142,10 +142,17 @@ Firebase is required for authentication (Google Sign-In) and cloud storage (Fire
    VITE_FIREBASE_APP_ID=your-app-id
    ```
 
-6. **Deploy Firestore Rules**:
+6. **Install Firebase CLI** (required for deploying Firestore rules):
+   ```bash
+   npm install -g firebase-tools
+   firebase login
+   ```
+
+7. **Deploy Firestore Rules** (optional for initial setup, required before production):
    ```bash
    npm run deploy:firestore:rules
    ```
+   Note: This step can be skipped during initial development. Deploy security rules before going to production.
 
 For detailed instructions, see [docs/setup/firebase.md](docs/setup/firebase.md).
 

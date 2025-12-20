@@ -80,7 +80,8 @@ export function validateRequiredConfiguration(): ConfigValidationResult {
   const firebaseErrors = validateFirebaseConfig();
   errors.push(...firebaseErrors);
 
-  // Check Dynatrace but only warn (not required)
+  // Check Dynatrace configuration (optional but recommended for production)
+  // Only show warnings in production mode to avoid noise during development
   const dynatraceErrors = validateDynatraceConfig();
   if (dynatraceErrors.length > 0 && !isDevelopment) {
     console.warn(
