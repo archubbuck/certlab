@@ -322,21 +322,30 @@ For detailed deployment instructions, see [docs/setup/deployment.md](docs/setup/
 
 ## 📖 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) | Repository organization and structure guide |
-| [docs/setup/firebase.md](docs/setup/firebase.md) | Firebase configuration for cloud sync |
-| [docs/setup/google-auth.md](docs/setup/google-auth.md) | Google OAuth setup for authentication |
-| [docs/setup/dynatrace.md](docs/setup/dynatrace.md) | Dynatrace observability and monitoring setup |
-| [docs/setup/deployment.md](docs/setup/deployment.md) | Detailed deployment instructions |
-| [docs/architecture/overview.md](docs/architecture/overview.md) | System design, data flow, and technical decisions |
-| [docs/architecture/state-management.md](docs/architecture/state-management.md) | State management patterns and practices |
-| [docs/features/tenant-switching.md](docs/features/tenant-switching.md) | Multi-tenancy feature documentation |
-| [docs/user-manual.md](docs/user-manual.md) | End-user feature guide |
-| [docs/dynatrace-examples.md](docs/dynatrace-examples.md) | Practical examples of Dynatrace integration |
-| [docs/known-issues.md](docs/known-issues.md) | Known issues and planned improvements |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute, code style, and PR process |
-| [CHANGELOG.md](CHANGELOG.md) | Version history and changes |
+Comprehensive documentation is available in the [docs/](docs/) directory:
+
+### Quick Start Guides
+- **[Getting Started](docs/README.md)** - Documentation overview
+- **[User Manual](docs/user-manual.md)** - End-user guide
+- **[Deployment Guide](docs/setup/deployment.md)** - Deploy your own instance
+
+### Architecture & Development
+- **[Architecture Overview](docs/architecture/overview.md)** - System design and data flow
+- **[ADR-001: Authentication & Authorization](docs/architecture/ADR-001-authentication-authorization.md)** - ⭐ Standard approach for auth
+- **[Authentication Quick Reference](docs/AUTHENTICATION_QUICK_REFERENCE.md)** - ⚡ Quick auth patterns
+- **[Authentication Checklist](docs/AUTHENTICATION_CHECKLIST.md)** - Developer implementation guide
+- **[State Management Guide](docs/architecture/state-management.md)** - State patterns and best practices
+
+### Setup & Configuration
+- **[Firebase Setup](docs/setup/firebase.md)** - Configure cloud sync and authentication
+- **[Google Auth Setup](docs/setup/google-auth.md)** - Enable Google Sign-In
+- **[Dynatrace Setup](docs/setup/dynatrace.md)** - Configure observability
+
+### Additional Resources
+- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Repository organization
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
+- **[Known Issues](docs/known-issues.md)** - Current limitations and planned improvements
+- **[Changelog](CHANGELOG.md)** - Version history
 
 ## ⚠️ Limitations
 
