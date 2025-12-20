@@ -18,8 +18,6 @@ export function TokenBalance() {
   const { data: tokenData } = useQuery({
     queryKey: queryKeys.user.tokenBalance(user?.id),
     enabled: !!user?.id,
-    staleTime: 0, // Always refetch when invalidated
-    refetchOnMount: true, // Always get fresh balance on mount
   });
 
   const addTokensMutation = useMutation({
@@ -27,19 +25,15 @@ export function TokenBalance() {
       if (!user?.id) throw new Error('Not authenticated');
       return await storage.addTokens(user.id, amount);
     },
-    onSuccess: async (newBalance) => {
-      // Immediately update the query cache with the new balance
-      queryClient.setQueryData(queryKeys.user.tokenBalance(user?.id), { balance: newBalance });
-
-      // Invalidate auth user query to sync the user object (which also contains tokenBalance)
-      // Note: We intentionally do NOT invalidate the tokenBalance query itself to avoid
-      // a race condition where the refetch might return stale Firestore data before
-      // the update propagates, causing the balance to reset.
-      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.user() });
+    onSuccess: async () => {
+      // Invalidate the tokenBalance query to refetch the updated balance from IndexedDB
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.user.tokenBalance(user?.id),
+      });
 
       toast({
         title: 'Tokens Added',
-        description: `Your new balance is ${newBalance} tokens.`,
+        description: 'Your token balance has been updated.',
       });
       setTokensToAdd('50');
     },

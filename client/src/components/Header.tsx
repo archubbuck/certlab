@@ -55,8 +55,6 @@ export default function Header() {
   const { data: tokenData } = useQuery<{ balance: number }>({
     queryKey: queryKeys.user.tokenBalance(currentUser?.id),
     enabled: !!currentUser?.id,
-    staleTime: 0, // Always refetch when invalidated
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
   const handleSignOut = async () => {
