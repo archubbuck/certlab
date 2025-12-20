@@ -34,9 +34,9 @@ import type { IClientStorage } from '@shared/storage-interface';
 export type StorageMode = 'cloud';
 
 /**
- * Current storage mode - always cloud (Firestore)
+ * Storage mode constant - always cloud (Firestore)
  */
-const currentMode: StorageMode = 'cloud';
+const STORAGE_MODE: StorageMode = 'cloud';
 
 /**
  * Whether Firestore is available
@@ -75,15 +75,21 @@ export async function initializeStorage(): Promise<void> {
  * Get the current storage mode (always 'cloud')
  */
 export function getStorageMode(): StorageMode {
-  return currentMode;
+  return STORAGE_MODE;
 }
 
 /**
  * Set the storage mode
- * @param mode The storage mode to use (only 'cloud' is supported)
+ * Since only 'cloud' mode is supported, this validates the mode and sets up Firestore
+ * @param mode The storage mode to use (must be 'cloud')
  */
 export async function setStorageMode(mode: StorageMode): Promise<void> {
   try {
+    // Validate mode - only 'cloud' is accepted
+    if (mode !== 'cloud') {
+      throw new Error(`Invalid storage mode: ${mode}. Only 'cloud' is supported.`);
+    }
+
     if (!firestoreAvailable) {
       throw new Error('Firestore is not available - this is required for the application');
     }
@@ -131,9 +137,10 @@ class StorageRouter implements IClientStorage {
   }
 
   /**
-   * Execute an operation with Firestore
+   * Execute a Firestore operation with error logging
+   * All storage operations are routed through Firestore (mandatory backend)
    */
-  private async executeOperation<T>(
+  private async executeFirestoreOperation<T>(
     operation: (storage: IClientStorage) => Promise<T>,
     operationName: string
   ): Promise<T> {
@@ -151,23 +158,21 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getCurrentUserId(): Promise<string | null> {
-    return this.executeOperation((s) => s.getCurrentUserId(), 'getCurrentUserId');
+    return this.executeFirestoreOperation((s) => s.getCurrentUserId(), 'getCurrentUserId');
   }
 
   async setCurrentUserId(userId: string): Promise<void> {
     // Only set in Firestore (now the single source of truth)
-    return this.executeOperation((s) => s.setCurrentUserId(userId), 'setCurrentUserId');
+    return this.executeFirestoreOperation((s) => s.setCurrentUserId(userId), 'setCurrentUserId');
   }
 
   async clearCurrentUser(): Promise<void> {
-    // Only clear from Firestore
-    if (firestoreAvailable) {
-      await firestoreStorage.clearCurrentUser();
-    }
+    // Only clear from Firestore (now mandatory)
+    return this.executeFirestoreOperation((s) => s.clearCurrentUser(), 'clearCurrentUser');
   }
 
   async getAllUsers(): Promise<any[]> {
-    return this.executeOperation((s) => s.getAllUsers(), 'getAllUsers');
+    return this.executeFirestoreOperation((s) => s.getAllUsers(), 'getAllUsers');
   }
 
   // ==========================================
@@ -175,23 +180,23 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getTenants(): Promise<any[]> {
-    return this.executeOperation((s) => s.getTenants(), 'getTenants');
+    return this.executeFirestoreOperation((s) => s.getTenants(), 'getTenants');
   }
 
   async getTenant(id: number): Promise<any> {
-    return this.executeOperation((s) => s.getTenant(id), 'getTenant');
+    return this.executeFirestoreOperation((s) => s.getTenant(id), 'getTenant');
   }
 
   async createTenant(tenant: any): Promise<any> {
-    return this.executeOperation((s) => s.createTenant(tenant), 'createTenant');
+    return this.executeFirestoreOperation((s) => s.createTenant(tenant), 'createTenant');
   }
 
   async updateTenant(id: number, updates: any): Promise<any> {
-    return this.executeOperation((s) => s.updateTenant(id, updates), 'updateTenant');
+    return this.executeFirestoreOperation((s) => s.updateTenant(id, updates), 'updateTenant');
   }
 
   async getUsersByTenant(tenantId: number): Promise<any[]> {
-    return this.executeOperation((s) => s.getUsersByTenant(tenantId), 'getUsersByTenant');
+    return this.executeFirestoreOperation((s) => s.getUsersByTenant(tenantId), 'getUsersByTenant');
   }
 
   // ==========================================
@@ -199,27 +204,27 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getUser(id: string): Promise<any> {
-    return this.executeOperation((s) => s.getUser(id), 'getUser');
+    return this.executeFirestoreOperation((s) => s.getUser(id), 'getUser');
   }
 
   async getUserById(id: string): Promise<any> {
-    return this.executeOperation((s) => s.getUserById(id), 'getUserById');
+    return this.executeFirestoreOperation((s) => s.getUserById(id), 'getUserById');
   }
 
   async getUserByEmail(email: string): Promise<any> {
-    return this.executeOperation((s) => s.getUserByEmail(email), 'getUserByEmail');
+    return this.executeFirestoreOperation((s) => s.getUserByEmail(email), 'getUserByEmail');
   }
 
   async createUser(user: any): Promise<any> {
-    return this.executeOperation((s) => s.createUser(user), 'createUser');
+    return this.executeFirestoreOperation((s) => s.createUser(user), 'createUser');
   }
 
   async updateUser(id: string, updates: any): Promise<any> {
-    return this.executeOperation((s) => s.updateUser(id, updates), 'updateUser');
+    return this.executeFirestoreOperation((s) => s.updateUser(id, updates), 'updateUser');
   }
 
   async updateUserGoals(id: string, goals: any): Promise<any> {
-    return this.executeOperation((s) => s.updateUserGoals(id, goals), 'updateUserGoals');
+    return this.executeFirestoreOperation((s) => s.updateUserGoals(id, goals), 'updateUserGoals');
   }
 
   // ==========================================
@@ -227,19 +232,19 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getCategories(tenantId?: number): Promise<any[]> {
-    return this.executeOperation((s) => s.getCategories(tenantId), 'getCategories');
+    return this.executeFirestoreOperation((s) => s.getCategories(tenantId), 'getCategories');
   }
 
   async createCategory(category: any): Promise<any> {
-    return this.executeOperation((s) => s.createCategory(category), 'createCategory');
+    return this.executeFirestoreOperation((s) => s.createCategory(category), 'createCategory');
   }
 
   async updateCategory(id: number, updates: any): Promise<any> {
-    return this.executeOperation((s) => s.updateCategory(id, updates), 'updateCategory');
+    return this.executeFirestoreOperation((s) => s.updateCategory(id, updates), 'updateCategory');
   }
 
   async deleteCategory(id: number): Promise<void> {
-    return this.executeOperation((s) => s.deleteCategory(id), 'deleteCategory');
+    return this.executeFirestoreOperation((s) => s.deleteCategory(id), 'deleteCategory');
   }
 
   // ==========================================
@@ -247,22 +252,28 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getSubcategories(categoryId?: number, tenantId?: number): Promise<any[]> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.getSubcategories(categoryId, tenantId),
       'getSubcategories'
     );
   }
 
   async createSubcategory(subcategory: any): Promise<any> {
-    return this.executeOperation((s) => s.createSubcategory(subcategory), 'createSubcategory');
+    return this.executeFirestoreOperation(
+      (s) => s.createSubcategory(subcategory),
+      'createSubcategory'
+    );
   }
 
   async updateSubcategory(id: number, updates: any): Promise<any> {
-    return this.executeOperation((s) => s.updateSubcategory(id, updates), 'updateSubcategory');
+    return this.executeFirestoreOperation(
+      (s) => s.updateSubcategory(id, updates),
+      'updateSubcategory'
+    );
   }
 
   async deleteSubcategory(id: number): Promise<void> {
-    return this.executeOperation((s) => s.deleteSubcategory(id), 'deleteSubcategory');
+    return this.executeFirestoreOperation((s) => s.deleteSubcategory(id), 'deleteSubcategory');
   }
 
   // ==========================================
@@ -275,30 +286,33 @@ class StorageRouter implements IClientStorage {
     difficultyLevels?: number[],
     tenantId?: number
   ): Promise<any[]> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.getQuestionsByCategories(categoryIds, subcategoryIds, difficultyLevels, tenantId),
       'getQuestionsByCategories'
     );
   }
 
   async getQuestion(id: number): Promise<any> {
-    return this.executeOperation((s) => s.getQuestion(id), 'getQuestion');
+    return this.executeFirestoreOperation((s) => s.getQuestion(id), 'getQuestion');
   }
 
   async createQuestion(question: any): Promise<any> {
-    return this.executeOperation((s) => s.createQuestion(question), 'createQuestion');
+    return this.executeFirestoreOperation((s) => s.createQuestion(question), 'createQuestion');
   }
 
   async updateQuestion(id: number, updates: any): Promise<any> {
-    return this.executeOperation((s) => s.updateQuestion(id, updates), 'updateQuestion');
+    return this.executeFirestoreOperation((s) => s.updateQuestion(id, updates), 'updateQuestion');
   }
 
   async deleteQuestion(id: number): Promise<void> {
-    return this.executeOperation((s) => s.deleteQuestion(id), 'deleteQuestion');
+    return this.executeFirestoreOperation((s) => s.deleteQuestion(id), 'deleteQuestion');
   }
 
   async getQuestionsByTenant(tenantId: number): Promise<any[]> {
-    return this.executeOperation((s) => s.getQuestionsByTenant(tenantId), 'getQuestionsByTenant');
+    return this.executeFirestoreOperation(
+      (s) => s.getQuestionsByTenant(tenantId),
+      'getQuestionsByTenant'
+    );
   }
 
   // ==========================================
@@ -306,27 +320,30 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async createQuiz(quiz: any): Promise<any> {
-    return this.executeOperation((s) => s.createQuiz(quiz), 'createQuiz');
+    return this.executeFirestoreOperation((s) => s.createQuiz(quiz), 'createQuiz');
   }
 
   async getQuiz(id: number): Promise<any> {
-    return this.executeOperation((s) => s.getQuiz(id), 'getQuiz');
+    return this.executeFirestoreOperation((s) => s.getQuiz(id), 'getQuiz');
   }
 
   async getUserQuizzes(userId: string, tenantId?: number): Promise<any[]> {
-    return this.executeOperation((s) => s.getUserQuizzes(userId, tenantId), 'getUserQuizzes');
+    return this.executeFirestoreOperation(
+      (s) => s.getUserQuizzes(userId, tenantId),
+      'getUserQuizzes'
+    );
   }
 
   async updateQuiz(id: number, updates: any): Promise<any> {
-    return this.executeOperation((s) => s.updateQuiz(id, updates), 'updateQuiz');
+    return this.executeFirestoreOperation((s) => s.updateQuiz(id, updates), 'updateQuiz');
   }
 
   async getQuizQuestions(quizId: number): Promise<any[]> {
-    return this.executeOperation((s) => s.getQuizQuestions(quizId), 'getQuizQuestions');
+    return this.executeFirestoreOperation((s) => s.getQuizQuestions(quizId), 'getQuizQuestions');
   }
 
   async submitQuiz(quizId: number, answers: any[]): Promise<any> {
-    return this.executeOperation((s) => s.submitQuiz(quizId, answers), 'submitQuiz');
+    return this.executeFirestoreOperation((s) => s.submitQuiz(quizId, answers), 'submitQuiz');
   }
 
   // ==========================================
@@ -334,7 +351,10 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getUserProgress(userId: string, tenantId?: number): Promise<any[]> {
-    return this.executeOperation((s) => s.getUserProgress(userId, tenantId), 'getUserProgress');
+    return this.executeFirestoreOperation(
+      (s) => s.getUserProgress(userId, tenantId),
+      'getUserProgress'
+    );
   }
 
   async updateUserProgress(
@@ -343,14 +363,14 @@ class StorageRouter implements IClientStorage {
     progress: any,
     tenantId?: number
   ): Promise<any> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.updateUserProgress(userId, categoryId, progress, tenantId),
       'updateUserProgress'
     );
   }
 
   async getUserStats(userId: string, tenantId?: number): Promise<any> {
-    return this.executeOperation((s) => s.getUserStats(userId, tenantId), 'getUserStats');
+    return this.executeFirestoreOperation((s) => s.getUserStats(userId, tenantId), 'getUserStats');
   }
 
   // ==========================================
@@ -366,18 +386,21 @@ class StorageRouter implements IClientStorage {
     categoryId: number,
     tenantId?: number
   ): Promise<any> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.createLecture(userId, quizId, title, content, topics, categoryId, tenantId),
       'createLecture'
     );
   }
 
   async getUserLectures(userId: string, tenantId?: number): Promise<any[]> {
-    return this.executeOperation((s) => s.getUserLectures(userId, tenantId), 'getUserLectures');
+    return this.executeFirestoreOperation(
+      (s) => s.getUserLectures(userId, tenantId),
+      'getUserLectures'
+    );
   }
 
   async getLecture(id: number): Promise<any> {
-    return this.executeOperation((s) => s.getLecture(id), 'getLecture');
+    return this.executeFirestoreOperation((s) => s.getLecture(id), 'getLecture');
   }
 
   // ==========================================
@@ -390,28 +413,28 @@ class StorageRouter implements IClientStorage {
     subcategoryId: number,
     isCorrect: boolean
   ): Promise<void> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.updateMasteryScore(userId, categoryId, subcategoryId, isCorrect),
       'updateMasteryScore'
     );
   }
 
   async getUserMasteryScores(userId: string, tenantId?: number): Promise<any[]> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.getUserMasteryScores(userId, tenantId),
       'getUserMasteryScores'
     );
   }
 
   async calculateOverallMasteryScore(userId: string, tenantId?: number): Promise<number> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.calculateOverallMasteryScore(userId, tenantId),
       'calculateOverallMasteryScore'
     );
   }
 
   async getCertificationMasteryScores(userId: string, tenantId?: number): Promise<any[]> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.getCertificationMasteryScores(userId, tenantId),
       'getCertificationMasteryScores'
     );
@@ -422,19 +445,22 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getBadges(): Promise<any[]> {
-    return this.executeOperation((s) => s.getBadges(), 'getBadges');
+    return this.executeFirestoreOperation((s) => s.getBadges(), 'getBadges');
   }
 
   async getUserBadges(userId: string, tenantId?: number): Promise<any[]> {
-    return this.executeOperation((s) => s.getUserBadges(userId, tenantId), 'getUserBadges');
+    return this.executeFirestoreOperation(
+      (s) => s.getUserBadges(userId, tenantId),
+      'getUserBadges'
+    );
   }
 
   async createUserBadge(userBadge: any): Promise<any> {
-    return this.executeOperation((s) => s.createUserBadge(userBadge), 'createUserBadge');
+    return this.executeFirestoreOperation((s) => s.createUserBadge(userBadge), 'createUserBadge');
   }
 
   async updateUserBadge(id: number, updates: any): Promise<any> {
-    return this.executeOperation((s) => s.updateUserBadge(id, updates), 'updateUserBadge');
+    return this.executeFirestoreOperation((s) => s.updateUserBadge(id, updates), 'updateUserBadge');
   }
 
   // ==========================================
@@ -442,11 +468,11 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getUserGameStats(userId: string): Promise<any> {
-    return this.executeOperation((s) => s.getUserGameStats(userId), 'getUserGameStats');
+    return this.executeFirestoreOperation((s) => s.getUserGameStats(userId), 'getUserGameStats');
   }
 
   async updateUserGameStats(userId: string, updates: any): Promise<any> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.updateUserGameStats(userId, updates),
       'updateUserGameStats'
     );
@@ -457,23 +483,26 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getChallenges(userId?: string): Promise<any[]> {
-    return this.executeOperation((s) => s.getChallenges(userId), 'getChallenges');
+    return this.executeFirestoreOperation((s) => s.getChallenges(userId), 'getChallenges');
   }
 
   async getChallenge(id: number): Promise<any> {
-    return this.executeOperation((s) => s.getChallenge(id), 'getChallenge');
+    return this.executeFirestoreOperation((s) => s.getChallenge(id), 'getChallenge');
   }
 
   async createChallenge(challenge: any): Promise<any> {
-    return this.executeOperation((s) => s.createChallenge(challenge), 'createChallenge');
+    return this.executeFirestoreOperation((s) => s.createChallenge(challenge), 'createChallenge');
   }
 
   async getChallengeAttempts(userId: string): Promise<any[]> {
-    return this.executeOperation((s) => s.getChallengeAttempts(userId), 'getChallengeAttempts');
+    return this.executeFirestoreOperation(
+      (s) => s.getChallengeAttempts(userId),
+      'getChallengeAttempts'
+    );
   }
 
   async createChallengeAttempt(attempt: any): Promise<any> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.createChallengeAttempt(attempt),
       'createChallengeAttempt'
     );
@@ -484,27 +513,36 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getStudyGroups(): Promise<any[]> {
-    return this.executeOperation((s) => s.getStudyGroups(), 'getStudyGroups');
+    return this.executeFirestoreOperation((s) => s.getStudyGroups(), 'getStudyGroups');
   }
 
   async getStudyGroup(id: number): Promise<any> {
-    return this.executeOperation((s) => s.getStudyGroup(id), 'getStudyGroup');
+    return this.executeFirestoreOperation((s) => s.getStudyGroup(id), 'getStudyGroup');
   }
 
   async createStudyGroup(group: any): Promise<any> {
-    return this.executeOperation((s) => s.createStudyGroup(group), 'createStudyGroup');
+    return this.executeFirestoreOperation((s) => s.createStudyGroup(group), 'createStudyGroup');
   }
 
   async getUserStudyGroups(userId: string): Promise<any[]> {
-    return this.executeOperation((s) => s.getUserStudyGroups(userId), 'getUserStudyGroups');
+    return this.executeFirestoreOperation(
+      (s) => s.getUserStudyGroups(userId),
+      'getUserStudyGroups'
+    );
   }
 
   async joinStudyGroup(userId: string, groupId: number): Promise<any> {
-    return this.executeOperation((s) => s.joinStudyGroup(userId, groupId), 'joinStudyGroup');
+    return this.executeFirestoreOperation(
+      (s) => s.joinStudyGroup(userId, groupId),
+      'joinStudyGroup'
+    );
   }
 
   async leaveStudyGroup(userId: string, groupId: number): Promise<void> {
-    return this.executeOperation((s) => s.leaveStudyGroup(userId, groupId), 'leaveStudyGroup');
+    return this.executeFirestoreOperation(
+      (s) => s.leaveStudyGroup(userId, groupId),
+      'leaveStudyGroup'
+    );
   }
 
   // ==========================================
@@ -512,33 +550,33 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getPracticeTests(): Promise<any[]> {
-    return this.executeOperation((s) => s.getPracticeTests(), 'getPracticeTests');
+    return this.executeFirestoreOperation((s) => s.getPracticeTests(), 'getPracticeTests');
   }
 
   async getPracticeTest(id: number): Promise<any> {
-    return this.executeOperation((s) => s.getPracticeTest(id), 'getPracticeTest');
+    return this.executeFirestoreOperation((s) => s.getPracticeTest(id), 'getPracticeTest');
   }
 
   async createPracticeTest(test: any): Promise<any> {
-    return this.executeOperation((s) => s.createPracticeTest(test), 'createPracticeTest');
+    return this.executeFirestoreOperation((s) => s.createPracticeTest(test), 'createPracticeTest');
   }
 
   async getPracticeTestAttempts(userId: string, testId?: number): Promise<any[]> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.getPracticeTestAttempts(userId, testId),
       'getPracticeTestAttempts'
     );
   }
 
   async createPracticeTestAttempt(attempt: any): Promise<any> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.createPracticeTestAttempt(attempt),
       'createPracticeTestAttempt'
     );
   }
 
   async updatePracticeTestAttempt(id: number, updates: any): Promise<any> {
-    return this.executeOperation(
+    return this.executeFirestoreOperation(
       (s) => s.updatePracticeTestAttempt(id, updates),
       'updatePracticeTestAttempt'
     );
@@ -549,15 +587,18 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getUserTokenBalance(userId: string): Promise<number> {
-    return this.executeOperation((s) => s.getUserTokenBalance(userId), 'getUserTokenBalance');
+    return this.executeFirestoreOperation(
+      (s) => s.getUserTokenBalance(userId),
+      'getUserTokenBalance'
+    );
   }
 
   async addTokens(userId: string, amount: number): Promise<number> {
-    return this.executeOperation((s) => s.addTokens(userId, amount), 'addTokens');
+    return this.executeFirestoreOperation((s) => s.addTokens(userId, amount), 'addTokens');
   }
 
   async consumeTokens(userId: string, amount: number): Promise<any> {
-    return this.executeOperation((s) => s.consumeTokens(userId, amount), 'consumeTokens');
+    return this.executeFirestoreOperation((s) => s.consumeTokens(userId, amount), 'consumeTokens');
   }
 
   calculateQuizTokenCost(questionCount: number): number {
@@ -569,15 +610,15 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async exportData(): Promise<string> {
-    return this.executeOperation((s) => s.exportData(), 'exportData');
+    return this.executeFirestoreOperation((s) => s.exportData(), 'exportData');
   }
 
   async importData(jsonData: string): Promise<void> {
-    return this.executeOperation((s) => s.importData(jsonData), 'importData');
+    return this.executeFirestoreOperation((s) => s.importData(jsonData), 'importData');
   }
 
   async clearAllData(): Promise<void> {
-    return this.executeOperation((s) => s.clearAllData(), 'clearAllData');
+    return this.executeFirestoreOperation((s) => s.clearAllData(), 'clearAllData');
   }
 }
 
