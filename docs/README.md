@@ -32,6 +32,7 @@ Feature-specific documentation:
 
 ### Implementation Guides
 
+- **[AUTHENTICATION_QUICK_REFERENCE.md](AUTHENTICATION_QUICK_REFERENCE.md)** - ⚡ Quick reference for auth patterns
 - **[AUTHENTICATION_CHECKLIST.md](AUTHENTICATION_CHECKLIST.md)** - ⭐ Developer checklist for implementing auth features
 - **[USER_STATE_VALIDATION.md](USER_STATE_VALIDATION.md)** - User state testing and validation guide
 - **[USER_STATE_SUMMARY.md](USER_STATE_SUMMARY.md)** - User state configuration summary
