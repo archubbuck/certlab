@@ -66,16 +66,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Initialize storage factory in the background
         // This can happen after user is loaded since it's primarily for Firebase sync
-        await initializeStorage();
+        // Wrap in try-catch to prevent errors from affecting user authentication state
+        try {
+          await initializeStorage();
 
-        // Initialize Firebase if configured
-        if (isFirebaseConfigured()) {
-          const initialized = initializeFirebase();
-          setFirebaseInitialized(initialized);
+          // Initialize Firebase if configured
+          if (isFirebaseConfigured()) {
+            const initialized = initializeFirebase();
+            setFirebaseInitialized(initialized);
 
-          if (initialized) {
-            console.log('[AuthProvider] Firebase initialized successfully');
+            if (initialized) {
+              console.log('[AuthProvider] Firebase initialized successfully');
+            }
           }
+        } catch (storageError) {
+          logError('initializeStorage', storageError);
+          // Continue with local-only mode if storage initialization fails
         }
       } catch (error) {
         logError('initializeAuth', error);
