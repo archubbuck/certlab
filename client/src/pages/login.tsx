@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { logError, getUserFriendlyMessage, getErrorTitle } from '@/lib/errors';
+import { logError, getUserFriendlyMessage, getErrorTitle, AuthError } from '@/lib/errors';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { signInWithGoogle } from '@/lib/firebase';
 
@@ -61,8 +61,9 @@ export default function Login() {
       navigate(from, { replace: true });
     } catch (error) {
       logError('handleGoogleSignIn', error);
+      const errorCode = error instanceof AuthError ? error.code : undefined;
       toast({
-        title: getErrorTitle(error, 'Google Sign-In Failed'),
+        title: getErrorTitle(errorCode, 'Google Sign-In Failed'),
         description: getUserFriendlyMessage(error),
         variant: 'destructive',
       });
