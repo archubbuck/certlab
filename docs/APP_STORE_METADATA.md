@@ -79,7 +79,9 @@ With offline support, you can study during your commute, on flights, or anywhere
 
 Start your certification journey today with CertLab - your path to professional success!
 
-**Character Count:** 2,644/4,000
+DISCLAIMER: CertLab is an independent study tool and is not affiliated with, endorsed by, or sponsored by (ISC)², ISACA, or any other certification body. CISSP is a registered trademark of (ISC)². CISM is a registered trademark of ISACA.
+
+**Character Count:** 2,809/4,000
 
 ---
 
@@ -296,9 +298,9 @@ ISACA. All trademarks are the property of their respective owners.
 ## Update Checklist
 
 When submitting to App Store Connect:
-- [ ] Promotional text entered (157 chars)
-- [ ] Description entered (2,644 chars)
-- [ ] Keywords entered (98 chars)
+- [ ] Promotional text entered (154 chars)
+- [ ] Description entered (2,809 chars)
+- [ ] Keywords entered (91 chars)
 - [ ] Support URL provided
 - [ ] Marketing URL provided (optional)
 - [ ] Copyright notice entered

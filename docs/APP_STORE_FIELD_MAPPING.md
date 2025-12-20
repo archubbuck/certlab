@@ -183,9 +183,9 @@ Copyright © 2024 archubbuck
 
 Use this checklist while filling out App Store Connect:
 
-- [ ] **Promotional Text** - Copied and pasted (157 chars)
+- [ ] **Promotional Text** - Copied and pasted (154 chars)
 - [ ] **Description** - Copied and pasted (2,809 chars)
-- [ ] **Keywords** - Copied and pasted (98 chars, no spaces after commas)
+- [ ] **Keywords** - Copied and pasted (91 chars, no spaces after commas)
 - [ ] **Support URL** - Entered: https://github.com/archubbuck/certlab/issues
 - [ ] **Marketing URL** - Entered: https://github.com/archubbuck/certlab
 - [ ] **Version** - Confirmed as 1.0
