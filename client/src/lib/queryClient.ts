@@ -63,7 +63,7 @@
  */
 
 import { QueryClient, QueryFunction } from '@tanstack/react-query';
-import { clientStorage } from './client-storage';
+import { storage } from './storage-factory';
 import { clientAuth } from './client-auth';
 
 /**
@@ -252,10 +252,10 @@ export const queryKeys = {
  * @returns Object containing badges, user badges, game stats, and quizzes
  */
 async function getAchievementData(userId: string, tenantId: number) {
-  const allBadges = await clientStorage.getBadges();
-  const userBadges = await clientStorage.getUserBadges(userId, tenantId);
-  const gameStats = await clientStorage.getUserGameStats(userId);
-  const userQuizzes = await clientStorage.getUserQuizzes(userId, tenantId);
+  const allBadges = await storage.getBadges();
+  const userBadges = await storage.getUserBadges(userId, tenantId);
+  const gameStats = await storage.getUserGameStats(userId);
+  const userQuizzes = await storage.getUserQuizzes(userId, tenantId);
   return { allBadges, userBadges, gameStats, userQuizzes };
 }
 
@@ -357,23 +357,23 @@ export function getQueryFn<T>(options: { on401: UnauthorizedBehavior }): QueryFu
         }
 
         // Get user's current tenant for data isolation
-        const user = await clientStorage.getUser(userId);
+        const user = await storage.getUser(userId);
         const tenantId = user?.tenantId || 1;
 
         if (path.includes('/stats')) {
-          return (await clientStorage.getUserStats(userId, tenantId)) as T;
+          return (await storage.getUserStats(userId, tenantId)) as T;
         }
         if (path.includes('/quizzes')) {
-          return (await clientStorage.getUserQuizzes(userId, tenantId)) as T;
+          return (await storage.getUserQuizzes(userId, tenantId)) as T;
         }
         if (path.includes('/progress')) {
-          return (await clientStorage.getUserProgress(userId, tenantId)) as T;
+          return (await storage.getUserProgress(userId, tenantId)) as T;
         }
         if (path.includes('/mastery')) {
-          return (await clientStorage.getCertificationMasteryScores(userId, tenantId)) as T;
+          return (await storage.getCertificationMasteryScores(userId, tenantId)) as T;
         }
         if (path.includes('/lectures')) {
-          return (await clientStorage.getUserLectures(userId, tenantId)) as T;
+          return (await storage.getUserLectures(userId, tenantId)) as T;
         }
         if (path.includes('/achievement-progress')) {
           // Return achievement progress data with all badges and user's progress
@@ -480,22 +480,22 @@ export function getQueryFn<T>(options: { on401: UnauthorizedBehavior }): QueryFu
           } as T;
         }
         if (path.includes('/practice-test-attempts')) {
-          return (await clientStorage.getPracticeTestAttempts(userId)) as T;
+          return (await storage.getPracticeTestAttempts(userId)) as T;
         }
         if (path.includes('/token-balance') || path.includes('/tokens')) {
-          return { balance: await clientStorage.getUserTokenBalance(userId) } as T;
+          return { balance: await storage.getUserTokenBalance(userId) } as T;
         }
         // Default to getting user
         const match = path.match(/\/api\/user\/([^\/]+)$/);
         if (match) {
           const uid = match[1];
-          return (await clientStorage.getUser(uid)) as T;
+          return (await storage.getUser(uid)) as T;
         }
       }
 
       // Handle tenants
       if (path === '/api/tenants') {
-        return (await clientStorage.getTenants()) as T;
+        return (await storage.getTenants()) as T;
       }
 
       // Handle specific tenant query
@@ -503,35 +503,35 @@ export function getQueryFn<T>(options: { on401: UnauthorizedBehavior }): QueryFu
         const match = path.match(/\/api\/tenants\/(\d+)/);
         if (match) {
           const tenantId = parseInt(match[1]);
-          return (await clientStorage.getTenant(tenantId)) as T;
+          return (await storage.getTenant(tenantId)) as T;
         }
       }
 
       // Handle categories
       if (path === '/api/categories') {
         // Get current user to determine tenantId
-        const userId = await clientStorage.getCurrentUserId();
-        if (!userId) return (await clientStorage.getCategories(1)) as T; // Anonymous users see tenant 1 (default tenant)
+        const userId = await storage.getCurrentUserId();
+        if (!userId) return (await storage.getCategories(1)) as T; // Anonymous users see tenant 1 (default tenant)
 
-        const user = await clientStorage.getUser(userId);
+        const user = await storage.getUser(userId);
         const tenantId = user?.tenantId || 1;
-        return (await clientStorage.getCategories(tenantId)) as T;
+        return (await storage.getCategories(tenantId)) as T;
       }
 
       // Handle subcategories
       if (path === '/api/subcategories') {
         // Get current user to determine tenantId
-        const userId = await clientStorage.getCurrentUserId();
-        if (!userId) return (await clientStorage.getSubcategories(undefined, 1)) as T;
+        const userId = await storage.getCurrentUserId();
+        if (!userId) return (await storage.getSubcategories(undefined, 1)) as T;
 
-        const user = await clientStorage.getUser(userId);
+        const user = await storage.getUser(userId);
         const tenantId = user?.tenantId || 1;
-        return (await clientStorage.getSubcategories(undefined, tenantId)) as T;
+        return (await storage.getSubcategories(undefined, tenantId)) as T;
       }
 
       // Handle badges
       if (path === '/api/badges') {
-        return (await clientStorage.getBadges()) as T;
+        return (await storage.getBadges()) as T;
       }
 
       // Handle quiz queries
@@ -540,14 +540,14 @@ export function getQueryFn<T>(options: { on401: UnauthorizedBehavior }): QueryFu
         const questionsMatch = path.match(/\/api\/quiz\/(\d+)\/questions$/);
         if (questionsMatch) {
           const quizId = parseInt(questionsMatch[1]);
-          return (await clientStorage.getQuizQuestions(quizId)) as T;
+          return (await storage.getQuizQuestions(quizId)) as T;
         }
 
         // Then check for quiz details
         const match = path.match(/\/api\/quiz\/(\d+)$/);
         if (match) {
           const quizId = parseInt(match[1]);
-          return (await clientStorage.getQuiz(quizId)) as T;
+          return (await storage.getQuiz(quizId)) as T;
         }
       }
 
@@ -556,28 +556,28 @@ export function getQueryFn<T>(options: { on401: UnauthorizedBehavior }): QueryFu
         const match = path.match(/\/api\/lecture\/(\d+)/);
         if (match) {
           const lectureId = parseInt(match[1]);
-          return (await clientStorage.getLecture(lectureId)) as T;
+          return (await storage.getLecture(lectureId)) as T;
         }
       }
 
       // Handle practice tests
       if (path === '/api/practice-tests') {
-        return (await clientStorage.getPracticeTests()) as T;
+        return (await storage.getPracticeTests()) as T;
       }
 
       // Handle admin tenant queries
       if (path === '/api/admin/tenants') {
-        return (await clientStorage.getTenants()) as T;
+        return (await storage.getTenants()) as T;
       }
 
       // Handle admin tenant stats
       const tenantStatsMatch = path.match(/\/api\/admin\/tenants\/(\d+)\/stats/);
       if (tenantStatsMatch) {
         const tenantId = parseInt(tenantStatsMatch[1]);
-        const categories = await clientStorage.getCategories(tenantId);
-        const subcategories = await clientStorage.getSubcategories(undefined, tenantId);
-        const questions = await clientStorage.getQuestionsByTenant(tenantId);
-        const users = await clientStorage.getUsersByTenant(tenantId);
+        const categories = await storage.getCategories(tenantId);
+        const subcategories = await storage.getSubcategories(undefined, tenantId);
+        const questions = await storage.getQuestionsByTenant(tenantId);
+        const users = await storage.getUsersByTenant(tenantId);
         return {
           categories: categories.length,
           subcategories: subcategories.length,
@@ -590,21 +590,21 @@ export function getQueryFn<T>(options: { on401: UnauthorizedBehavior }): QueryFu
       const tenantCategoriesMatch = path.match(/\/api\/admin\/tenants\/(\d+)\/categories/);
       if (tenantCategoriesMatch) {
         const tenantId = parseInt(tenantCategoriesMatch[1]);
-        return (await clientStorage.getCategories(tenantId)) as T;
+        return (await storage.getCategories(tenantId)) as T;
       }
 
       // Handle admin tenant questions
       const tenantQuestionsMatch = path.match(/\/api\/admin\/tenants\/(\d+)\/questions/);
       if (tenantQuestionsMatch) {
         const tenantId = parseInt(tenantQuestionsMatch[1]);
-        return (await clientStorage.getQuestionsByTenant(tenantId)) as T;
+        return (await storage.getQuestionsByTenant(tenantId)) as T;
       }
 
       // Handle admin tenant users
       const tenantUsersMatch = path.match(/\/api\/admin\/tenants\/(\d+)\/users/);
       if (tenantUsersMatch) {
         const tenantId = parseInt(tenantUsersMatch[1]);
-        return (await clientStorage.getUsersByTenant(tenantId)) as T;
+        return (await storage.getUsersByTenant(tenantId)) as T;
       }
 
       // Default: return null for unsupported queries
@@ -713,7 +713,7 @@ export const queryClient = new QueryClient({
  * ```typescript
  * const mutation = useMutation({
  *   mutationFn: async (data) => {
- *     await clientStorage.updateUserProgress(userId, data);
+ *     await storage.updateUserProgress(userId, data);
  *   },
  *   onSuccess: () => {
  *     invalidateUserQueries(userId);
@@ -776,7 +776,7 @@ export function invalidateAllUserData(userId?: string): void {
  * @example
  * ```typescript
  * // After admin creates a new category
- * await clientStorage.createCategory(data);
+ * await storage.createCategory(data);
  * invalidateStaticData();
  * ```
  */
@@ -799,7 +799,7 @@ export function invalidateStaticData(): void {
  * @example
  * ```typescript
  * // After completing a quiz
- * await clientStorage.completeQuiz(quizId, results);
+ * await storage.completeQuiz(quizId, results);
  * invalidateQuizQueries(quizId);
  * invalidateUserQueries(userId); // Also update user stats
  * ```
