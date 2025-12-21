@@ -25,7 +25,7 @@ const studyMaterials: StudyMaterial[] = [
   },
   {
     id: '2',
-    title: 'Organic Chem Video Course',
+    title: 'Organic Chemistry Video Lectures',
     type: 'VIDEO',
     rating: 4.8,
     price: 45,
