@@ -175,6 +175,18 @@ export default function Header() {
                     </Button>
                   </NavigationMenuItem>
 
+                  {/* Achievements */}
+                  <NavigationMenuItem>
+                    <Button
+                      variant="ghost"
+                      onClick={() => navigate('/app/achievements')}
+                      className="text-muted-foreground hover:text-primary h-10 px-4 py-2"
+                    >
+                      <Trophy className="w-4 h-4 mr-2" />
+                      Achievements
+                    </Button>
+                  </NavigationMenuItem>
+
                   {/* Tools & Features */}
                   <NavigationMenuItem>
                     <NavigationMenuTrigger className="text-muted-foreground hover:text-primary h-10 px-4 py-2">
