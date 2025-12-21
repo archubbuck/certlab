@@ -16,7 +16,7 @@ export default function MarketplacePage() {
   const handleAddToCart = (e: React.MouseEvent, materialId: string) => {
     e.stopPropagation();
     // Cart button click would add to cart
-    console.log('Add to cart:', materialId);
+    // TODO: Implement cart functionality
   };
 
   return (
