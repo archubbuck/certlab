@@ -24,7 +24,6 @@ const getNavigationItems = (isAdmin: boolean) => {
   const items = [
     { title: 'Dashboard', icon: Home, url: '/app' },
     { title: 'Marketplace', icon: ShoppingBag, url: '/app/marketplace' },
-    { title: 'My Courses', icon: BookOpen, url: '/app/practice-tests' },
     { title: 'Wallet', icon: Wallet, url: '/app/wallet' },
     { title: 'Profile', icon: User, url: '/app/profile' },
     { title: 'Import', icon: Download, url: '/app/data-import' },
