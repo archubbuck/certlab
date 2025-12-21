@@ -18,7 +18,6 @@ import {
   Target,
   History,
   ChartBar,
-  Crown,
   Sparkles,
   ArrowRight,
   Coins,
@@ -397,7 +396,7 @@ export default function Dashboard() {
             <CardContent>
               {completedQuizzes.length > 0 ? (
                 <div className="space-y-3" role="list" aria-label="Recent completed quizzes">
-                  {completedQuizzes.slice(0, 5).map((quiz) => (
+                  {completedQuizzes.map((quiz) => (
                     <div
                       key={quiz.id}
                       className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
