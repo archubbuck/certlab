@@ -670,6 +670,25 @@ export interface IClientStorage extends IStorageAdapter {
   calculateQuizTokenCost(questionCount: number): number;
 
   // ==========================================
+  // Smart Study Recommendations
+  // ==========================================
+
+  /** Generate personalized study recommendations for a user */
+  getStudyRecommendations(userId: string): Promise<any[]>;
+
+  /** Calculate readiness score for certification */
+  getReadinessScore(userId: string): Promise<any>;
+
+  /** Analyze time-of-day performance patterns */
+  getTimeOfDayPerformance(userId: string): Promise<any[]>;
+
+  /** Calculate learning velocity metrics */
+  getLearningVelocity(userId: string): Promise<any>;
+
+  /** Analyze performance for a specific category or subcategory */
+  analyzePerformance(userId: string, categoryId?: number, subcategoryId?: number): Promise<any>;
+
+  // ==========================================
   // Data Management
   // ==========================================
 
