@@ -2,6 +2,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-provider';
 import { queryKeys, queryClient } from '@/lib/queryClient';
 import { gamificationService } from '@/lib/gamification-service';
+import { triggerCelebration } from '@/components/Celebration';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

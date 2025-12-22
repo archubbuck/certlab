@@ -22,6 +22,7 @@ import { queryClient, queryKeys } from '@/lib/queryClient';
 import { clientStorage } from '@/lib/client-storage';
 import { achievementService } from '@/lib/achievement-service';
 import { gamificationService } from '@/lib/gamification-service';
+import { triggerCelebration } from '@/components/Celebration';
 import { useToast } from '@/hooks/use-toast';
 import { quizReducer } from '@/components/quiz/quizReducer';
 import type { QuizState, Question, Quiz } from '@/components/quiz/types';
@@ -144,6 +145,7 @@ export function useQuizState({ quizId, quiz, questions }: UseQuizStateOptions) {
       // Show toast for new badges earned
       if (result.achievements?.newBadges && result.achievements.newBadges.length > 0) {
         const badgeNames = result.achievements.newBadges.map((b) => b.name).join(', ');
+        triggerCelebration('achievement');
         toast({
           title: '🏆 Achievement Unlocked!',
           description: `You earned: ${badgeNames}`,
@@ -152,6 +154,7 @@ export function useQuizState({ quizId, quiz, questions }: UseQuizStateOptions) {
 
       // Show toast for level up
       if (result.achievements?.levelUp) {
+        triggerCelebration('levelup');
         toast({
           title: '🎉 Level Up!',
           description: `You've reached level ${result.achievements.newLevel}!`,
@@ -161,6 +164,7 @@ export function useQuizState({ quizId, quiz, questions }: UseQuizStateOptions) {
       // Show toast for completed quests
       if (result.quests?.completedQuests && result.quests.completedQuests.length > 0) {
         const questTitles = result.quests.completedQuests.map((q) => q.title).join(', ');
+        triggerCelebration('quest');
         toast({
           title: '🎯 Quest Completed!',
           description: `You completed: ${questTitles}`,

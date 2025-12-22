@@ -38,11 +38,13 @@ import {
   Sparkles,
   Coins,
   ShoppingCart,
+  Snowflake,
 } from 'lucide-react';
 import MobileNavigationEnhanced from '@/components/MobileNavigationEnhanced';
 import TenantSwitcher from '@/components/TenantSwitcher';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
+import type { UserGameStats } from '@shared/schema';
 
 export default function Header() {
   const location = useLocation();
@@ -55,6 +57,12 @@ export default function Header() {
   // Get token balance
   const { data: tokenData } = useQuery<{ balance: number }>({
     queryKey: queryKeys.user.tokenBalance(currentUser?.id),
+    enabled: !!currentUser?.id,
+  });
+
+  // Get user game stats for streak freeze indicator
+  const { data: gameStats } = useQuery<UserGameStats>({
+    queryKey: queryKeys.user.stats(currentUser?.id),
     enabled: !!currentUser?.id,
   });
 
@@ -130,6 +138,25 @@ export default function Header() {
                   <span className="ml-1 text-xs text-muted-foreground">tokens</span>
                 </Badge>
               )}
+              {/* Streak Freeze Indicator */}
+              {gameStats &&
+                currentUser &&
+                gameStats.streakFreezes &&
+                gameStats.streakFreezes > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="hidden lg:flex ml-2 px-3 py-1 border-blue-400 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 cursor-help"
+                    title={`You have ${gameStats.streakFreezes} streak freeze${gameStats.streakFreezes > 1 ? 's' : ''} available. Use them to protect your study streak!`}
+                    data-testid="streak-freeze-badge"
+                    aria-label={`${gameStats.streakFreezes} streak freeze${gameStats.streakFreezes > 1 ? 's' : ''} available`}
+                  >
+                    <Snowflake className="w-4 h-4 mr-1.5" aria-hidden="true" />
+                    <span className="font-medium">{gameStats.streakFreezes}</span>
+                    <span className="ml-1 text-xs">
+                      freeze{gameStats.streakFreezes > 1 ? 's' : ''}
+                    </span>
+                  </Badge>
+                )}
             </div>
             {/* Tenant Switcher - Large screens only */}
             {!isAdminArea && (
