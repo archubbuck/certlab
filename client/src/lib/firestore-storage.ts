@@ -32,21 +32,14 @@ import {
   getUserDocuments,
   setUserDocument,
   updateUserDocument,
-  deleteUserDocument,
   getSharedDocument,
   getSharedDocuments,
   setSharedDocument,
   getUserProfile,
   setUserProfile,
   updateUserProfile,
-  query,
-  where,
-  orderBy,
-  limit,
   Timestamp,
   timestampToDate,
-  dateToTimestamp,
-  type QueryConstraint,
 } from './firestore-service';
 import { logError } from './errors';
 import type {
@@ -72,16 +65,12 @@ import type {
   InsertQuestion,
   InsertUserProgress,
   Lecture,
-  InsertLecture,
-  StudyNote,
-  MarketplacePurchase,
 } from '@shared/schema';
 import type {
   IClientStorage,
   UserStatsResult,
   UserGoals,
   CertificationMasteryScore,
-  StudyGroupWithMembers,
 } from '@shared/storage-interface';
 
 /**
@@ -723,8 +712,8 @@ class FirestoreStorage implements IClientStorage {
         passingRate,
         masteryScore,
       };
-    } catch (error) {
-      logError('getUserStats', error, { userId, tenantId });
+    } catch (_error) {
+      logError('getUserStats', _error, { userId, tenantId });
       return {
         totalQuizzes: 0,
         averageScore: 0,

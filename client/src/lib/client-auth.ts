@@ -492,7 +492,7 @@ class ClientAuth {
       }
 
       // Don't allow updating password through this method
-      const { passwordHash, ...safeUpdates } = updates as any;
+      const { passwordHash: _passwordHash, ...safeUpdates } = updates as unknown;
 
       const updatedUser = await clientStorage.updateUser(userId, safeUpdates);
       if (!updatedUser) {

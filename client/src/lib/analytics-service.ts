@@ -432,7 +432,7 @@ export class AnalyticsService {
   /**
    * Calculate optimal study duration per session
    */
-  private calculateOptimalStudyDuration(quizzes: Quiz[]): number {
+  private calculateOptimalStudyDuration(_quizzes: Quiz[]): number {
     // Analyze performance patterns to find optimal session length
     // For now, use evidence-based defaults: 45-60 minutes with breaks
     const avgQuizLength = 20; // minutes

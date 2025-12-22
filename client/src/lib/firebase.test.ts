@@ -17,7 +17,7 @@ vi.mock('firebase/auth', () => ({
 }));
 
 // Store original env values
-const originalEnv = {
+const _originalEnv = {
   VITE_FIREBASE_API_KEY: '',
   VITE_FIREBASE_AUTH_DOMAIN: '',
   VITE_FIREBASE_PROJECT_ID: '',

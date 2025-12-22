@@ -32,7 +32,7 @@
  */
 
 import { clientStorage } from './client-storage';
-import type { Quiz, Badge, UserBadge, UserGameStats } from '@shared/schema';
+import type { Quiz, Badge, UserGameStats } from '@shared/schema';
 
 /**
  * Badge requirement structure for calculating progress and awarding badges
@@ -268,11 +268,12 @@ class AchievementService {
           earned = progress >= requirement.value;
           break;
 
-        case 'perfect_score':
+        case 'perfect_score': {
           const perfectScores = completedQuizzes.filter((q) => q.score === 100).length;
           progress = perfectScores;
           earned = progress >= requirement.value;
           break;
+        }
 
         case 'study_streak':
           progress = gameStats.currentStreak || 0;
@@ -284,13 +285,14 @@ class AchievementService {
           earned = progress >= requirement.value;
           break;
 
-        case 'high_score':
+        case 'high_score': {
           // Check if user has achieved a specific score threshold
           const highScores = completedQuizzes.filter((q) => (q.score || 0) >= requirement.value);
           earned = highScores.length > 0;
           break;
+        }
 
-        case 'questions_answered':
+        case 'questions_answered': {
           const totalCorrect = completedQuizzes.reduce(
             (sum, q) => sum + (q.correctAnswers || 0),
             0
@@ -298,6 +300,7 @@ class AchievementService {
           progress = totalCorrect;
           earned = progress >= requirement.value;
           break;
+        }
 
         case 'total_points':
           progress = gameStats.totalPoints || 0;
@@ -379,24 +382,26 @@ class AchievementService {
           progressText = `${completedQuizzes.length}/${requirement.value} quizzes completed`;
           break;
 
-        case 'perfect_score':
+        case 'perfect_score': {
           const perfectScores = completedQuizzes.filter((q) => q.score === 100).length;
           progress = Math.min(100, Math.round((perfectScores / requirement.value) * 100));
           progressText = `${perfectScores}/${requirement.value} perfect scores`;
           break;
+        }
 
-        case 'study_streak':
+        case 'study_streak': {
           const streak = gameStats?.currentStreak || 0;
           progress = Math.min(100, Math.round((streak / requirement.value) * 100));
           progressText = `${streak}/${requirement.value} day streak`;
           break;
+        }
 
         case 'lectures_read':
           progress = Math.min(100, Math.round((readLectures.length / requirement.value) * 100));
           progressText = `${readLectures.length}/${requirement.value} lectures read`;
           break;
 
-        case 'high_score':
+        case 'high_score': {
           const bestScore =
             completedQuizzes.length > 0
               ? Math.max(0, ...completedQuizzes.map((q) => q.score || 0))
@@ -407,8 +412,9 @@ class AchievementService {
               ? `Best score: ${bestScore}% (target: ${requirement.value}%)`
               : `Achieve ${requirement.value}% on a quiz`;
           break;
+        }
 
-        case 'questions_answered':
+        case 'questions_answered': {
           const totalCorrect = completedQuizzes.reduce(
             (sum, q) => sum + (q.correctAnswers || 0),
             0
@@ -416,12 +422,14 @@ class AchievementService {
           progress = Math.min(100, Math.round((totalCorrect / requirement.value) * 100));
           progressText = `${totalCorrect}/${requirement.value} correct answers`;
           break;
+        }
 
-        case 'total_points':
+        case 'total_points': {
           const points = gameStats?.totalPoints || 0;
           progress = Math.min(100, Math.round((points / requirement.value) * 100));
           progressText = `${points}/${requirement.value} points earned`;
           break;
+        }
       }
 
       return {
