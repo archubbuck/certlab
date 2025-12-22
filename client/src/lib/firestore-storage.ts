@@ -1727,7 +1727,6 @@ class FirestoreStorage implements IClientStorage {
     }
 
     // Calculate streaks
-    const sortedDates = Array.from(dateMap.keys()).sort();
     let currentStreak = 0;
     let longestStreak = 0;
     let tempStreak = 0;
@@ -1735,6 +1734,22 @@ class FirestoreStorage implements IClientStorage {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Current streak: consecutive active days ending today (or most recent day)
+    for (let i = 0; i < days; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(checkDate.getDate() - i);
+      const dateStr = checkDate.toISOString().split('T')[0];
+
+      if (dateMap.has(dateStr)) {
+        currentStreak++;
+      } else {
+        // If first day (today) has no activity, current streak is 0
+        // If any day breaks the streak, stop counting
+        break;
+      }
+    }
+
+    // Longest streak: find maximum consecutive active days within the window
     for (let i = 0; i < days; i++) {
       const checkDate = new Date(today);
       checkDate.setDate(checkDate.getDate() - i);
@@ -1742,12 +1757,8 @@ class FirestoreStorage implements IClientStorage {
 
       if (dateMap.has(dateStr)) {
         tempStreak++;
-        if (i === 0 || currentStreak > 0) {
-          currentStreak = tempStreak;
-        }
         longestStreak = Math.max(longestStreak, tempStreak);
       } else {
-        if (i === 0) currentStreak = 0;
         tempStreak = 0;
       }
     }
@@ -1756,7 +1767,7 @@ class FirestoreStorage implements IClientStorage {
       .map(([date, data]) => ({
         date,
         quizCount: data.quizCount,
-        totalScore: Math.round(data.totalScore / data.quizCount),
+        totalScore: data.quizCount > 0 ? Math.round(data.totalScore / data.quizCount) : 0,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -1795,14 +1806,15 @@ class FirestoreStorage implements IClientStorage {
     const totalQuestions = completedQuizzes.reduce((sum, q) => sum + (q.totalQuestions || 0), 0);
 
     // Determine recent trend (last 10 quizzes vs previous 10)
+    // Note: completedQuizzes is sorted descending by completedAt, so slice(0,10) gets most recent
     let recentTrend: 'improving' | 'stable' | 'declining' = 'stable';
     if (completedQuizzes.length >= 10) {
-      const recent = completedQuizzes.slice(0, 10);
-      const previous = completedQuizzes.slice(10, 20);
-      const recentAvg = recent.reduce((sum, q) => sum + (q.score || 0), 0) / recent.length;
+      const mostRecent10 = completedQuizzes.slice(0, 10);
+      const next10 = completedQuizzes.slice(10, 20);
+      const recentAvg = mostRecent10.reduce((sum, q) => sum + (q.score || 0), 0) / mostRecent10.length;
       const previousAvg =
-        previous.length > 0
-          ? previous.reduce((sum, q) => sum + (q.score || 0), 0) / previous.length
+        next10.length > 0
+          ? next10.reduce((sum, q) => sum + (q.score || 0), 0) / next10.length
           : recentAvg;
 
       if (recentAvg > previousAvg + 5) recentTrend = 'improving';

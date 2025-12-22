@@ -15,7 +15,6 @@ import {
   TrendingUp,
   TrendingDown,
   BarChart3,
-  Calendar,
   Target,
   Clock,
   Download,
@@ -100,22 +99,6 @@ export default function PerformanceInsightsPage() {
     staleTime: staleTime.user,
   });
 
-  const { data: strengthWeaknessAnalysis, isLoading: loadingStrength } = useQuery<
-    Array<{
-      categoryId: number;
-      categoryName: string;
-      subcategoryId: number;
-      subcategoryName: string;
-      masteryLevel: 'weak' | 'developing' | 'strong' | 'mastered';
-      score: number;
-      questionsAnswered: number;
-    }>
-  >({
-    queryKey: queryKeys.user.strengthWeaknessAnalysis(user?.id),
-    enabled: !!user?.id,
-    staleTime: staleTime.user,
-  });
-
   const { data: studyConsistency, isLoading: loadingConsistency } = useQuery<{
     currentStreak: number;
     longestStreak: number;
@@ -133,7 +116,6 @@ export default function PerformanceInsightsPage() {
     loadingTrends ||
     loadingCategories ||
     loadingTime ||
-    loadingStrength ||
     loadingConsistency;
 
   if (!user) {
@@ -150,6 +132,16 @@ export default function PerformanceInsightsPage() {
 
   const handleExportCSV = () => {
     if (!performanceSummary || !performanceOverTime || !categoryBreakdown) return;
+
+    // Helper function to escape CSV values according to RFC 4180
+    const escapeCSV = (value: string | number): string => {
+      const str = String(value);
+      // If value contains comma, quote, or newline, wrap in quotes and escape internal quotes
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
 
     // Create CSV content
     const rows = [
@@ -170,14 +162,14 @@ export default function PerformanceInsightsPage() {
       ['Category Breakdown'],
       ['Category', 'Score', 'Questions Answered', 'Correct Answers'],
       ...categoryBreakdown.map((cat) => [
-        cat.categoryName,
+        escapeCSV(cat.categoryName),
         cat.score,
         cat.questionsAnswered,
         cat.correctAnswers,
       ]),
     ];
 
-    const csvContent = rows.map((row) => row.join(',')).join('\n');
+    const csvContent = rows.map((row) => row.map(cell => escapeCSV(cell)).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -381,7 +373,9 @@ export default function PerformanceInsightsPage() {
                         cx="50%"
                         cy="50%"
                         outerRadius={100}
-                        label={(entry: any) => `${entry.categoryName}: ${entry.questionsAnswered}`}
+                        label={(entry: (typeof categoryBreakdown)[number]) => 
+                          `${entry.categoryName}: ${entry.questionsAnswered}`
+                        }
                       >
                         {categoryBreakdown.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
