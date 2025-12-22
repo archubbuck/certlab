@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const existingUser = await storage.getUserById(currentUserId);
             if (existingUser) {
               setUser(existingUser);
-              identifyUser(existingUser.id, existingUser.email);
+              identifyUser(existingUser.id);
             }
           }
 

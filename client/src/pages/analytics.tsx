@@ -433,7 +433,7 @@ export default function Analytics() {
                     />
                     <YAxis domain={[0, 100]} />
                     <Tooltip
-                      formatter={(value: number) => [`${value}%`, '']}
+                      formatter={(value: number | undefined) => [`${value ?? 0}%`, '']}
                       labelFormatter={(date) => new Date(date).toLocaleDateString()}
                     />
                     <Legend />
@@ -476,7 +476,7 @@ export default function Analytics() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
                     <YAxis domain={[0, 100]} />
-                    <Tooltip formatter={(value: number) => `${value}%`} />
+                    <Tooltip formatter={(value: number | undefined) => `${value ?? 0}%`} />
                     <Legend />
                     <Area
                       type="monotone"
@@ -582,7 +582,9 @@ export default function Analytics() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="hour" />
                       <YAxis domain={[0, 100]} />
-                      <Tooltip formatter={(value: number) => [`${value}%`, 'Score']} />
+                      <Tooltip
+                        formatter={(value: number | undefined) => [`${value ?? 0}%`, 'Score']}
+                      />
                       <Legend />
                       <Bar dataKey="score" fill="#8884d8" name="Average Score" />
                     </BarChart>
@@ -755,7 +757,7 @@ export default function Analytics() {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="category" />
                         <YAxis domain={[0, 100]} />
-                        <Tooltip formatter={(value: number) => `${value}%`} />
+                        <Tooltip formatter={(value: number | undefined) => `${value ?? 0}%`} />
                         <Legend />
                         <Bar dataKey="current" fill="#8884d8" name="Current Mastery" />
                         <Bar dataKey="target" fill="#82ca9d" name="Target Mastery" />
@@ -851,7 +853,7 @@ export default function Analytics() {
                       domain={[0, 100]}
                       label={{ value: 'Retention %', angle: -90, position: 'insideLeft' }}
                     />
-                    <Tooltip formatter={(value: number) => `${value}%`} />
+                    <Tooltip formatter={(value: number | undefined) => `${value ?? 0}%`} />
                     <Legend />
                     <Area
                       type="monotone"

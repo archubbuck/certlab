@@ -58,7 +58,7 @@ function AuthenticatedHeader() {
   });
 
   // Count unread notifications
-  const unreadCount = achievements?.badges?.filter((b: any) => !b.isNotified)?.length || 0;
+  const unreadCount = (achievements as any)?.badges?.filter((b: any) => !b.isNotified)?.length || 0;
 
   // Calculate level and XP based on total quizzes and average score
   const level = stats ? Math.floor((stats.totalQuizzes || 0) / 10) + 1 : 1;

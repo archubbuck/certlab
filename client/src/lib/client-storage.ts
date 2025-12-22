@@ -308,6 +308,12 @@ class ClientStorage implements IClientStorage {
       explanation: question.explanation || null,
       difficultyLevel: question.difficultyLevel || 1,
       tags: question.tags || null,
+      explanationSteps: question.explanationSteps || null,
+      referenceLinks: question.referenceLinks || null,
+      videoUrl: question.videoUrl || null,
+      communityExplanations: question.communityExplanations || null,
+      explanationVotes: question.explanationVotes || null,
+      hasAlternativeViews: question.hasAlternativeViews || null,
     };
     const id = await indexedDBService.add(STORES.questions, newQuestion);
     return { ...newQuestion, id: Number(id) };
@@ -633,8 +639,15 @@ class ClientStorage implements IClientStorage {
       quizId: studyNote.quizId || null,
       title: studyNote.title!,
       content: studyNote.content!,
+      richContent: studyNote.richContent || null,
+      contentType: studyNote.contentType || null,
       categoryIds: studyNote.categoryIds || null,
+      tags: studyNote.tags || null,
       score: studyNote.score || null,
+      wordCount: studyNote.wordCount || null,
+      hasCode: studyNote.hasCode || null,
+      hasFormulas: studyNote.hasFormulas || null,
+      hasDiagrams: studyNote.hasDiagrams || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -840,9 +853,16 @@ class ClientStorage implements IClientStorage {
         currentStreak: updates.currentStreak || 0,
         longestStreak: updates.longestStreak || 0,
         lastActivityDate: updates.lastActivityDate || null,
+        lastLoginDate: updates.lastLoginDate || null,
+        consecutiveLoginDays: updates.consecutiveLoginDays || 0,
         totalBadgesEarned: updates.totalBadgesEarned || 0,
         level: updates.level || 1,
         nextLevelPoints: updates.nextLevelPoints || 100,
+        streakFreezes: updates.streakFreezes || null,
+        lastStreakFreezeReset: updates.lastStreakFreezeReset || null,
+        selectedTitle: updates.selectedTitle || null,
+        profileCustomization: updates.profileCustomization || null,
+        gamificationEnabled: updates.gamificationEnabled || null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1632,6 +1652,257 @@ class ClientStorage implements IClientStorage {
     // TODO: Implement IndexedDB store for daily rewards
     console.warn('[ClientStorage] claimDailyReward not yet implemented for IndexedDB');
     throw new Error('Daily rewards not yet implemented for IndexedDB');
+  }
+
+  // ==========================================
+  // Smart Study Recommendations & Analytics
+  // ==========================================
+
+  async getStudyRecommendations(userId: string): Promise<
+    Array<{
+      id: string;
+      type:
+        | 'focus_area'
+        | 'difficulty_adjustment'
+        | 'time_optimization'
+        | 'streak_building'
+        | 'readiness';
+      title: string;
+      description: string;
+      priority: 'high' | 'medium' | 'low';
+      categoryId?: number;
+      subcategoryId?: number;
+      suggestedQuestionCount?: number;
+      suggestedDifficulty?: number;
+      estimatedTimeMinutes?: number;
+      reasoning: string;
+      actionUrl?: string;
+      confidence: number;
+    }>
+  > {
+    console.warn('[ClientStorage] getStudyRecommendations not yet implemented for IndexedDB');
+    return [];
+  }
+
+  async getReadinessScore(userId: string): Promise<{
+    overall: number;
+    categoryScores: Array<{
+      categoryId: number;
+      categoryName: string;
+      score: number;
+      questionsAnswered: number;
+      averageScore: number;
+      recommendedStudyTime: number;
+    }>;
+    estimatedDaysToReady: number;
+    confidenceLevel: 'high' | 'medium' | 'low';
+    weakAreas: Array<{
+      categoryId: number;
+      categoryName: string;
+      subcategoryId?: number;
+      subcategoryName?: string;
+      currentScore: number;
+      targetScore: number;
+      questionsNeeded: number;
+      priorityLevel: 'critical' | 'high' | 'medium' | 'low';
+      improvementTrend: 'improving' | 'stable' | 'declining';
+    }>;
+    strengths: string[];
+    nextSteps: string[];
+  }> {
+    console.warn('[ClientStorage] getReadinessScore not yet implemented for IndexedDB');
+    return {
+      overall: 0,
+      categoryScores: [],
+      estimatedDaysToReady: 0,
+      confidenceLevel: 'low',
+      weakAreas: [],
+      strengths: [],
+      nextSteps: [],
+    };
+  }
+
+  async getTimeOfDayPerformance(userId: string): Promise<
+    Array<{
+      hour: number;
+      averageScore: number;
+      quizCount: number;
+      optimalForStudy: boolean;
+    }>
+  > {
+    console.warn('[ClientStorage] getTimeOfDayPerformance not yet implemented for IndexedDB');
+    return [];
+  }
+
+  async getLearningVelocity(userId: string): Promise<{
+    questionsPerDay: number;
+    averageScoreImprovement: number;
+    streakConsistency: number;
+    masteryGrowthRate: number;
+    predictedCertificationDate: Date | null;
+  }> {
+    console.warn('[ClientStorage] getLearningVelocity not yet implemented for IndexedDB');
+    return {
+      questionsPerDay: 0,
+      averageScoreImprovement: 0,
+      streakConsistency: 0,
+      masteryGrowthRate: 0,
+      predictedCertificationDate: null,
+    };
+  }
+
+  async analyzePerformance(
+    userId: string,
+    categoryId?: number,
+    subcategoryId?: number
+  ): Promise<{
+    totalAttempts: number;
+    correctAnswers: number;
+    accuracy: number;
+    averageTime: number;
+    difficultyDistribution: Array<{
+      level: number;
+      count: number;
+      accuracy: number;
+    }>;
+    recentTrend: 'improving' | 'stable' | 'declining';
+    lastAttemptDate: Date | null;
+  }> {
+    console.warn('[ClientStorage] analyzePerformance not yet implemented for IndexedDB');
+    return {
+      totalAttempts: 0,
+      correctAnswers: 0,
+      accuracy: 0,
+      averageTime: 0,
+      difficultyDistribution: [],
+      recentTrend: 'stable',
+      lastAttemptDate: null,
+    };
+  }
+
+  // ==========================================
+  // Performance Analytics Methods
+  // ==========================================
+
+  async getPerformanceOverTime(
+    userId: string,
+    tenantId?: number,
+    days?: number
+  ): Promise<Array<{ date: string; score: number; quizCount: number }>> {
+    console.warn('[ClientStorage] getPerformanceOverTime not yet implemented for IndexedDB');
+    return [];
+  }
+
+  async getCategoryBreakdown(
+    userId: string,
+    tenantId?: number
+  ): Promise<
+    Array<{
+      categoryId: number;
+      categoryName: string;
+      score: number;
+      questionsAnswered: number;
+      correctAnswers: number;
+      subcategories: Array<{
+        subcategoryId: number;
+        subcategoryName: string;
+        score: number;
+        questionsAnswered: number;
+        correctAnswers: number;
+      }>;
+    }>
+  > {
+    console.warn('[ClientStorage] getCategoryBreakdown not yet implemented for IndexedDB');
+    return [];
+  }
+
+  async getStudyTimeDistribution(
+    userId: string,
+    tenantId?: number
+  ): Promise<{
+    totalMinutes: number;
+    averageSessionMinutes: number;
+    byDayOfWeek: Array<{ day: string; minutes: number; sessions: number }>;
+    byTimeOfDay: Array<{ hour: number; minutes: number; sessions: number }>;
+  }> {
+    console.warn('[ClientStorage] getStudyTimeDistribution not yet implemented for IndexedDB');
+    return {
+      totalMinutes: 0,
+      averageSessionMinutes: 0,
+      byDayOfWeek: [],
+      byTimeOfDay: [],
+    };
+  }
+
+  async getStrengthWeaknessAnalysis(
+    userId: string,
+    tenantId?: number
+  ): Promise<
+    Array<{
+      categoryId: number;
+      categoryName: string;
+      subcategoryId: number;
+      subcategoryName: string;
+      masteryLevel: 'weak' | 'developing' | 'strong' | 'mastered';
+      score: number;
+      questionsAnswered: number;
+    }>
+  > {
+    console.warn('[ClientStorage] getStrengthWeaknessAnalysis not yet implemented for IndexedDB');
+    return [];
+  }
+
+  async getStudyConsistency(
+    userId: string,
+    tenantId?: number,
+    days?: number
+  ): Promise<{
+    currentStreak: number;
+    longestStreak: number;
+    activeDays: number;
+    totalDays: number;
+    calendar: Array<{ date: string; quizCount: number; totalScore: number }>;
+  }> {
+    console.warn('[ClientStorage] getStudyConsistency not yet implemented for IndexedDB');
+    return {
+      currentStreak: 0,
+      longestStreak: 0,
+      activeDays: 0,
+      totalDays: 0,
+      calendar: [],
+    };
+  }
+
+  async getPerformanceSummary(
+    userId: string,
+    tenantId?: number
+  ): Promise<{
+    overview: {
+      totalQuizzes: number;
+      totalQuestions: number;
+      averageScore: number;
+      passingRate: number;
+      studyStreak: number;
+      totalStudyTime: number;
+    };
+    recentTrend: 'improving' | 'stable' | 'declining';
+    topCategories: Array<{ categoryId: number; categoryName: string; score: number }>;
+    weakCategories: Array<{ categoryId: number; categoryName: string; score: number }>;
+  }> {
+    console.warn('[ClientStorage] getPerformanceSummary not yet implemented for IndexedDB');
+    return {
+      overview: {
+        totalQuizzes: 0,
+        totalQuestions: 0,
+        averageScore: 0,
+        passingRate: 0,
+        studyStreak: 0,
+        totalStudyTime: 0,
+      },
+      recentTrend: 'stable',
+      topCategories: [],
+      weakCategories: [],
+    };
   }
 }
 

@@ -1942,6 +1942,132 @@ class FirestoreStorage implements IClientStorage {
     console.warn('[FirestoreStorage] claimDailyReward not yet implemented');
     throw new Error('Daily rewards not yet implemented for Firestore');
   }
+
+  // ==========================================
+  // Smart Study Recommendations & Analytics
+  // ==========================================
+
+  async getStudyRecommendations(userId: string): Promise<
+    Array<{
+      id: string;
+      type:
+        | 'focus_area'
+        | 'difficulty_adjustment'
+        | 'time_optimization'
+        | 'streak_building'
+        | 'readiness';
+      title: string;
+      description: string;
+      priority: 'high' | 'medium' | 'low';
+      categoryId?: number;
+      subcategoryId?: number;
+      suggestedQuestionCount?: number;
+      suggestedDifficulty?: number;
+      estimatedTimeMinutes?: number;
+      reasoning: string;
+      actionUrl?: string;
+      confidence: number;
+    }>
+  > {
+    console.warn('[FirestoreStorage] getStudyRecommendations not yet implemented');
+    return [];
+  }
+
+  async getReadinessScore(userId: string): Promise<{
+    overall: number;
+    categoryScores: Array<{
+      categoryId: number;
+      categoryName: string;
+      score: number;
+      questionsAnswered: number;
+      averageScore: number;
+      recommendedStudyTime: number;
+    }>;
+    estimatedDaysToReady: number;
+    confidenceLevel: 'high' | 'medium' | 'low';
+    weakAreas: Array<{
+      categoryId: number;
+      categoryName: string;
+      subcategoryId?: number;
+      subcategoryName?: string;
+      currentScore: number;
+      targetScore: number;
+      questionsNeeded: number;
+      priorityLevel: 'critical' | 'high' | 'medium' | 'low';
+      improvementTrend: 'improving' | 'stable' | 'declining';
+    }>;
+    strengths: string[];
+    nextSteps: string[];
+  }> {
+    console.warn('[FirestoreStorage] getReadinessScore not yet implemented');
+    return {
+      overall: 0,
+      categoryScores: [],
+      estimatedDaysToReady: 0,
+      confidenceLevel: 'low',
+      weakAreas: [],
+      strengths: [],
+      nextSteps: [],
+    };
+  }
+
+  async getTimeOfDayPerformance(userId: string): Promise<
+    Array<{
+      hour: number;
+      averageScore: number;
+      quizCount: number;
+      optimalForStudy: boolean;
+    }>
+  > {
+    console.warn('[FirestoreStorage] getTimeOfDayPerformance not yet implemented');
+    return [];
+  }
+
+  async getLearningVelocity(userId: string): Promise<{
+    questionsPerDay: number;
+    averageScoreImprovement: number;
+    streakConsistency: number;
+    masteryGrowthRate: number;
+    predictedCertificationDate: Date | null;
+  }> {
+    console.warn('[FirestoreStorage] getLearningVelocity not yet implemented');
+    return {
+      questionsPerDay: 0,
+      averageScoreImprovement: 0,
+      streakConsistency: 0,
+      masteryGrowthRate: 0,
+      predictedCertificationDate: null,
+    };
+  }
+
+  async analyzePerformance(
+    userId: string,
+    categoryId?: number,
+    subcategoryId?: number
+  ): Promise<{
+    totalAttempts: number;
+    correctAnswers: number;
+    accuracy: number;
+    averageTime: number;
+    difficultyDistribution: Array<{
+      level: number;
+      count: number;
+      accuracy: number;
+    }>;
+    recentTrend: 'improving' | 'stable' | 'declining';
+    lastAttemptDate: Date | null;
+  }> {
+    console.warn('[FirestoreStorage] analyzePerformance not yet implemented');
+    return {
+      totalAttempts: 0,
+      correctAnswers: 0,
+      accuracy: 0,
+      averageTime: 0,
+      difficultyDistribution: [],
+      recentTrend: 'stable',
+      lastAttemptDate: null,
+    };
+  }
 }
 
 // Export singleton instance

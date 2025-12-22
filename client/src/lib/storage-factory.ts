@@ -771,10 +771,11 @@ class StorageRouter implements IClientStorage {
   async getStudyRecommendations(
     userId: string
   ): Promise<import('./smart-recommendations').StudyRecommendation[]> {
-    return this.executeStorageOperation(
+    const result = await this.executeStorageOperation(
       (s) => s.getStudyRecommendations(userId),
       'getStudyRecommendations'
     );
+    return result as any;
   }
 
   async getReadinessScore(
