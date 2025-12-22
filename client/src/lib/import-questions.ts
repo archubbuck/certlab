@@ -5,11 +5,8 @@
 
 import yaml from 'js-yaml';
 import { clientStorage } from './client-storage';
-import type { Category, Subcategory, Question } from '@shared/schema';
-import { 
-  questionOptionsSchema, 
-  validateCorrectAnswer
-} from '@shared/schema';
+import type { Subcategory } from '@shared/schema';
+import { questionOptionsSchema, validateCorrectAnswer } from '@shared/schema';
 
 export interface QuestionImportData {
   text: string;
@@ -49,7 +46,10 @@ export interface ImportResult {
  * Validates a single question's options and correctAnswer
  * @returns Error message if invalid, null if valid
  */
-export function validateQuestionOptions(question: QuestionImportData, questionIndex: number): string | null {
+export function validateQuestionOptions(
+  question: QuestionImportData,
+  questionIndex: number
+): string | null {
   // Validate options structure using Zod schema
   const optionsResult = questionOptionsSchema.safeParse(question.options);
   if (!optionsResult.success) {
@@ -58,7 +58,7 @@ export function validateQuestionOptions(question: QuestionImportData, questionIn
 
   // Validate correctAnswer matches an option ID
   if (!validateCorrectAnswer(optionsResult.data, question.correctAnswer)) {
-    const optionIds = optionsResult.data.map(o => o.id).join(', ');
+    const optionIds = optionsResult.data.map((o) => o.id).join(', ');
     return `Question ${questionIndex + 1}: correctAnswer ${question.correctAnswer} does not match any option ID. Valid IDs: ${optionIds}`;
   }
 
@@ -71,14 +71,16 @@ export function validateQuestionOptions(question: QuestionImportData, questionIn
 export function parseYAMLQuestions(yamlContent: string): YAMLImportData {
   try {
     const data = yaml.load(yamlContent) as YAMLImportData;
-    
+
     if (!data.category || !data.questions || !Array.isArray(data.questions)) {
       throw new Error('Invalid YAML structure: must contain category and questions array');
     }
-    
+
     return data;
   } catch (error) {
-    throw new Error(`Failed to parse YAML: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse YAML: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -102,7 +104,7 @@ export async function importQuestionsFromYAML(
   try {
     // Parse YAML
     const data = parseYAMLQuestions(yamlContent);
-    
+
     onProgress?.({
       total: data.questions.length,
       current: 0,
@@ -112,8 +114,8 @@ export async function importQuestionsFromYAML(
 
     // Find or create category
     const existingCategories = await clientStorage.getCategories(tenantId);
-    let category = existingCategories.find(c => c.name === data.category);
-    
+    let category = existingCategories.find((c) => c.name === data.category);
+
     if (!category) {
       category = await clientStorage.createCategory({
         tenantId,
@@ -127,19 +129,19 @@ export async function importQuestionsFromYAML(
     // Get or create subcategories
     const subcategoryMap = new Map<string, Subcategory>();
     const existingSubcategories = await clientStorage.getSubcategories(category.id, tenantId);
-    
-    const uniqueSubcategories = Array.from(new Set(data.questions.map(q => q.subcategory)));
-    
+
+    const uniqueSubcategories = Array.from(new Set(data.questions.map((q) => q.subcategory)));
+
     onProgress?.({
       total: data.questions.length,
       current: 0,
       status: `Creating ${uniqueSubcategories.length} subcategories...`,
       category: data.category,
     });
-    
+
     for (const subcatName of uniqueSubcategories) {
-      let subcat = existingSubcategories.find(s => s.name === subcatName);
-      
+      let subcat = existingSubcategories.find((s) => s.name === subcatName);
+
       if (!subcat) {
         subcat = await clientStorage.createSubcategory({
           tenantId,
@@ -149,7 +151,7 @@ export async function importQuestionsFromYAML(
         });
         result.subcategoriesCreated++;
       }
-      
+
       subcategoryMap.set(subcatName, subcat);
     }
 
@@ -160,21 +162,21 @@ export async function importQuestionsFromYAML(
     const batchSize = 50;
     let imported = 0;
     let skipped = 0;
-    
+
     for (let i = 0; i < data.questions.length; i += batchSize) {
       const batch = data.questions.slice(i, i + batchSize);
-      
+
       onProgress?.({
         total: data.questions.length,
         current: i,
         status: `Importing questions ${i + 1}-${Math.min(i + batchSize, data.questions.length)} of ${data.questions.length}...`,
         category: data.category,
       });
-      
+
       for (let batchIndex = 0; batchIndex < batch.length; batchIndex++) {
         const questionData = batch[batchIndex];
         const absoluteIndex = i + batchIndex;
-        
+
         try {
           // Validate question options and correctAnswer before import
           const validationError = validateQuestionOptions(questionData, absoluteIndex);
@@ -184,15 +186,17 @@ export async function importQuestionsFromYAML(
             skipped++;
             continue;
           }
-          
+
           const subcategory = subcategoryMap.get(questionData.subcategory);
           if (!subcategory) {
             console.error(`Subcategory not found: ${questionData.subcategory}`);
-            result.errors.push(`Question ${absoluteIndex + 1}: Subcategory not found: ${questionData.subcategory}`);
+            result.errors.push(
+              `Question ${absoluteIndex + 1}: Subcategory not found: ${questionData.subcategory}`
+            );
             skipped++;
             continue;
           }
-          
+
           await clientStorage.createQuestion({
             tenantId,
             categoryId: category.id,
@@ -204,26 +208,27 @@ export async function importQuestionsFromYAML(
             difficultyLevel: questionData.difficultyLevel,
             tags: questionData.tags,
           });
-          
+
           imported++;
         } catch (error) {
-          result.errors.push(`Question ${absoluteIndex + 1}: Failed to import - ${error instanceof Error ? error.message : 'Unknown error'}`);
+          result.errors.push(
+            `Question ${absoluteIndex + 1}: Failed to import - ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
           skipped++;
         }
       }
     }
-    
+
     result.questionsImported = imported;
     result.questionsSkipped = skipped;
     result.success = true;
-    
+
     onProgress?.({
       total: data.questions.length,
       current: data.questions.length,
       status: `Successfully imported ${imported} questions for ${data.category}!${skipped > 0 ? ` (${skipped} skipped due to validation errors)` : ''}`,
       category: data.category,
     });
-    
   } catch (error) {
     result.errors.push(error instanceof Error ? error.message : 'Unknown error');
   }
@@ -246,14 +251,13 @@ export async function importFromBundledYAML(
     const baseUrl = import.meta.env.BASE_URL || '/';
     const dataPath = baseUrl.endsWith('/') ? 'data' : '/data';
     const response = await fetch(`${baseUrl}${dataPath}/${fileName}-questions.yaml`);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to load ${categoryName} questions: ${response.statusText}`);
     }
-    
+
     const yamlContent = await response.text();
     return await importQuestionsFromYAML(yamlContent, 1, onProgress);
-    
   } catch (error) {
     return {
       success: false,
@@ -293,17 +297,17 @@ export async function importFromFile(
  */
 export async function clearCategoryQuestions(categoryName: string): Promise<number> {
   const categories = await clientStorage.getCategories();
-  const category = categories.find(c => c.name === categoryName);
-  
+  const category = categories.find((c) => c.name === categoryName);
+
   if (!category) {
     return 0;
   }
-  
+
   const questions = await clientStorage.getQuestionsByCategories([category.id]);
-  
+
   for (const question of questions) {
     await clientStorage.deleteQuestion(question.id);
   }
-  
+
   return questions.length;
 }

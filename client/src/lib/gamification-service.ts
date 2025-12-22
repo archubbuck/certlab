@@ -84,18 +84,20 @@ class GamificationService {
             newProgress = completedQuizzes.length;
             break;
 
-          case 'questions_answered':
+          case 'questions_answered': {
             const totalCorrect = completedQuizzes.reduce(
               (sum, q) => sum + (q.correctAnswers || 0),
               0
             );
             newProgress = totalCorrect;
             break;
+          }
 
-          case 'perfect_scores':
+          case 'perfect_scores': {
             const perfectScores = completedQuizzes.filter((q) => q.score === 100).length;
             newProgress = perfectScores;
             break;
+          }
 
           case 'study_streak':
             newProgress = gameStats?.currentStreak || 0;
@@ -175,7 +177,7 @@ class GamificationService {
    */
   async processDailyLogin(
     userId: string,
-    tenantId: number = 1
+    _tenantId: number = 1
   ): Promise<{ shouldShowReward: boolean; day: number; reward?: DailyRewardClaimResult }> {
     try {
       // Get user's game stats

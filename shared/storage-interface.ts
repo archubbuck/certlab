@@ -33,9 +33,7 @@ import type {
   InsertCategory,
   InsertSubcategory,
   InsertQuestion,
-  InsertQuiz,
   InsertUserProgress,
-  InsertChallenge,
   InsertStudyGroup,
   InsertPracticeTest,
   Lecture,
@@ -674,9 +672,7 @@ export interface IClientStorage extends IStorageAdapter {
   // ==========================================
 
   /** Generate personalized study recommendations for a user */
-  getStudyRecommendations(
-    userId: string
-  ): Promise<
+  getStudyRecommendations(userId: string): Promise<
     Array<{
       id: string;
       type: string;
@@ -723,9 +719,7 @@ export interface IClientStorage extends IStorageAdapter {
   }>;
 
   /** Analyze time-of-day performance patterns */
-  getTimeOfDayPerformance(
-    userId: string
-  ): Promise<
+  getTimeOfDayPerformance(userId: string): Promise<
     Array<{
       hour: number;
       averageScore: number;

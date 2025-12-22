@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { clientStorage } from './client-storage';
 import { calculateLevelAndXP } from './level-utils';
-import type { User, UserGameStats, UserStats } from '@shared/schema';
+import type { UserStats } from '@shared/schema';
 
 describe('User State Management', () => {
   let testUserId: string;

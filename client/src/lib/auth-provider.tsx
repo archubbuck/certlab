@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { clientAuth } from './client-auth';
 import { logError } from './errors';
 import {
   initializeFirebase,
