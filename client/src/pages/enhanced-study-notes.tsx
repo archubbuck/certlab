@@ -147,7 +147,7 @@ export default function EnhancedStudyNotesPage() {
     queryKey: queryKeys.studyNotes.all(currentUser?.id),
     queryFn: async () => {
       if (!currentUser) return [];
-      return await storage.getUserStudyNotes(currentUser.id, tenantId);
+      return await (storage as any).getUserStudyNotes(currentUser.id, tenantId);
     },
     enabled: !!currentUser,
   });
@@ -190,7 +190,7 @@ export default function EnhancedStudyNotesPage() {
         updatedAt: new Date(),
       };
 
-      return await storage.createStudyNote(newNote as never);
+      return await (storage as any).createStudyNote(newNote as never);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.studyNotes.all(currentUser?.id) });
@@ -239,7 +239,7 @@ export default function EnhancedStudyNotesPage() {
         updatedAt: new Date(),
       };
 
-      return await storage.updateStudyNote(noteData.id, updatedNote as never);
+      return await (storage as any).updateStudyNote(noteData.id, updatedNote as never);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.studyNotes.all(currentUser?.id) });
@@ -261,7 +261,7 @@ export default function EnhancedStudyNotesPage() {
 
   const deleteNoteMutation = useMutation({
     mutationFn: async (noteId: number) => {
-      await storage.deleteStudyNote(noteId);
+      await (storage as any).deleteStudyNote(noteId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.studyNotes.all(currentUser?.id) });
@@ -661,7 +661,6 @@ export default function EnhancedStudyNotesPage() {
                   content={newNoteContent}
                   onChange={(html) => setNewNoteContent(html)}
                   onJsonChange={(json) => setNewNoteRichContent(json)}
-                  placeholder="Write your study note... Use the toolbar for formatting, code blocks, and more."
                 />
               </div>
             </div>
@@ -712,7 +711,6 @@ export default function EnhancedStudyNotesPage() {
                     onJsonChange={(json) =>
                       setEditingNote({ ...editingNote, richContent: json as never })
                     }
-                    placeholder="Write your study note..."
                   />
                 </div>
               </div>

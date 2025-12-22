@@ -110,7 +110,7 @@ export default function StudyTimerPage() {
           userId: user.id,
           tenantId: 1,
           sessionType,
-          duration: configuredDuration,
+          duration: configuredDuration ?? 0,
           isCompleted: false,
           isPaused: false,
           totalPausedTime: 0,
@@ -131,10 +131,10 @@ export default function StudyTimerPage() {
     if (timerSettings && !isRunning) {
       const duration =
         sessionType === 'work'
-          ? timerSettings.workDuration
+          ? (timerSettings.workDuration ?? 25)
           : sessionType === 'break'
-            ? timerSettings.breakDuration
-            : timerSettings.longBreakDuration;
+            ? (timerSettings.breakDuration ?? 5)
+            : (timerSettings.longBreakDuration ?? 15);
       setTimeLeft(duration * 60);
     }
   }, [timerSettings, sessionType, isRunning]);
@@ -172,7 +172,7 @@ export default function StudyTimerPage() {
 
       saveSessionMutation.mutate({
         sessionType,
-        duration: configuredDuration,
+        duration: configuredDuration ?? 0,
         startedAt: sessionStartTimeRef.current,
       });
     }
@@ -247,9 +247,9 @@ export default function StudyTimerPage() {
       const newCount = workSessionsCompleted + 1;
       setWorkSessionsCompleted(newCount);
 
-      if (timerSettings && newCount % timerSettings.sessionsUntilLongBreak === 0) {
+      if (timerSettings && newCount % (timerSettings.sessionsUntilLongBreak ?? 4) === 0) {
         setSessionType('long_break');
-        setTimeLeft(timerSettings.longBreakDuration * 60);
+        setTimeLeft((timerSettings.longBreakDuration ?? 15) * 60);
 
         if (timerSettings.autoStartBreaks) {
           // Clear any existing timeout before setting new one
@@ -261,7 +261,7 @@ export default function StudyTimerPage() {
       } else {
         setSessionType('break');
         if (timerSettings) {
-          setTimeLeft(timerSettings.breakDuration * 60);
+          setTimeLeft((timerSettings.breakDuration ?? 5) * 60);
         }
 
         if (timerSettings?.autoStartBreaks) {
@@ -275,7 +275,7 @@ export default function StudyTimerPage() {
     } else {
       setSessionType('work');
       if (timerSettings) {
-        setTimeLeft(timerSettings.workDuration * 60);
+        setTimeLeft((timerSettings.workDuration ?? 25) * 60);
       }
 
       if (timerSettings?.autoStartWork) {
@@ -355,10 +355,10 @@ export default function StudyTimerPage() {
     if (!timerSettings) return 0;
     const totalDuration =
       sessionType === 'work'
-        ? timerSettings.workDuration * 60
+        ? (timerSettings.workDuration ?? 25) * 60
         : sessionType === 'break'
-          ? timerSettings.breakDuration * 60
-          : timerSettings.longBreakDuration * 60;
+          ? (timerSettings.breakDuration ?? 5) * 60
+          : (timerSettings.longBreakDuration ?? 15) * 60;
     return ((totalDuration - timeLeft) / totalDuration) * 100;
   };
 
@@ -387,10 +387,10 @@ export default function StudyTimerPage() {
     if (timerSettings) {
       const duration =
         sessionType === 'work'
-          ? timerSettings.workDuration
+          ? (timerSettings.workDuration ?? 25)
           : sessionType === 'break'
-            ? timerSettings.breakDuration
-            : timerSettings.longBreakDuration;
+            ? (timerSettings.breakDuration ?? 5)
+            : (timerSettings.longBreakDuration ?? 15);
       setTimeLeft(duration * 60);
     }
 
@@ -409,7 +409,7 @@ export default function StudyTimerPage() {
     .reduce((sum: number, s: StudyTimerSession) => sum + s.duration, 0);
 
   const todayGoalProgress = timerSettings
-    ? (todayMinutes / timerSettings.dailyGoalMinutes) * 100
+    ? (todayMinutes / (timerSettings.dailyGoalMinutes ?? 120)) * 100
     : 0;
 
   if (isLoadingSettings) {

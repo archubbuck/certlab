@@ -37,7 +37,7 @@ export default function DailyChallengesPage() {
   });
 
   // Get user game stats for consecutive login days
-  const { data: gameStats } = useQuery<unknown>({
+  const { data: gameStats } = useQuery({
     queryKey: queryKeys.user.stats(currentUser?.id),
     enabled: !!currentUser,
   });
@@ -123,7 +123,7 @@ export default function DailyChallengesPage() {
   const monthlyQuests = quests?.filter((q) => q.type === 'monthly') || [];
 
   // Calculate daily reward streak using consecutive login days from game stats
-  const consecutiveDays = gameStats?.consecutiveLoginDays ?? 0;
+  const consecutiveDays = (gameStats as any)?.consecutiveLoginDays ?? 0;
   const currentRewardDay = (consecutiveDays % 7) + 1;
 
   return (
