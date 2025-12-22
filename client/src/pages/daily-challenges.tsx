@@ -1,6 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-provider';
-import { queryKeys } from '@/lib/queryClient';
+import { queryKeys, queryClient } from '@/lib/queryClient';
+import { gamificationService } from '@/lib/gamification-service';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +18,7 @@ interface QuestWithProgress extends Quest {
 
 export default function DailyChallengesPage() {
   const { user: currentUser } = useAuth();
+  const { toast } = useToast();
 
   const { data: quests, isLoading: questsLoading } = useQuery<QuestWithProgress[]>({
     queryKey: queryKeys.quests.active(),
@@ -30,6 +33,66 @@ export default function DailyChallengesPage() {
   const { data: userDailyRewards } = useQuery<any[]>({
     queryKey: queryKeys.dailyRewards.userClaims(currentUser?.id || ''),
     enabled: !!currentUser,
+  });
+
+  // Mutation for claiming daily rewards
+  const claimDailyRewardMutation = useMutation({
+    mutationFn: async (day: number) => {
+      if (!currentUser) throw new Error('Not authenticated');
+      return await gamificationService.claimDailyReward(currentUser.id, day, currentUser.tenantId);
+    },
+    onSuccess: (result) => {
+      toast({
+        title: '🎁 Reward Claimed!',
+        description: `You earned ${result.pointsEarned} points${result.streakFreezeGranted ? ' and a Streak Freeze!' : '!'}`,
+      });
+      // Invalidate queries to refresh UI
+      if (currentUser) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyRewards.userClaims(currentUser.id),
+        });
+        queryClient.invalidateQueries({ queryKey: queryKeys.user.all(currentUser.id) });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to claim reward',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Mutation for claiming quest rewards
+  const claimQuestRewardMutation = useMutation({
+    mutationFn: async (questId: number) => {
+      if (!currentUser) throw new Error('Not authenticated');
+      return await gamificationService.claimQuestReward(
+        currentUser.id,
+        questId,
+        currentUser.tenantId
+      );
+    },
+    onSuccess: (result) => {
+      toast({
+        title: '✨ Quest Reward Claimed!',
+        description: `You earned ${result.pointsAwarded} points for completing "${result.quest.title}"!`,
+      });
+      // Invalidate queries to refresh UI
+      if (currentUser) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.userQuestProgress.all(currentUser.id),
+        });
+        queryClient.invalidateQueries({ queryKey: queryKeys.user.all(currentUser.id) });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to claim quest reward',
+        variant: 'destructive',
+      });
+    },
   });
 
   if (!currentUser) {
@@ -121,9 +184,18 @@ export default function DailyChallengesPage() {
                   })}
                 </div>
                 {currentRewardDay <= 7 && (
-                  <Button className="w-full" size="lg">
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={() => claimDailyRewardMutation.mutate(currentRewardDay)}
+                    disabled={
+                      claimDailyRewardMutation.isPending || consecutiveDays >= currentRewardDay
+                    }
+                  >
                     <Gift className="w-4 h-4 mr-2" />
-                    Claim Today's Reward
+                    {consecutiveDays >= currentRewardDay
+                      ? 'Already Claimed'
+                      : "Claim Today's Reward"}
                   </Button>
                 )}
               </>
@@ -169,7 +241,15 @@ export default function DailyChallengesPage() {
                   </CardContent>
                 </Card>
               ) : (
-                dailyQuests.map((quest) => <QuestCard key={quest.id} quest={quest} type="daily" />)
+                dailyQuests.map((quest) => (
+                  <QuestCard
+                    key={quest.id}
+                    quest={quest}
+                    type="daily"
+                    onClaimReward={claimQuestRewardMutation.mutate}
+                    isClaimingReward={claimQuestRewardMutation.isPending}
+                  />
+                ))
               )}
             </div>
           </TabsContent>
@@ -196,7 +276,13 @@ export default function DailyChallengesPage() {
                 </Card>
               ) : (
                 weeklyQuests.map((quest) => (
-                  <QuestCard key={quest.id} quest={quest} type="weekly" />
+                  <QuestCard
+                    key={quest.id}
+                    quest={quest}
+                    type="weekly"
+                    onClaimReward={claimQuestRewardMutation.mutate}
+                    isClaimingReward={claimQuestRewardMutation.isPending}
+                  />
                 ))
               )}
             </div>
@@ -222,7 +308,13 @@ export default function DailyChallengesPage() {
                 </Card>
               ) : (
                 monthlyQuests.map((quest) => (
-                  <QuestCard key={quest.id} quest={quest} type="monthly" />
+                  <QuestCard
+                    key={quest.id}
+                    quest={quest}
+                    type="monthly"
+                    onClaimReward={claimQuestRewardMutation.mutate}
+                    isClaimingReward={claimQuestRewardMutation.isPending}
+                  />
                 ))
               )}
             </div>
@@ -236,9 +328,11 @@ export default function DailyChallengesPage() {
 interface QuestCardProps {
   quest: QuestWithProgress;
   type: 'daily' | 'weekly' | 'monthly';
+  onClaimReward: (questId: number) => void;
+  isClaimingReward: boolean;
 }
 
-function QuestCard({ quest, type }: QuestCardProps) {
+function QuestCard({ quest, type, onClaimReward, isClaimingReward }: QuestCardProps) {
   const progress = quest.progress?.progress || 0;
   const target = quest.requirement.target;
   const progressPercent = Math.min(100, Math.round((progress / target) * 100));
@@ -303,9 +397,9 @@ function QuestCard({ quest, type }: QuestCardProps) {
           </div>
 
           {isCompleted && !rewardClaimed && (
-            <Button size="sm">
+            <Button size="sm" onClick={() => onClaimReward(quest.id)} disabled={isClaimingReward}>
               <Gift className="w-4 h-4 mr-2" />
-              Claim Reward
+              {isClaimingReward ? 'Claiming...' : 'Claim Reward'}
             </Button>
           )}
 
