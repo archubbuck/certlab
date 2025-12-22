@@ -576,6 +576,46 @@ class StorageRouter implements IClientStorage {
   }
 
   // ==========================================
+  // Smart Study Recommendations
+  // ==========================================
+
+  async getStudyRecommendations(userId: string): Promise<any[]> {
+    return this.executeFirestoreOperation(
+      (s) => s.getStudyRecommendations(userId),
+      'getStudyRecommendations'
+    );
+  }
+
+  async getReadinessScore(userId: string): Promise<any> {
+    return this.executeFirestoreOperation((s) => s.getReadinessScore(userId), 'getReadinessScore');
+  }
+
+  async getTimeOfDayPerformance(userId: string): Promise<any[]> {
+    return this.executeFirestoreOperation(
+      (s) => s.getTimeOfDayPerformance(userId),
+      'getTimeOfDayPerformance'
+    );
+  }
+
+  async getLearningVelocity(userId: string): Promise<any> {
+    return this.executeFirestoreOperation(
+      (s) => s.getLearningVelocity(userId),
+      'getLearningVelocity'
+    );
+  }
+
+  async analyzePerformance(
+    userId: string,
+    categoryId?: number,
+    subcategoryId?: number
+  ): Promise<any> {
+    return this.executeFirestoreOperation(
+      (s) => s.analyzePerformance(userId, categoryId, subcategoryId),
+      'analyzePerformance'
+    );
+  }
+
+  // ==========================================
   // Data Management
   // ==========================================
 
