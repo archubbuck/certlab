@@ -240,6 +240,31 @@ export const queryKeys = {
   subscription: {
     status: () => ['/api', 'subscription', 'status'] as const,
   },
+
+  // Gamification V2: Quest queries
+  quests: {
+    all: () => ['/api', 'quests'] as const,
+    active: () => ['/api', 'quests', 'active'] as const,
+    byType: (type: string) => ['/api', 'quests', 'type', type] as const,
+  },
+
+  // Gamification V2: User quest progress queries
+  userQuestProgress: {
+    all: (userId: string | undefined) => ['/api', 'user', userId, 'quest-progress'] as const,
+    byQuest: (userId: string | undefined, questId: number) =>
+      ['/api', 'user', userId, 'quest-progress', questId] as const,
+  },
+
+  // Gamification V2: Daily rewards queries
+  dailyRewards: {
+    all: () => ['/api', 'daily-rewards'] as const,
+    userClaims: (userId: string | undefined) => ['/api', 'user', userId, 'daily-rewards'] as const,
+  },
+
+  // Gamification V2: User titles queries
+  userTitles: {
+    all: (userId: string | undefined) => ['/api', 'user', userId, 'titles'] as const,
+  },
 } as const;
 
 /**
