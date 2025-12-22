@@ -227,6 +227,15 @@ export default function Header() {
                       <Badge variant="secondary" className="ml-2 text-xs">
                         NEW
                       </Badge>
+                  {/* Performance */}
+                  <NavigationMenuItem>
+                    <Button
+                      variant="ghost"
+                      onClick={() => navigate('/app/performance')}
+                      className="text-muted-foreground hover:text-primary h-10 px-4 py-2"
+                    >
+                      <BarChart3 className="w-4 h-4 mr-2" />
+                      Performance
                     </Button>
                   </NavigationMenuItem>
 

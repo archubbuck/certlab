@@ -66,6 +66,13 @@ export default function MobileNavigationEnhanced() {
           href: '/app/achievements',
           description: 'Track your progress and badges',
         },
+        {
+          id: 'performance',
+          label: 'Performance',
+          icon: <BarChart3 className="w-4 h-4" />,
+          href: '/app/performance',
+          description: 'View detailed analytics and insights',
+        },
       ],
     },
     {
