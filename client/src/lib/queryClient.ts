@@ -632,6 +632,60 @@ export function getQueryFn<T>(options: { on401: UnauthorizedBehavior }): QueryFu
         return (await storage.getUsersByTenant(tenantId)) as T;
       }
 
+      // Handle Gamification V2: Quests
+      if (path === '/api/quests') {
+        return (await storage.getQuests()) as T;
+      }
+
+      if (path === '/api/quests/active') {
+        return (await storage.getActiveQuests()) as T;
+      }
+
+      if (path.includes('/quests/type/')) {
+        const match = path.match(/\/quests\/type\/([^\/]+)/);
+        if (match) {
+          const type = match[1];
+          return (await storage.getQuestsByType(type)) as T;
+        }
+      }
+
+      // Handle user quest progress
+      if (path.includes('/quest-progress')) {
+        const userId = key[2] as string;
+        const user = await storage.getUser(userId);
+        const tenantId = user?.tenantId || 1;
+
+        // Check if it's a specific quest
+        const questIdMatch = path.match(/\/quest-progress\/(\d+)/);
+        if (questIdMatch) {
+          const questId = parseInt(questIdMatch[1]);
+          return (await storage.getUserQuestProgressByQuest(userId, questId, tenantId)) as T;
+        }
+
+        // Return all quest progress
+        return (await storage.getUserQuestProgress(userId, tenantId)) as T;
+      }
+
+      // Handle Gamification V2: Daily Rewards
+      if (path === '/api/daily-rewards') {
+        return (await storage.getDailyRewards()) as T;
+      }
+
+      if (path.includes('/daily-rewards') && key[2]) {
+        const userId = key[2] as string;
+        const user = await storage.getUser(userId);
+        const tenantId = user?.tenantId || 1;
+        return (await storage.getUserDailyRewards(userId, tenantId)) as T;
+      }
+
+      // Handle Gamification V2: User Titles
+      if (path.includes('/titles') && key[2]) {
+        const userId = key[2] as string;
+        const user = await storage.getUser(userId);
+        const tenantId = user?.tenantId || 1;
+        return (await storage.getUserTitles(userId, tenantId)) as T;
+      }
+
       // Default: return null for unsupported queries
       console.warn(`Unsupported query path: ${path}`);
       return null as T;
