@@ -187,6 +187,21 @@ export default function Header() {
                     </Button>
                   </NavigationMenuItem>
 
+                  {/* Daily Challenges - NEW */}
+                  <NavigationMenuItem>
+                    <Button
+                      variant="ghost"
+                      onClick={() => navigate('/app/daily-challenges')}
+                      className="text-muted-foreground hover:text-primary h-10 px-4 py-2"
+                    >
+                      <Target className="w-4 h-4 mr-2" />
+                      Daily Challenges
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        NEW
+                      </Badge>
+                    </Button>
+                  </NavigationMenuItem>
+
                   {/* Tools & Features */}
                   <NavigationMenuItem>
                     <NavigationMenuTrigger className="text-muted-foreground hover:text-primary h-10 px-4 py-2">
