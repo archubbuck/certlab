@@ -64,7 +64,7 @@ export function useMobileThrottle<T extends (...args: any[]) => any>(
 ): T {
   const isMobile = useIsMobile();
   const lastRun = useRef(Date.now());
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const throttledCallback = useCallback(
     (...args: Parameters<T>) => {
