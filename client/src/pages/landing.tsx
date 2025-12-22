@@ -33,6 +33,7 @@ const COLOR_SCHEMES = {
   slate: {
     name: 'Slate Professional',
     bg: 'bg-[#F8FAFC]',
+    bgHex: '#F8FAFC',
     cardBg: 'bg-[#F1F5F9]',
     primary: 'bg-gradient-to-br from-[#0891B2] to-[#06B6D4]',
     secondary: 'bg-gradient-to-br from-[#F59E0B] to-[#FBBF24]',
@@ -52,6 +53,7 @@ const COLOR_SCHEMES = {
   olive: {
     name: 'Dark Olive',
     bg: 'bg-[#F5F3EF]',
+    bgHex: '#F5F3EF',
     cardBg: 'bg-[#EBE7E0]',
     primary: 'bg-gradient-to-br from-[#6B8E23] to-[#8BA83F]',
     secondary: 'bg-gradient-to-br from-[#D2691E] to-[#E07B39]',
@@ -70,6 +72,7 @@ const COLOR_SCHEMES = {
   midnight: {
     name: 'Midnight Blue',
     bg: 'bg-[#F0F4F8]',
+    bgHex: '#F0F4F8',
     cardBg: 'bg-[#E2EAF1]',
     primary: 'bg-gradient-to-br from-[#1E40AF] to-[#3B82F6]',
     secondary: 'bg-gradient-to-br from-[#7C3AED] to-[#A78BFA]',
@@ -265,8 +268,6 @@ export default function Landing() {
           {(Object.keys(COLOR_SCHEMES) as ColorScheme[]).map((schemeKey) => {
             const scheme = COLOR_SCHEMES[schemeKey];
             const isActive = colorScheme === schemeKey;
-            // Extract bg color from the bg class for ring-offset
-            const bgColor = scheme.bg.match(/bg-\[(#[A-F0-9]+)\]/)?.[1] || '#FFFFFF';
 
             return (
               <button
@@ -277,7 +278,7 @@ export default function Landing() {
                 } ${scheme.buttonShadow} hover:scale-110 transition-all duration-300 motion-reduce:transform-none`}
                 style={
                   isActive
-                    ? ({ '--tw-ring-offset-color': bgColor } as React.CSSProperties)
+                    ? ({ '--tw-ring-offset-color': scheme.bgHex } as React.CSSProperties)
                     : undefined
                 }
                 aria-label={`${scheme.name} theme`}
@@ -546,7 +547,7 @@ export default function Landing() {
               >
                 <div className="flex gap-1 mb-6">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className={`w-6 h-6 fill-current ${theme.text}`} />
+                    <Star key={i} className="w-6 h-6 fill-yellow-400 text-yellow-500" />
                   ))}
                 </div>
                 <p className={`${theme.textLight} mb-8 leading-relaxed font-semibold text-lg`}>
@@ -613,11 +614,11 @@ export default function Landing() {
               className={`flex items-center justify-center gap-8 text-base ${theme.textLight} font-bold`}
             >
               <div className="flex items-center gap-2">
-                <CheckCircle2 className={`w-6 h-6 ${theme.text}`} />
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
                 <span>No credit card required</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className={`w-6 h-6 ${theme.text}`} />
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
                 <span>Free forever plan</span>
               </div>
             </div>
