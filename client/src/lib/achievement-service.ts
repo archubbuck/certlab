@@ -33,6 +33,7 @@
 
 import { clientStorage } from './client-storage';
 import type { Quiz, Badge, UserGameStats } from '@shared/schema';
+import { calculateLevelFromPoints, calculatePointsForLevel } from './level-utils';
 
 /**
  * Badge requirement structure for calculating progress and awarding badges
@@ -102,7 +103,7 @@ class AchievementService {
     // Calculate new total points and level
     const newTotalPoints = (gameStats?.totalPoints || 0) + pointsEarned;
     const oldLevel = gameStats?.level || 1;
-    const newLevel = this.calculateLevel(newTotalPoints);
+    const newLevel = calculateLevelFromPoints(newTotalPoints);
     const levelUp = newLevel > oldLevel;
 
     // Update game stats
@@ -112,7 +113,7 @@ class AchievementService {
       longestStreak: Math.max(gameStats?.longestStreak || 0, streakInfo.currentStreak),
       lastActivityDate: new Date(),
       level: newLevel,
-      nextLevelPoints: this.calculatePointsForLevel(newLevel + 1),
+      nextLevelPoints: calculatePointsForLevel(newLevel + 1),
     });
 
     // Check for new badges
@@ -190,39 +191,6 @@ class AchievementService {
       // Streak broken - reset to 1
       return { currentStreak: 1, streakBroken: true };
     }
-  }
-
-  /**
-   * Calculates the user's level based on total points.
-   * Uses a progressive level system where each level requires more points.
-   * Level 1: 0-99 points, Level 2: 100-299, Level 3: 300-599, etc.
-   * Each level N requires (N-1) * 100 additional points to reach.
-   */
-  private calculateLevel(totalPoints: number): number {
-    let level = 1;
-    let pointsNeeded = 0;
-
-    while (true) {
-      const pointsForNextLevel = level * POINTS_CONFIG.POINTS_PER_LEVEL;
-      if (pointsNeeded + pointsForNextLevel > totalPoints) {
-        break;
-      }
-      pointsNeeded += pointsForNextLevel;
-      level++;
-    }
-
-    return level;
-  }
-
-  /**
-   * Calculates total points needed to reach a specific level.
-   */
-  private calculatePointsForLevel(level: number): number {
-    let points = 0;
-    for (let i = 1; i < level; i++) {
-      points += i * POINTS_CONFIG.POINTS_PER_LEVEL;
-    }
-    return points;
   }
 
   /**
@@ -456,13 +424,13 @@ class AchievementService {
 
     let gameStats = await clientStorage.getUserGameStats(userId);
     const newTotalPoints = (gameStats?.totalPoints || 0) + pointsEarned;
-    const newLevel = this.calculateLevel(newTotalPoints);
+    const newLevel = calculateLevelFromPoints(newTotalPoints);
 
     gameStats = await clientStorage.updateUserGameStats(userId, {
       totalPoints: newTotalPoints,
       lastActivityDate: new Date(),
       level: newLevel,
-      nextLevelPoints: this.calculatePointsForLevel(newLevel + 1),
+      nextLevelPoints: calculatePointsForLevel(newLevel + 1),
     });
 
     // Check for lecture-based badges

@@ -4,45 +4,24 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { calculateLevelFromPoints, calculatePointsForLevel } from '@/lib/level-utils';
 
 /**
- * Helper function that mimics the calculateLevel logic in LevelProgress.tsx
+ * Test helper functions
+ *
+ * NOTE: These helpers intentionally duplicate the logic from LevelProgress.tsx
+ * and achievement-service.ts to test the component's behavior independently.
+ * If the level calculation algorithm changes, these test helpers must be
+ * updated accordingly to maintain test accuracy.
  */
-function calculateLevel(points: number): number {
-  const POINTS_PER_LEVEL = 100;
-  let calcLevel = 1;
-  let pointsNeeded = 0;
-
-  while (true) {
-    const pointsForNextLevel = calcLevel * POINTS_PER_LEVEL;
-    if (pointsNeeded + pointsForNextLevel > points) {
-      break;
-    }
-    pointsNeeded += pointsForNextLevel;
-    calcLevel++;
-  }
-
-  return calcLevel;
-}
-
-/**
- * Helper function that mimics the calculatePointsForLevel logic in LevelProgress.tsx
- */
-function calculatePointsForLevel(targetLevel: number): number {
-  let points = 0;
-  for (let i = 1; i < targetLevel; i++) {
-    points += i * 100;
-  }
-  return points;
-}
 
 /**
  * Helper to calculate progress values (mimics LevelProgress component logic)
- * Now calculates level from totalPoints instead of using provided level
+ * Uses the shared utility functions to match component behavior
  */
 function calculateLevelProgress(propLevel: number, totalPoints: number) {
   // Calculate correct level from totalPoints (matching component behavior)
-  const level = calculateLevel(totalPoints);
+  const level = calculateLevelFromPoints(totalPoints);
 
   const currentLevelStartPoints = calculatePointsForLevel(level);
   const pointsInCurrentLevel = totalPoints - currentLevelStartPoints;
@@ -61,34 +40,34 @@ function calculateLevelProgress(propLevel: number, totalPoints: number) {
 }
 
 describe('LevelProgress calculations', () => {
-  describe('calculateLevel', () => {
+  describe('calculateLevelFromPoints', () => {
     it('should calculate level 1 for 0-99 points', () => {
-      expect(calculateLevel(0)).toBe(1);
-      expect(calculateLevel(50)).toBe(1);
-      expect(calculateLevel(99)).toBe(1);
+      expect(calculateLevelFromPoints(0)).toBe(1);
+      expect(calculateLevelFromPoints(50)).toBe(1);
+      expect(calculateLevelFromPoints(99)).toBe(1);
     });
 
     it('should calculate level 2 for 100-299 points', () => {
-      expect(calculateLevel(100)).toBe(2);
-      expect(calculateLevel(200)).toBe(2);
-      expect(calculateLevel(299)).toBe(2);
+      expect(calculateLevelFromPoints(100)).toBe(2);
+      expect(calculateLevelFromPoints(200)).toBe(2);
+      expect(calculateLevelFromPoints(299)).toBe(2);
     });
 
     it('should calculate level 3 for 300-599 points', () => {
-      expect(calculateLevel(300)).toBe(3);
-      expect(calculateLevel(400)).toBe(3);
-      expect(calculateLevel(599)).toBe(3);
+      expect(calculateLevelFromPoints(300)).toBe(3);
+      expect(calculateLevelFromPoints(400)).toBe(3);
+      expect(calculateLevelFromPoints(599)).toBe(3);
     });
 
     it('should calculate level 4 for 600-999 points', () => {
-      expect(calculateLevel(600)).toBe(4);
-      expect(calculateLevel(650)).toBe(4);
-      expect(calculateLevel(999)).toBe(4);
+      expect(calculateLevelFromPoints(600)).toBe(4);
+      expect(calculateLevelFromPoints(650)).toBe(4);
+      expect(calculateLevelFromPoints(999)).toBe(4);
     });
 
     it('should calculate level 5 for 1000+ points', () => {
-      expect(calculateLevel(1000)).toBe(5);
-      expect(calculateLevel(1499)).toBe(5);
+      expect(calculateLevelFromPoints(1000)).toBe(5);
+      expect(calculateLevelFromPoints(1499)).toBe(5);
     });
   });
 

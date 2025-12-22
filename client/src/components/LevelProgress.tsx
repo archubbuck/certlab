@@ -2,6 +2,7 @@ import { Trophy, Star, TrendingUp } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { calculateLevelFromPoints, calculatePointsForLevel } from '@/lib/level-utils';
 
 interface LevelProgressProps {
   level: number;
@@ -33,50 +34,37 @@ const getLevelColor = (level: number) => {
   return 'from-red-500 to-pink-600';
 };
 
+/**
+ * Displays user level progress with gamification statistics.
+ *
+ * This component implements a defensive programming pattern where it recalculates
+ * the user's level from totalPoints rather than trusting the level prop. This
+ * prevents display bugs when gameStats.level becomes out of sync with totalPoints
+ * due to race conditions or data synchronization issues.
+ *
+ * The level prop is received for API compatibility but is intentionally ignored
+ * in favor of the recalculated value to ensure the UI always displays accurate
+ * information.
+ *
+ * @param props - Component props
+ * @param props.level - User's level from gameStats (ignored, recalculated from totalPoints)
+ * @param props.totalPoints - Total gamification points earned
+ * @param props.nextLevelPoints - Points needed for next level (unused)
+ * @param props.currentStreak - Current daily learning streak
+ * @param props.longestStreak - Longest daily learning streak (unused)
+ * @param props.totalBadgesEarned - Number of badges earned
+ */
 export function LevelProgress({
-  level: propLevel = 1,
+  level: _level = 1,
   totalPoints = 0,
   _nextLevelPoints = 100,
   currentStreak = 0,
   _longestStreak = 0,
   totalBadgesEarned = 0,
 }: LevelProgressProps) {
-  // Calculate the correct level from totalPoints
-  // This ensures the display is always correct even if gameStats.level is outdated
-  const calculateLevel = (points: number): number => {
-    const POINTS_PER_LEVEL = 100;
-    let calcLevel = 1;
-    let pointsNeeded = 0;
-
-    while (true) {
-      const pointsForNextLevel = calcLevel * POINTS_PER_LEVEL;
-      if (pointsNeeded + pointsForNextLevel > points) {
-        break;
-      }
-      pointsNeeded += pointsForNextLevel;
-      calcLevel++;
-    }
-
-    return calcLevel;
-  };
-
-  // Calculate current level's starting points using cumulative sum
-  // Level progression: Level N requires (N * 100) points to complete
-  // Level 1: 0-99 points (needs 100 to complete)
-  // Level 2: 100-299 points (needs 200 to complete)
-  // Level 3: 300-599 points (needs 300 to complete)
-  // Cumulative formula: sum of (i * 100) for i=1 to level-1
-  const calculatePointsForLevel = (targetLevel: number): number => {
-    let points = 0;
-    for (let i = 1; i < targetLevel; i++) {
-      points += i * 100;
-    }
-    return points;
-  };
-
   // Always recalculate level from totalPoints to ensure accuracy
   // This prevents display bugs if gameStats.level is out of sync with totalPoints
-  const level = calculateLevel(totalPoints);
+  const level = calculateLevelFromPoints(totalPoints);
 
   const currentLevelStartPoints = calculatePointsForLevel(level);
   const pointsInCurrentLevel = totalPoints - currentLevelStartPoints;
