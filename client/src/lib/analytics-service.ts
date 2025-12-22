@@ -211,6 +211,16 @@ export class AnalyticsService {
     const completedQuizzes = quizzes.filter((q) => q.completedAt && q.score !== null);
     const recentQuizzes = completedQuizzes.slice(-10); // Last 10 quizzes
 
+    if (recentQuizzes.length === 0) {
+      return {
+        score: 0,
+        confidence: 0,
+        confidenceInterval: { lower: 0, upper: 0 },
+        recommendation: 'Complete more quizzes to get an accurate readiness assessment.',
+        estimatedPassProbability: 0,
+      };
+    }
+
     // Calculate weighted average (recent quizzes weighted higher)
     let weightedSum = 0;
     let weightSum = 0;
@@ -299,8 +309,12 @@ export class AnalyticsService {
     const firstHalf = recentQuizzes.slice(0, Math.floor(recentQuizzes.length / 2));
     const secondHalf = recentQuizzes.slice(Math.floor(recentQuizzes.length / 2));
 
-    const firstHalfAvg = firstHalf.reduce((sum, q) => sum + q.score!, 0) / firstHalf.length;
-    const secondHalfAvg = secondHalf.reduce((sum, q) => sum + q.score!, 0) / secondHalf.length;
+    const firstHalfAvg =
+      firstHalf.length > 0 ? firstHalf.reduce((sum, q) => sum + q.score!, 0) / firstHalf.length : 0;
+    const secondHalfAvg =
+      secondHalf.length > 0
+        ? secondHalf.reduce((sum, q) => sum + q.score!, 0) / secondHalf.length
+        : 0;
 
     const trendValue = secondHalfAvg - firstHalfAvg;
     const trend = trendValue > 2 ? 'improving' : trendValue < -2 ? 'declining' : 'stable';
@@ -652,7 +666,13 @@ export class AnalyticsService {
     peaks.forEach((peak) => {
       if (peak.hour === bestHour) {
         const timeStr =
-          peak.hour < 12 ? `${peak.hour} AM` : peak.hour === 12 ? '12 PM' : `${peak.hour - 12} PM`;
+          peak.hour === 0
+            ? '12 AM'
+            : peak.hour < 12
+              ? `${peak.hour} AM`
+              : peak.hour === 12
+                ? '12 PM'
+                : `${peak.hour - 12} PM`;
         peak.recommendation = `Your best performance is around ${timeStr}. Try scheduling important study sessions at this time.`;
       }
     });

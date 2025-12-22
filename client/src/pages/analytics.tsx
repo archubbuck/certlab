@@ -18,11 +18,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
 } from 'recharts';
 import {
   TrendingUp,
@@ -41,6 +36,7 @@ import {
 import { analyticsService } from '@/lib/analytics-service';
 import type { Quiz, MasteryScore, UserProgress, Category } from '@shared/schema';
 import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
 
 export default function Analytics() {
   const { user } = useAuth();
@@ -53,7 +49,7 @@ export default function Analytics() {
   });
 
   const { data: masteryScores = [] } = useQuery<MasteryScore[]>({
-    queryKey: queryKeys.user.masteryScores(user?.id),
+    queryKey: queryKeys.user.mastery(user?.id),
     enabled: !!user?.id,
   });
 
@@ -66,33 +62,69 @@ export default function Analytics() {
     queryKey: queryKeys.categories.all(),
   });
 
-  // Calculate analytics
-  const learningCurve = analyticsService.calculateLearningCurve(quizzes);
-  const examReadiness = analyticsService.predictExamReadiness(quizzes, masteryScores);
-  const forecast7d = analyticsService.forecastPerformance(quizzes, '7days');
-  const forecast30d = analyticsService.forecastPerformance(quizzes, '30days');
-  const forecast90d = analyticsService.forecastPerformance(quizzes, '90days');
-  const efficiency = analyticsService.calculateStudyEfficiency(quizzes);
-  const skillGaps = analyticsService.identifySkillGaps(masteryScores, userProgress);
-  const burnoutRisk = analyticsService.detectBurnoutRisk(quizzes);
-  const peakTimes = analyticsService.identifyPeakPerformanceTimes(quizzes);
-  const insights = analyticsService.generateInsights(quizzes, masteryScores, userProgress);
+  // Calculate analytics (memoized to avoid expensive recalculations on every render)
+  const learningCurve = useMemo(() => analyticsService.calculateLearningCurve(quizzes), [quizzes]);
+  const examReadiness = useMemo(
+    () => analyticsService.predictExamReadiness(quizzes, masteryScores),
+    [quizzes, masteryScores]
+  );
+  const forecast7d = useMemo(
+    () => analyticsService.forecastPerformance(quizzes, '7days'),
+    [quizzes]
+  );
+  const forecast30d = useMemo(
+    () => analyticsService.forecastPerformance(quizzes, '30days'),
+    [quizzes]
+  );
+  const forecast90d = useMemo(
+    () => analyticsService.forecastPerformance(quizzes, '90days'),
+    [quizzes]
+  );
+  const efficiency = useMemo(() => analyticsService.calculateStudyEfficiency(quizzes), [quizzes]);
+  const skillGaps = useMemo(
+    () => analyticsService.identifySkillGaps(masteryScores, userProgress),
+    [masteryScores, userProgress]
+  );
+  const burnoutRisk = useMemo(() => analyticsService.detectBurnoutRisk(quizzes), [quizzes]);
+  const peakTimes = useMemo(
+    () => analyticsService.identifyPeakPerformanceTimes(quizzes),
+    [quizzes]
+  );
+  const insights = useMemo(
+    () => analyticsService.generateInsights(quizzes, masteryScores, userProgress),
+    [quizzes, masteryScores, userProgress]
+  );
 
   // Enrich skill gaps with category names
-  const enrichedSkillGaps = skillGaps.map((gap) => {
-    const category = categories.find((c) => c.id === gap.categoryId);
-    return {
-      ...gap,
-      categoryName: category?.name || gap.categoryName,
-    };
-  });
+  const enrichedSkillGaps = useMemo(
+    () =>
+      skillGaps.map((gap) => {
+        const category = categories.find((c) => c.id === gap.categoryId);
+        return {
+          ...gap,
+          categoryName: category?.name || gap.categoryName,
+        };
+      }),
+    [skillGaps, categories]
+  );
 
-  // Generate retention curve data (using last quiz date)
-  const lastQuizDate =
-    quizzes.length > 0 && quizzes[quizzes.length - 1].completedAt
-      ? new Date(quizzes[quizzes.length - 1].completedAt)
-      : new Date();
-  const retentionCurve = analyticsService.generateRetentionCurve(lastQuizDate);
+  // Generate retention curve data (using most recent quiz completion date)
+  const lastQuizDate = useMemo(() => {
+    return (
+      quizzes.reduce<Date | null>((latest, quiz) => {
+        if (!quiz.completedAt) return latest;
+        const quizDate = new Date(quiz.completedAt);
+        if (!latest || quizDate > latest) {
+          return quizDate;
+        }
+        return latest;
+      }, null) ?? new Date()
+    );
+  }, [quizzes]);
+  const retentionCurve = useMemo(
+    () => analyticsService.generateRetentionCurve(lastQuizDate),
+    [lastQuizDate]
+  );
 
   // Format data for charts
   const forecastData = [
