@@ -29,6 +29,9 @@ export default function StudyTimerPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Constants
+  const AUTO_START_DELAY_MS = 1000; // Delay before auto-starting next session
+
   // Timer state
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -79,11 +82,24 @@ export default function StudyTimerPage() {
       if (currentSessionId) {
         return await storage.updateStudyTimerSession(currentSessionId, session);
       } else {
+        // Get the configured duration for the session type (not remaining time)
+        const configuredDuration = timerSettings
+          ? sessionType === 'work'
+            ? timerSettings.workDuration
+            : sessionType === 'break'
+              ? timerSettings.breakDuration
+              : timerSettings.longBreakDuration
+          : sessionType === 'work'
+            ? 25
+            : sessionType === 'break'
+              ? 5
+              : 15;
+
         const newSession = await storage.createStudyTimerSession({
           userId: user.id,
           tenantId: 1,
           sessionType,
-          duration: Math.floor(timeLeft / 60),
+          duration: configuredDuration,
           isCompleted: false,
           isPaused: false,
           totalPausedTime: 0,
@@ -284,20 +300,28 @@ export default function StudyTimerPage() {
     if (timerSettings?.enableSound) {
       // Simple beep using AudioContext
       try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
+        const AudioContext =
+          window.AudioContext ||
+          (window as typeof window & { webkitAudioContext?: typeof window.AudioContext })
+            .webkitAudioContext;
+        if (!AudioContext) {
+          console.warn('AudioContext not supported in this browser');
+        } else {
+          const audioContext = new AudioContext();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
 
-        oscillator.frequency.value = 800;
-        oscillator.type = 'sine';
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+          oscillator.frequency.value = 800;
+          oscillator.type = 'sine';
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
 
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.5);
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.5);
+        }
       } catch (e) {
         console.error('Failed to play sound:', e);
       }
@@ -313,7 +337,7 @@ export default function StudyTimerPage() {
         setTimeLeft(timerSettings.longBreakDuration * 60);
 
         if (timerSettings.autoStartBreaks) {
-          setTimeout(() => handleStart(), 1000);
+          setTimeout(() => handleStart(), AUTO_START_DELAY_MS);
         }
       } else {
         setSessionType('break');
@@ -322,7 +346,7 @@ export default function StudyTimerPage() {
         }
 
         if (timerSettings?.autoStartBreaks) {
-          setTimeout(() => handleStart(), 1000);
+          setTimeout(() => handleStart(), AUTO_START_DELAY_MS);
         }
       }
     } else {
@@ -332,7 +356,7 @@ export default function StudyTimerPage() {
       }
 
       if (timerSettings?.autoStartWork) {
-        setTimeout(() => handleStart(), 1000);
+        setTimeout(() => handleStart(), AUTO_START_DELAY_MS);
       }
     }
 

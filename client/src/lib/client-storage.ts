@@ -1315,7 +1315,11 @@ class ClientStorage implements IClientStorage {
    * @returns The saved settings
    */
   async saveStudyTimerSettings(settings: Partial<StudyTimerSettings>): Promise<StudyTimerSettings> {
-    const existingSettings = await this.getStudyTimerSettings(settings.userId!);
+    if (!settings.userId) {
+      throw new Error('userId is required for study timer settings');
+    }
+
+    const existingSettings = await this.getStudyTimerSettings(settings.userId);
 
     if (existingSettings) {
       const updated = {
@@ -1327,7 +1331,7 @@ class ClientStorage implements IClientStorage {
       return updated;
     } else {
       const newSettings = {
-        userId: settings.userId!,
+        userId: settings.userId,
         tenantId: settings.tenantId || 1,
         workDuration: settings.workDuration || 25,
         breakDuration: settings.breakDuration || 5,
@@ -1417,7 +1421,11 @@ class ClientStorage implements IClientStorage {
     );
 
     return allSessions.filter((session) => {
-      const sessionDate = new Date(session.startedAt!);
+      // Filter out sessions without startedAt timestamp
+      if (!session.startedAt) {
+        return false;
+      }
+      const sessionDate = new Date(session.startedAt);
       return sessionDate >= startDate && sessionDate <= endDate;
     });
   }
@@ -1483,7 +1491,7 @@ class ClientStorage implements IClientStorage {
     // Calculate streaks (days with at least one completed work session)
     const sessionsByDate = new Map<string, boolean>();
     completedSessions
-      .filter((s) => s.sessionType === 'work')
+      .filter((s) => s.sessionType === 'work' && s.startedAt) // Filter out sessions without startedAt
       .forEach((s) => {
         const dateKey = new Date(s.startedAt!).toDateString();
         sessionsByDate.set(dateKey, true);
