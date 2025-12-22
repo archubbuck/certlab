@@ -227,6 +227,9 @@ export default function Header() {
                       <Badge variant="secondary" className="ml-2 text-xs">
                         NEW
                       </Badge>
+                    </Button>
+                  </NavigationMenuItem>
+
                   {/* Performance */}
                   <NavigationMenuItem>
                     <Button
