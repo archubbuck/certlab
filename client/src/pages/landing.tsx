@@ -6,7 +6,23 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { GraduationCap, ArrowRight, Brain, Shield, BookOpen, Menu, X } from 'lucide-react';
+import {
+  GraduationCap,
+  ArrowRight,
+  Brain,
+  Shield,
+  BookOpen,
+  Menu,
+  X,
+  Target,
+  Zap,
+  Trophy,
+  TrendingUp,
+  Users,
+  Star,
+  CheckCircle2,
+  Sparkles,
+} from 'lucide-react';
 import { useAuth } from '@/lib/auth-provider';
 import { useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -14,24 +30,80 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 // Lazy load Login component to reduce initial bundle size
 const Login = lazy(() => import('./login'));
 
-// Features data
+// Features data - Enhanced with more details
 const features = [
   {
     title: 'Adaptive Learning',
     description:
       'AI-powered system adapts to your learning pace and identifies knowledge gaps automatically.',
     icon: Brain,
+    gradient: 'from-purple-500 to-pink-500',
   },
   {
-    title: 'Enterprise Ready',
+    title: 'Smart Progress Tracking',
     description:
-      'Secure multi-tenant architecture designed for organizations and teams of any size.',
-    icon: Shield,
+      'Visualize your journey with detailed analytics and insights into your performance.',
+    icon: TrendingUp,
+    gradient: 'from-blue-500 to-cyan-500',
   },
   {
-    title: 'Smart Lectures',
-    description: 'AI generates personalized lectures based on your weak topics and learning style.',
+    title: 'Personalized Lectures',
+    description: 'AI generates custom lectures based on your weak topics and learning style.',
     icon: BookOpen,
+    gradient: 'from-green-500 to-emerald-500',
+  },
+  {
+    title: 'Practice Tests',
+    description:
+      'Realistic exam simulations to build confidence and identify areas for improvement.',
+    icon: Target,
+    gradient: 'from-orange-500 to-red-500',
+  },
+  {
+    title: 'Fast & Efficient',
+    description:
+      'Study smarter, not harder. Our platform optimizes your study time for maximum retention.',
+    icon: Zap,
+    gradient: 'from-yellow-500 to-orange-500',
+  },
+  {
+    title: 'Achievement System',
+    description: 'Earn badges and track milestones to stay motivated throughout your journey.',
+    icon: Trophy,
+    gradient: 'from-indigo-500 to-purple-500',
+  },
+];
+
+// Stats data
+const stats = [
+  { value: '10K+', label: 'Active Learners' },
+  { value: '95%', label: 'Pass Rate' },
+  { value: '500K+', label: 'Questions Answered' },
+  { value: '4.9/5', label: 'User Rating' },
+];
+
+// Testimonials data
+const testimonials = [
+  {
+    name: 'Sarah Chen',
+    role: 'Security Analyst',
+    content:
+      'CertLab helped me pass my CISSP on the first try. The adaptive learning really made a difference.',
+    rating: 5,
+  },
+  {
+    name: 'Michael Rodriguez',
+    role: 'IT Manager',
+    content:
+      "The best certification prep platform I've used. The AI-powered lectures filled in my knowledge gaps perfectly.",
+    rating: 5,
+  },
+  {
+    name: 'Emily Watson',
+    role: 'Cybersecurity Consultant',
+    content:
+      'I love the progress tracking and achievement system. It kept me motivated throughout my CISM preparation.',
+    rating: 5,
   },
 ];
 
@@ -56,6 +128,11 @@ const faqs = [
     question: 'Is there a free trial available?',
     answer:
       'Absolutely! You can create a free account and access our core features. No credit card required to get started.',
+  },
+  {
+    question: 'How long does it take to prepare for a certification?',
+    answer:
+      'It varies by individual and certification, but most users spend 2-3 months preparing with CertLab. Our adaptive system helps optimize your study time based on your current knowledge level.',
   },
 ];
 
@@ -119,20 +196,24 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-x-hidden">
       {/* Navigation */}
-      <nav className="py-4 bg-black sticky top-0 z-50">
-        <div className="container mx-auto px-4">
+      <nav className="py-4 px-4 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-50 border-b border-white/5">
+        <div className="container mx-auto">
           <div className="flex justify-between items-center">
-            <div className="relative">
-              <div className="absolute w-full top-2 bottom-0 bg-[linear-gradient(to_right,rgb(252,214,255),rgb(41,216,255),rgb(255,253,128),rgb(248,154,191),rgb(252,214,255))] blur-md" />
-              <div className="relative flex items-center gap-2">
-                <GraduationCap className="h-10 w-10 text-white" />
-                <span className="text-xl font-bold">CertLab</span>
+            <div className="flex items-center gap-3 group cursor-pointer">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 rounded-lg blur-lg opacity-75 group-hover:opacity-100 transition-opacity" />
+                <div className="relative bg-slate-900 p-2 rounded-lg">
+                  <GraduationCap className="h-6 w-6 text-white" />
+                </div>
               </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent">
+                CertLab
+              </span>
             </div>
             <button
-              className="border border-white/30 size-10 inline-flex justify-center items-center rounded-lg md:hidden"
+              className="border border-white/20 size-10 inline-flex justify-center items-center rounded-lg md:hidden hover:bg-white/5 transition-colors"
               aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-menu"
@@ -144,23 +225,23 @@ export default function Landing() {
                 <Menu className="text-white w-5 h-5" />
               )}
             </button>
-            <nav className="text-white/60 items-center gap-6 hidden md:flex">
+            <nav className="text-white/70 items-center gap-6 hidden md:flex">
               <button
                 onClick={handleScrollToFeatures}
-                className="hover:text-white transition duration-300"
+                className="hover:text-white transition duration-300 font-medium"
               >
                 Features
               </button>
               <button
                 onClick={handleScrollToFaq}
-                className="hover:text-white transition duration-300"
+                className="hover:text-white transition duration-300 font-medium"
               >
                 FAQ
               </button>
               {isAuthenticated ? (
                 <button
                   onClick={handleGoToDashboard}
-                  className="bg-white py-2 px-4 rounded-lg text-black font-medium"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 py-2.5 px-6 rounded-lg text-white font-semibold shadow-lg shadow-purple-500/25 transition-all hover:shadow-xl hover:shadow-purple-500/40"
                   data-testid="dashboard-button"
                 >
                   Dashboard
@@ -168,7 +249,7 @@ export default function Landing() {
               ) : (
                 <button
                   onClick={handleLogin}
-                  className="bg-white py-2 px-4 rounded-lg text-black font-medium"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 py-2.5 px-6 rounded-lg text-white font-semibold shadow-lg shadow-purple-500/25 transition-all hover:shadow-xl hover:shadow-purple-500/40"
                   data-testid="get-started-button"
                 >
                   Get Started
@@ -178,17 +259,17 @@ export default function Landing() {
           </div>
           {/* Mobile Menu Dropdown */}
           {mobileMenuOpen && (
-            <div id="mobile-menu" className="md:hidden mt-4 py-4 border-t border-white/20">
+            <div id="mobile-menu" className="md:hidden mt-4 py-4 border-t border-white/10">
               <div className="flex flex-col gap-4">
                 <button
                   onClick={handleScrollToFeatures}
-                  className="text-white/60 hover:text-white transition duration-300 text-left"
+                  className="text-white/70 hover:text-white transition duration-300 text-left font-medium"
                 >
                   Features
                 </button>
                 <button
                   onClick={handleScrollToFaq}
-                  className="text-white/60 hover:text-white transition duration-300 text-left"
+                  className="text-white/70 hover:text-white transition duration-300 text-left font-medium"
                 >
                   FAQ
                 </button>
@@ -198,7 +279,7 @@ export default function Landing() {
                       handleGoToDashboard();
                       setMobileMenuOpen(false);
                     }}
-                    className="bg-white py-2 px-4 rounded-lg text-black font-medium text-center"
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 py-2.5 px-6 rounded-lg text-white font-semibold text-center"
                   >
                     Dashboard
                   </button>
@@ -208,7 +289,7 @@ export default function Landing() {
                       handleLogin();
                       setMobileMenuOpen(false);
                     }}
-                    className="bg-white py-2 px-4 rounded-lg text-black font-medium text-center"
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 py-2.5 px-6 rounded-lg text-white font-semibold text-center"
                   >
                     Get Started
                   </button>
@@ -220,85 +301,187 @@ export default function Landing() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative py-[72px] md:py-24 bg-[linear-gradient(to_bottom,#000,#200d42_34%,#4f21a1_65%,#a46edb_82%)] overflow-clip">
-        <div className="absolute h-[375px] w-[750px] sm:w-[900px] md:w-[1536px] md:h-[768px] lg:w-[2400px] lg:h-[1200px] rounded-[100%] bg-black left-1/2 -translate-x-1/2 border border-[#b48cde] bg-[radial-gradient(closest-side,#000_82%,#9560eb)] top-[calc(100%-96px)] md:top-[calc(100%-120px)]" />
+      <section className="relative py-20 md:py-32 overflow-hidden">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-pink-600/20 to-cyan-600/20" />
+        <div className="absolute inset-0">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500/30 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse delay-2000" />
+        </div>
+
         <div className="container mx-auto px-4 relative">
-          <div className="flex items-center justify-center">
-            <button
-              className="border border-white/30 py-1 px-2 rounded-lg inline-flex gap-3"
+          <div className="flex items-center justify-center mb-8">
+            <div
+              className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 py-2 px-4 rounded-full hover:bg-white/10 transition-all cursor-pointer group"
               onClick={handleScrollToFeatures}
             >
-              <span className="bg-[linear-gradient(to_right,#f87aff,#fb93d0,#ffdd99,#c3f0b2,#2fd8fe)] bg-clip-text text-transparent">
-                AI-Powered Learning
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent font-medium">
+                AI-Powered Adaptive Learning
               </span>
-              <span className="inline-flex items-center gap-1">
-                <span>Learn More</span>
-                <ArrowRight className="w-4 h-4" />
-              </span>
-            </button>
-          </div>
-          <div className="flex justify-center mt-8">
-            <div className="inline-flex relative">
-              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-bold tracking-tighter text-center">
-                Master Your
-                <br /> Certifications
-              </h1>
+              <ArrowRight className="w-4 h-4 text-white/70 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
+
           <div className="flex justify-center">
-            <p className="text-center text-base sm:text-lg md:text-xl mt-8 max-w-md text-white/70 px-2">
-              The intelligent learning platform that adapts to you. Pass CISSP, CISM, and other
-              professional certifications with confidence.
-            </p>
+            <div className="max-w-5xl text-center">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6">
+                <span className="bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent">
+                  Master Your
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+                  Certifications
+                </span>
+              </h1>
+              <p className="text-xl md:text-2xl text-white/70 max-w-3xl mx-auto mb-10 leading-relaxed">
+                The intelligent learning platform that adapts to you. Pass{' '}
+                <span className="text-purple-400 font-semibold">CISSP</span>,{' '}
+                <span className="text-pink-400 font-semibold">CISM</span>, and other professional
+                certifications with confidence.
+              </p>
+
+              {isAuthenticated ? (
+                <div className="flex flex-col items-center gap-4">
+                  <p className="text-white/80 text-lg">Welcome back, {getUserDisplayName(user)}!</p>
+                  <button
+                    onClick={handleGoToDashboard}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-4 px-10 rounded-xl font-bold text-lg shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transform hover:scale-105 transition-all inline-flex items-center gap-2"
+                    data-testid="hero-dashboard-button"
+                  >
+                    Continue Learning
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                  <button
+                    onClick={handleLogin}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-4 px-10 rounded-xl font-bold text-lg shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transform hover:scale-105 transition-all inline-flex items-center gap-2"
+                    data-testid="hero-get-started-button"
+                  >
+                    Get Started Free
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleScrollToFeatures}
+                    className="bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/20 text-white py-4 px-10 rounded-xl font-bold text-lg transition-all inline-flex items-center gap-2"
+                  >
+                    Learn More
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex justify-center mt-8">
-            {isAuthenticated ? (
-              <div className="text-center">
-                <p className="text-white/70 mb-4">Welcome back, {getUserDisplayName(user)}!</p>
-                <button
-                  onClick={handleGoToDashboard}
-                  className="bg-white text-black py-3 px-5 rounded-lg font-medium"
-                  data-testid="hero-dashboard-button"
-                >
-                  Continue Learning
-                </button>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 bg-gradient-to-br from-slate-900/50 to-slate-950/50 backdrop-blur-sm border-y border-white/5">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+                  {stat.value}
+                </div>
+                <div className="text-white/60 font-medium">{stat.label}</div>
               </div>
-            ) : (
-              <button
-                onClick={handleLogin}
-                className="bg-white text-black py-3 px-5 rounded-lg font-medium"
-                data-testid="hero-get-started-button"
-              >
-                Get Started Free
-              </button>
-            )}
+            ))}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="bg-black py-[72px] md:py-24">
-        <div className="container mx-auto px-4">
-          <h2 className="text-center font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tighter">
-            Everything you need
-          </h2>
-          <div className="max-w-xl mx-auto">
-            <p className="text-center mt-5 text-xl text-white/70">
-              Enjoy adaptive quizzes, smart lectures, and progress tracking all in one place. Set
-              goals, get reminders, and see your improvement simply and quickly.
+      <section id="features" className="py-20 md:py-32 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-950/10 to-transparent" />
+        <div className="container mx-auto px-4 relative">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4">
+              <span className="bg-purple-500/10 border border-purple-500/20 text-purple-300 px-4 py-1.5 rounded-full text-sm font-semibold">
+                Features
+              </span>
+            </div>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6">
+              <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                Everything you need
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                to succeed
+              </span>
+            </h2>
+            <p className="text-xl text-white/60 max-w-2xl mx-auto">
+              Powerful features designed to accelerate your certification journey
             </p>
           </div>
-          <div className="mt-16 flex flex-col md:flex-row gap-4">
-            {features.map(({ title, description, icon: Icon }) => (
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map(({ title, description, icon: Icon, gradient }) => (
               <div
                 key={title}
-                className="border border-white/30 px-5 py-10 text-center rounded-xl md:flex-1"
+                className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
               >
-                <div className="inline-flex h-14 w-14 bg-white text-black justify-center items-center rounded-lg">
-                  <Icon className="w-6 h-6" />
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <div
+                    className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${gradient} mb-5 shadow-lg`}
+                  >
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-3 text-white">{title}</h3>
+                  <p className="text-white/60 leading-relaxed">{description}</p>
                 </div>
-                <h3 className="mt-6 font-bold">{title}</h3>
-                <p className="mt-2 text-white/70">{description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 md:py-32 bg-gradient-to-br from-purple-950/20 to-pink-950/20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4">
+              <span className="bg-pink-500/10 border border-pink-500/20 text-pink-300 px-4 py-1.5 rounded-full text-sm font-semibold">
+                Testimonials
+              </span>
+            </div>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6">
+              <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                Loved by learners
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                worldwide
+              </span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {testimonials.map((testimonial, index) => (
+              <div
+                key={index}
+                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-white/20 transition-all"
+              >
+                <div className="flex gap-1 mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-white/80 mb-6 leading-relaxed">
+                  &quot;{testimonial.content}&quot;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
+                    {testimonial.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white">{testimonial.name}</div>
+                    <div className="text-sm text-white/60">{testimonial.role}</div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -306,49 +489,97 @@ export default function Landing() {
       </section>
 
       {/* Call to Action Section */}
-      <section className="bg-black py-[72px] md:py-24 text-center">
-        <div className="container mx-auto px-4 max-w-xl relative">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter">
-            Get instant access
-          </h2>
-          <p className="text-xl text-white/70 mt-5">
-            Start your certification journey today with an app designed to track your progress and
-            motivate your efforts.
-          </p>
-          <div className="mt-10 flex flex-col gap-2.5 max-w-sm mx-auto md:flex-row">
-            {isAuthenticated ? (
-              <button
-                onClick={handleGoToDashboard}
-                className="bg-white text-black h-12 rounded-lg px-5 font-medium w-full"
-              >
-                Go to Dashboard
-              </button>
-            ) : (
-              <button
-                onClick={handleLogin}
-                className="bg-white text-black h-12 rounded-lg px-5 font-medium w-full"
-              >
-                Start Free Trial
-              </button>
-            )}
+      <section className="py-20 md:py-32 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-pink-600/20" />
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-pink-500/30 rounded-full blur-3xl" />
+        </div>
+
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6">
+              <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                Ready to ace your
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                certification exam?
+              </span>
+            </h2>
+            <p className="text-xl text-white/70 mb-10 max-w-2xl mx-auto">
+              Join thousands of successful learners who have mastered their certifications with
+              CertLab&apos;s AI-powered platform.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              {isAuthenticated ? (
+                <button
+                  onClick={handleGoToDashboard}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-4 px-10 rounded-xl font-bold text-lg shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transform hover:scale-105 transition-all inline-flex items-center justify-center gap-2"
+                >
+                  Go to Dashboard
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleLogin}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-4 px-10 rounded-xl font-bold text-lg shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transform hover:scale-105 transition-all inline-flex items-center justify-center gap-2"
+                >
+                  Start Free Trial
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center gap-6 text-sm text-white/60">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-400" />
+                <span>No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-400" />
+                <span>Free forever plan</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-[72px] md:py-24 bg-gradient-to-b from-[#5f2ca8] to-black">
+      <section id="faq" className="py-20 md:py-32 bg-gradient-to-b from-slate-950 to-slate-900">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl lg:max-w-[648px] mx-auto text-center font-bold tracking-tighter">
-            Frequently asked questions
-          </h2>
-          <div className="mt-12 max-w-[648px] mx-auto">
-            <Accordion type="single" collapsible className="w-full">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4">
+              <span className="bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 px-4 py-1.5 rounded-full text-sm font-semibold">
+                FAQ
+              </span>
+            </div>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight">
+              <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                Frequently asked
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                questions
+              </span>
+            </h2>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <Accordion type="single" collapsible className="w-full space-y-4">
               {faqs.map((faq, index) => (
-                <AccordionItem key={index} value={`item-${index}`} className="border-white/30">
-                  <AccordionTrigger className="text-left py-4 text-white hover:no-underline">
+                <AccordionItem
+                  key={index}
+                  value={`item-${index}`}
+                  className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl px-6 hover:bg-white/10 transition-colors"
+                >
+                  <AccordionTrigger className="text-left py-6 text-white hover:no-underline font-semibold">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-white/70">{faq.answer}</AccordionContent>
+                  <AccordionContent className="text-white/70 pb-6 leading-relaxed">
+                    {faq.answer}
+                  </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
@@ -357,26 +588,40 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-black text-white/60 py-5 border-t border-white/20">
+      <footer className="bg-slate-950 text-white/60 py-12 border-t border-white/5">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:justify-between gap-4">
-            <div className="text-center md:text-left select-none">
-              © {new Date().getFullYear()} CertLab. All rights reserved
+          <div className="flex flex-col md:flex-row md:justify-between gap-8 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 rounded-lg blur-lg opacity-75" />
+                <div className="relative bg-slate-900 p-2 rounded-lg">
+                  <GraduationCap className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent">
+                CertLab
+              </span>
             </div>
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-wrap gap-6">
               <button
                 onClick={handleScrollToFeatures}
-                className="hover:text-white transition duration-200"
+                className="hover:text-white transition duration-200 font-medium"
               >
                 Features
               </button>
               <button
                 onClick={handleScrollToFaq}
-                className="hover:text-white transition duration-200"
+                className="hover:text-white transition duration-200 font-medium"
               >
                 FAQ
               </button>
             </div>
+          </div>
+          <div className="pt-8 border-t border-white/5 text-center md:text-left">
+            <p className="select-none">
+              © {new Date().getFullYear()} CertLab. All rights reserved. Built with AI-powered
+              learning technology.
+            </p>
           </div>
         </div>
       </footer>
