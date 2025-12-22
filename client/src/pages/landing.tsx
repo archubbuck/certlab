@@ -30,47 +30,64 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 // Lazy load Login component to reduce initial bundle size
 const Login = lazy(() => import('./login'));
 
+// Predefined gradient classes for features (prevents style injection)
+const GRADIENT_CLASSES = {
+  purplePink: 'from-purple-500 to-pink-500',
+  blueCyan: 'from-blue-500 to-cyan-500',
+  greenEmerald: 'from-green-500 to-emerald-500',
+  orangeRed: 'from-orange-500 to-red-500',
+  yellowOrange: 'from-yellow-500 to-orange-500',
+  indigoPurple: 'from-indigo-500 to-purple-500',
+} as const;
+
+type GradientKey = keyof typeof GRADIENT_CLASSES;
+
 // Features data - Enhanced with more details
-const features = [
+const features: Array<{
+  title: string;
+  description: string;
+  icon: typeof Brain;
+  gradientKey: GradientKey;
+}> = [
   {
     title: 'Adaptive Learning',
     description:
       'AI-powered system adapts to your learning pace and identifies knowledge gaps automatically.',
     icon: Brain,
-    gradient: 'from-purple-500 to-pink-500',
+    gradientKey: 'purplePink',
   },
   {
     title: 'Smart Progress Tracking',
     description:
       'Visualize your journey with detailed analytics and insights into your performance.',
     icon: TrendingUp,
-    gradient: 'from-blue-500 to-cyan-500',
+    gradientKey: 'blueCyan',
   },
   {
     title: 'Personalized Lectures',
     description: 'AI generates custom lectures based on your weak topics and learning style.',
     icon: BookOpen,
-    gradient: 'from-green-500 to-emerald-500',
+    gradientKey: 'greenEmerald',
   },
   {
     title: 'Practice Tests',
     description:
       'Realistic exam simulations to build confidence and identify areas for improvement.',
     icon: Target,
-    gradient: 'from-orange-500 to-red-500',
+    gradientKey: 'orangeRed',
   },
   {
     title: 'Fast & Efficient',
     description:
       'Study smarter, not harder. Our platform optimizes your study time for maximum retention.',
     icon: Zap,
-    gradient: 'from-yellow-500 to-orange-500',
+    gradientKey: 'yellowOrange',
   },
   {
     title: 'Achievement System',
     description: 'Earn badges and track milestones to stay motivated throughout your journey.',
     icon: Trophy,
-    gradient: 'from-indigo-500 to-purple-500',
+    gradientKey: 'indigoPurple',
   },
 ];
 
@@ -418,23 +435,26 @@ export default function Landing() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map(({ title, description, icon: Icon, gradient }) => (
-              <div
-                key={title}
-                className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative">
-                  <div
-                    className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${gradient} mb-5 shadow-lg`}
-                  >
-                    <Icon className="w-6 h-6 text-white" />
+            {features.map(({ title, description, icon: Icon, gradientKey }) => {
+              const gradientClass = GRADIENT_CLASSES[gradientKey];
+              return (
+                <div
+                  key={title}
+                  className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div
+                      className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${gradientClass} mb-5 shadow-lg`}
+                    >
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-3 text-white">{title}</h3>
+                    <p className="text-white/60 leading-relaxed">{description}</p>
                   </div>
-                  <h3 className="text-xl font-bold mb-3 text-white">{title}</h3>
-                  <p className="text-white/60 leading-relaxed">{description}</p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
