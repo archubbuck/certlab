@@ -1568,8 +1568,7 @@ class FirestoreStorage implements IClientStorage {
       subcategories: Array.from(cat.subcategories.values()).map((sub) => ({
         subcategoryId: sub.subcategoryId,
         subcategoryName: sub.subcategoryName,
-        score:
-          sub.totalAnswers > 0 ? Math.round((sub.correctAnswers / sub.totalAnswers) * 100) : 0,
+        score: sub.totalAnswers > 0 ? Math.round((sub.correctAnswers / sub.totalAnswers) * 100) : 0,
         questionsAnswered: sub.totalAnswers,
         correctAnswers: sub.correctAnswers,
       })),
@@ -1664,7 +1663,10 @@ class FirestoreStorage implements IClientStorage {
     const categories = await this.getCategories(tenantId);
     const subcategories = await this.getSubcategories(undefined, tenantId);
 
-    const getMasteryLevel = (score: number, questionsAnswered: number): 'weak' | 'developing' | 'strong' | 'mastered' => {
+    const getMasteryLevel = (
+      score: number,
+      questionsAnswered: number
+    ): 'weak' | 'developing' | 'strong' | 'mastered' => {
       if (questionsAnswered < 5) return 'developing'; // Not enough data
       if (score >= 85) return 'mastered';
       if (score >= 70) return 'strong';
@@ -1811,7 +1813,8 @@ class FirestoreStorage implements IClientStorage {
     if (completedQuizzes.length >= 10) {
       const mostRecent10 = completedQuizzes.slice(0, 10);
       const next10 = completedQuizzes.slice(10, 20);
-      const recentAvg = mostRecent10.reduce((sum, q) => sum + (q.score || 0), 0) / mostRecent10.length;
+      const recentAvg =
+        mostRecent10.reduce((sum, q) => sum + (q.score || 0), 0) / mostRecent10.length;
       const previousAvg =
         next10.length > 0
           ? next10.reduce((sum, q) => sum + (q.score || 0), 0) / next10.length
@@ -1823,19 +1826,26 @@ class FirestoreStorage implements IClientStorage {
 
     // Get top and weak categories
     const sortedCategories = [...categoryBreakdown].sort((a, b) => b.score - a.score);
-    const topCategories = sortedCategories.slice(0, 3).map((c) => ({
+    const topCount = Math.min(3, sortedCategories.length);
+    const topCategories = sortedCategories.slice(0, topCount).map((c) => ({
       categoryId: c.categoryId,
       categoryName: c.categoryName,
       score: c.score,
     }));
-    const weakCategories = sortedCategories
-      .slice(-3)
-      .reverse()
-      .map((c) => ({
-        categoryId: c.categoryId,
-        categoryName: c.categoryName,
-        score: c.score,
-      }));
+    const topCategoryIds = new Set(topCategories.map((c) => c.categoryId));
+    const weakCategories =
+      sortedCategories.length <= topCount
+        ? []
+        : sortedCategories
+            .slice()
+            .reverse()
+            .filter((c) => !topCategoryIds.has(c.categoryId))
+            .slice(0, 3)
+            .map((c) => ({
+              categoryId: c.categoryId,
+              categoryName: c.categoryName,
+              score: c.score,
+            }));
 
     return {
       overview: {

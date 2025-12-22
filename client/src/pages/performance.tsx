@@ -11,15 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Target,
-  Clock,
-  Download,
-  Minus,
-} from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart3, Target, Clock, Download, Minus } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -112,11 +104,7 @@ export default function PerformanceInsightsPage() {
   });
 
   const isLoading =
-    loadingSummary ||
-    loadingTrends ||
-    loadingCategories ||
-    loadingTime ||
-    loadingConsistency;
+    loadingSummary || loadingTrends || loadingCategories || loadingTime || loadingConsistency;
 
   if (!user) {
     return (
@@ -162,14 +150,14 @@ export default function PerformanceInsightsPage() {
       ['Category Breakdown'],
       ['Category', 'Score', 'Questions Answered', 'Correct Answers'],
       ...categoryBreakdown.map((cat) => [
-        escapeCSV(cat.categoryName),
+        cat.categoryName,
         cat.score,
         cat.questionsAnswered,
         cat.correctAnswers,
       ]),
     ];
 
-    const csvContent = rows.map((row) => row.map(cell => escapeCSV(cell)).join(',')).join('\n');
+    const csvContent = rows.map((row) => row.map((cell) => escapeCSV(cell)).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -199,7 +187,10 @@ export default function PerformanceInsightsPage() {
 
   const getTrendText = () => {
     if (!performanceSummary) return 'Stable';
-    return performanceSummary.recentTrend.charAt(0).toUpperCase() + performanceSummary.recentTrend.slice(1);
+    return (
+      performanceSummary.recentTrend.charAt(0).toUpperCase() +
+      performanceSummary.recentTrend.slice(1)
+    );
   };
 
   return (
@@ -373,12 +364,13 @@ export default function PerformanceInsightsPage() {
                         cx="50%"
                         cy="50%"
                         outerRadius={100}
-                        label={(entry: (typeof categoryBreakdown)[number]) => 
-                          `${entry.categoryName}: ${entry.questionsAnswered}`
-                        }
+                        label
                       >
                         {categoryBreakdown.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell
+                            key={`cell-${entry.categoryId}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
                         ))}
                       </Pie>
                       <Tooltip
@@ -474,19 +466,25 @@ export default function PerformanceInsightsPage() {
                   <CardDescription>Your strongest areas</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {performanceSummary.topCategories.map((cat, index) => (
-                      <div key={cat.categoryId} className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 font-bold">
-                          {index + 1}
+                  {performanceSummary.topCategories.length > 0 ? (
+                    <div className="space-y-3">
+                      {performanceSummary.topCategories.map((cat, index) => (
+                        <div key={cat.categoryId} className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 font-bold">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{cat.categoryName}</p>
+                            <p className="text-sm text-muted-foreground">{cat.score}% accuracy</p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium">{cat.categoryName}</p>
-                          <p className="text-sm text-muted-foreground">{cat.score}% accuracy</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-4">
+                      Complete quizzes to see your top performing categories
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -499,19 +497,26 @@ export default function PerformanceInsightsPage() {
                   <CardDescription>Focus on these topics</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {performanceSummary.weakCategories.map((cat, index) => (
-                      <div key={cat.categoryId} className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-bold">
-                          {index + 1}
+                  {performanceSummary.weakCategories.length > 0 ? (
+                    <div className="space-y-3">
+                      {performanceSummary.weakCategories.map((cat, index) => (
+                        <div key={cat.categoryId} className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-bold">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{cat.categoryName}</p>
+                            <p className="text-sm text-muted-foreground">{cat.score}% accuracy</p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium">{cat.categoryName}</p>
-                          <p className="text-sm text-muted-foreground">{cat.score}% accuracy</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-4">
+                      Complete more quizzes in different categories to identify areas for
+                      improvement
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
