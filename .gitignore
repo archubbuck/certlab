@@ -24,3 +24,7 @@ dynatrace-snippet.html
 
 # Temporary files
 .ui-sync-timestamp
+
+# Roadmap tracking generated files (keep these in repo but mark as optional)
+# ROADMAP_ISSUES_PREVIEW.md
+# ROADMAP_TRACKING.md
