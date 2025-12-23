@@ -739,7 +739,12 @@ export interface IClientStorage extends IStorageAdapter {
   getStudyRecommendations(userId: string): Promise<
     Array<{
       id: string;
-      type: string;
+      type:
+        | 'focus_area'
+        | 'difficulty_adjustment'
+        | 'time_optimization'
+        | 'streak_building'
+        | 'readiness';
       title: string;
       description: string;
       priority: 'high' | 'medium' | 'low';
