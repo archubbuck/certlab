@@ -24,6 +24,16 @@ dynatrace-snippet.html
 
 # Temporary files
 .ui-sync-timestamp
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Test and debug artifacts
+test-report*.md
+debug-*.log
 
 # Roadmap tracking generated files (keep these in repo but mark as optional)
 # ROADMAP_ISSUES_PREVIEW.md
