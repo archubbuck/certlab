@@ -25,7 +25,6 @@ import {
   Sparkles,
   ArrowRight,
   Flame,
-  Star,
   CheckCircle,
 } from 'lucide-react';
 import type { UserStats, Quiz, Category } from '@shared/schema';
@@ -293,7 +292,44 @@ export default function Dashboard() {
     enabled: !!currentUser?.id,
   });
 
-  const gameStats = achievements?.gameStats || {
+  // Get user badges with proper typing
+  interface BadgeData {
+    id: number;
+    badgeId: number;
+    userId: number;
+    earnedAt: string;
+    progress: number;
+    isNotified: boolean;
+    badge: {
+      id: number;
+      name: string;
+      description: string;
+      icon: string;
+      category: string;
+      requirement: any;
+      color: string;
+      rarity: string;
+      points: number;
+    };
+  }
+
+  interface GameStats {
+    totalPoints: number;
+    currentStreak: number;
+    longestStreak: number;
+    totalBadgesEarned: number;
+    level: number;
+    nextLevelPoints: number;
+  }
+
+  interface AchievementData {
+    badges: BadgeData[];
+    gameStats: GameStats;
+    newBadges: number;
+  }
+
+  const achievementData = achievements as AchievementData | undefined;
+  const gameStats = achievementData?.gameStats || {
     totalPoints: 0,
     currentStreak: 0,
     longestStreak: 0,
@@ -308,11 +344,10 @@ export default function Dashboard() {
   const pointsNeededForLevel = level * 100;
   const progressToNextLevel = (pointsInCurrentLevel / pointsNeededForLevel) * 100;
 
-  // Get user badges
-  const badges = achievements?.badges || [];
-  const quizMasterBadge = badges.find((b: any) => b.badge?.name === 'Quiz Master');
-  const videoBuffBadge = badges.find((b: any) => b.badge?.name === 'Video Buff');
-  const dailyStreakBadge = badges.find((b: any) => b.badge?.name === 'Daily Streak');
+  const badges = achievementData?.badges || [];
+  const quizMasterBadge = badges.find((b) => b.badge?.name === 'Quiz Master');
+  const videoBuffBadge = badges.find((b) => b.badge?.name === 'Video Buff');
+  const dailyStreakBadge = badges.find((b) => b.badge?.name === 'Daily Streak');
 
   return (
     <div className="min-h-screen bg-background">
@@ -331,7 +366,7 @@ export default function Dashboard() {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Progress: Learning path in AI-adapted learning path.
+                  Track your progress through the AI-adapted learning path.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -340,7 +375,11 @@ export default function Dashboard() {
                   <div className="flex-1">
                     <p className="text-sm font-medium text-muted-foreground mb-1">
                       Current Goal:{' '}
-                      {(currentUser as any)?.currentCertificationGoal || 'AWS Solutions Architect'}
+                      {(currentUser &&
+                        'currentCertificationGoal' in currentUser &&
+                        (currentUser as { currentCertificationGoal?: string })
+                          .currentCertificationGoal) ||
+                        'AWS Solutions Architect'}
                     </p>
                     <Progress value={100} className="h-2 mb-2" />
                     <p className="text-xs text-muted-foreground">100%</p>
@@ -351,28 +390,41 @@ export default function Dashboard() {
                 <div className="p-4 bg-muted/30 rounded-lg">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold">Learning Velocity</h3>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
+                  </div>
+                  <div className="flex gap-4">
+                    {/* Y-axis percentage scale */}
+                    <div className="flex flex-col justify-between text-xs text-muted-foreground h-24">
                       <span>100%</span>
                       <span>75%</span>
                       <span>50%</span>
                       <span>25%</span>
                       <span>0</span>
                     </div>
-                  </div>
-                  {/* Simple chart representation */}
-                  <div className="h-24 flex items-end justify-between gap-2">
-                    {[20, 35, 45, 60, 70, 75, 80].map((height, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 bg-primary/60 rounded-t"
-                        style={{ height: `${height}%` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>Time</span>
-                    <span>Time</span>
-                    <span>Time</span>
+                    <div className="flex-1">
+                      {/* Simple chart representation */}
+                      <div className="relative h-24">
+                        {/* Horizontal grid lines to connect y-axis labels to bars */}
+                        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                          {Array.from({ length: 5 }).map((_, index) => (
+                            <div key={index} className="border-t border-border/40" />
+                          ))}
+                        </div>
+                        <div className="relative h-full flex items-end justify-between gap-2">
+                          {[20, 35, 45, 60, 70, 75, 80].map((height, i) => (
+                            <div
+                              key={i}
+                              className="flex-1 bg-primary/60 rounded-t"
+                              style={{ height: `${height}%` }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label) => (
+                          <span key={label}>{label}</span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -436,7 +488,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-4">
-                    Total XP: {pointsInCurrentLevel}/{pointsNeededForLevel}
+                    Current Level XP: {pointsInCurrentLevel}/{pointsNeededForLevel}
                   </p>
                 </div>
 
@@ -448,7 +500,9 @@ export default function Dashboard() {
                       <Trophy className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
                     </div>
                     <p className="text-xs font-semibold text-center mb-1">Quiz Master</p>
-                    <p className="text-xs text-muted-foreground">Complete 50 Quizzes - 400 XP</p>
+                    <p className="text-xs text-muted-foreground">
+                      Complete 50 Quizzes - {quizMasterBadge?.badge?.points || 400} XP
+                    </p>
                     {quizMasterBadge && (
                       <Badge variant="secondary" className="mt-1 text-xs">
                         Earned
@@ -462,7 +516,9 @@ export default function Dashboard() {
                       <PlayCircle className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <p className="text-xs font-semibold text-center mb-1">Video Buff</p>
-                    <p className="text-xs text-muted-foreground">Watch 100 Videos - 300 XP</p>
+                    <p className="text-xs text-muted-foreground">
+                      Watch 100 Videos - {videoBuffBadge?.badge?.points || 300} XP
+                    </p>
                     {videoBuffBadge && (
                       <Badge variant="secondary" className="mt-1 text-xs">
                         Earned
@@ -476,7 +532,9 @@ export default function Dashboard() {
                       <Flame className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                     </div>
                     <p className="text-xs font-semibold text-center mb-1">Daily Streak</p>
-                    <p className="text-xs text-muted-foreground">7-Day Streak - 100 XP</p>
+                    <p className="text-xs text-muted-foreground">
+                      7-Day Streak - {dailyStreakBadge?.badge?.points || 100} XP
+                    </p>
                     {dailyStreakBadge && (
                       <Badge variant="secondary" className="mt-1 text-xs">
                         Earned
@@ -509,6 +567,15 @@ export default function Dashboard() {
                 key={material.id}
                 className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
                 onClick={() => navigate(`/app/marketplace/${material.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate(`/app/marketplace/${material.id}`);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`View ${material.title} - ${material.type}`}
               >
                 <div className="bg-gradient-to-br from-blue-500 to-blue-700 h-32 flex items-center justify-center">
                   {material.type === 'PDF' ? (
@@ -519,13 +586,13 @@ export default function Dashboard() {
                 </div>
                 <CardContent className="p-4">
                   <Badge variant="secondary" className="mb-2 text-xs">
-                    {material.type === 'PDF' ? 'Cloud Computing' : 'Cybersecurity'}
+                    {material.type === 'PDF' ? 'PDF Guide' : 'Video Course'}
                   </Badge>
                   <h3 className="font-semibold text-sm mb-1 line-clamp-2">{material.title}</h3>
                   <p className="text-xs text-muted-foreground line-clamp-2">
                     {material.type === 'PDF'
-                      ? 'Cloud Computing Fundamentals'
-                      : 'Cybersecurity Basics'}
+                      ? 'Downloadable study guide to support your exam prep.'
+                      : 'On-demand video lesson to deepen your understanding.'}
                   </p>
                 </CardContent>
               </Card>
@@ -540,44 +607,29 @@ export default function Dashboard() {
             <CardContent className="p-6">
               {completedQuizzes.length > 0 ? (
                 <div className="space-y-3">
-                  {completedQuizzes.slice(0, 4).map((quiz, index) => {
-                    const activityTypes = [
-                      { icon: Target, label: 'Completed Quiz', color: 'text-blue-600' },
-                      { icon: PlayCircle, label: 'Watched Lecture', color: 'text-green-600' },
-                      { icon: CheckCircle, label: 'Completed Quiz', color: 'text-blue-600' },
-                      { icon: BookOpen, label: 'Started', color: 'text-purple-600' },
-                    ];
-                    const activity = activityTypes[index % activityTypes.length];
-                    const IconComponent = activity.icon;
-
-                    return (
-                      <div
-                        key={quiz.id}
-                        className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
-                      >
-                        <div
-                          className={`w-10 h-10 rounded-full bg-muted flex items-center justify-center ${activity.color}`}
-                        >
-                          <IconComponent className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">
-                            {activity.label} "{quiz.title}"
-                          </p>
-                          {quiz.score && (
-                            <p className="text-xs text-muted-foreground">
-                              Score: {Math.round(quiz.score)}%
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">
-                            {formatTimeAgo(quiz.completedAt!)}
-                          </p>
-                        </div>
+                  {completedQuizzes.slice(0, 4).map((quiz) => (
+                    <div
+                      key={quiz.id}
+                      className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-blue-600">
+                        <Target className="h-5 w-5" />
                       </div>
-                    );
-                  })}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">Completed Quiz "{quiz.title}"</p>
+                        {quiz.score && (
+                          <p className="text-xs text-muted-foreground">
+                            Score: {Math.round(quiz.score)}%
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">
+                          {formatTimeAgo(quiz.completedAt!)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-center py-8">
