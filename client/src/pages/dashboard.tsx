@@ -5,34 +5,15 @@ import { useAuth } from '@/lib/auth-provider';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { storage } from '@/lib/storage-factory';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { InsufficientTokensDialog } from '@/components/InsufficientTokensDialog';
 import { CertificationSelectionDialog } from '@/components/CertificationSelectionDialog';
 import { studyMaterials } from '@/data/study-materials';
 import { calculateLevelFromPoints, calculatePointsForLevel } from '@/lib/level-utils';
-import {
-  BookOpen,
-  PlayCircle,
-  TrendingUp,
-  Clock,
-  Trophy,
-  Target,
-  History,
-  FileText,
-  Sparkles,
-  ArrowRight,
-  Flame,
-  CheckCircle,
-} from 'lucide-react';
+import { PlayCircle, Trophy, Target, History, FileText, ArrowRight, Flame } from 'lucide-react';
 import type { UserStats, Quiz, Category } from '@shared/schema';
-import type {
-  StudyRecommendation,
-  ReadinessScore,
-  LearningVelocity,
-} from '@/lib/smart-recommendations';
 
 export default function Dashboard() {
   const { user: currentUser, refreshUser } = useAuth();
@@ -65,27 +46,6 @@ export default function Dashboard() {
   // Get token balance for compact display
   const { data: tokenData } = useQuery({
     queryKey: queryKeys.user.tokenBalance(currentUser?.id),
-    enabled: !!currentUser?.id,
-  });
-
-  // Get smart recommendations
-  const { data: recommendations = [] } = useQuery<StudyRecommendation[]>({
-    queryKey: ['recommendations', currentUser?.id],
-    queryFn: () => storage.getStudyRecommendations(currentUser!.id),
-    enabled: !!currentUser?.id,
-  });
-
-  // Get readiness score
-  const { data: readinessScore } = useQuery<ReadinessScore>({
-    queryKey: ['readinessScore', currentUser?.id],
-    queryFn: () => storage.getReadinessScore(currentUser!.id),
-    enabled: !!currentUser?.id,
-  });
-
-  // Get learning velocity
-  const { data: learningVelocity } = useQuery<LearningVelocity>({
-    queryKey: ['learningVelocity', currentUser?.id],
-    queryFn: () => storage.getLearningVelocity(currentUser!.id),
     enabled: !!currentUser?.id,
   });
 
@@ -352,199 +312,151 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Two-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Left Column - AI-Adapted Learning Path */}
-          <div className="lg:col-span-2">
-            <Card className="h-full border-primary/20">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold">AI-Adapted Learning Path</CardTitle>
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Progress
-                  </Button>
+        {/* Learning Velocity Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground">Learning Velocity</h2>
+          </div>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex gap-4">
+                {/* Y-axis percentage scale */}
+                <div className="flex flex-col justify-between text-xs text-muted-foreground h-24">
+                  <span>100%</span>
+                  <span>75%</span>
+                  <span>50%</span>
+                  <span>25%</span>
+                  <span>0</span>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Track your progress through the AI-adapted learning path.
+                <div className="flex-1">
+                  {/* Simple chart representation */}
+                  <div className="relative h-24">
+                    {/* Horizontal grid lines to connect y-axis labels to bars */}
+                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <div key={index} className="border-t border-border/40" />
+                      ))}
+                    </div>
+                    <div className="relative h-full flex items-end justify-between gap-2">
+                      {[20, 35, 45, 60, 70, 75, 80].map((height, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 bg-primary/60 rounded-t"
+                          style={{ height: `${height}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label) => (
+                      <span key={label}>{label}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Achievements & Progress Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground">Achievements & Progress</h2>
+            <Button variant="ghost" size="sm" onClick={handleViewProgress} className="gap-2">
+              View All
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="p-6 space-y-6">
+              {/* Level Progress Circle */}
+              <div className="flex flex-col items-center justify-center p-6 bg-muted/30 rounded-lg">
+                <div className="relative w-32 h-32">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      className="text-muted"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 56}`}
+                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - progressToNextLevel / 100)}`}
+                      className="text-primary transition-all duration-500"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <p className="text-xs text-muted-foreground">Level</p>
+                    <p className="text-3xl font-bold">{level}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4">
+                  Current Level XP: {pointsInCurrentLevel}/{pointsNeededForLevel}
                 </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Current Goal */}
-                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">
-                      Current Goal:{' '}
-                      {(currentUser &&
-                        'currentCertificationGoal' in currentUser &&
-                        (currentUser as { currentCertificationGoal?: string })
-                          .currentCertificationGoal) ||
-                        'AWS Solutions Architect'}
-                    </p>
-                    <Progress value={100} className="h-2 mb-2" />
-                    <p className="text-xs text-muted-foreground">100%</p>
-                  </div>
-                </div>
+              </div>
 
-                {/* Learning Velocity Chart */}
-                <div className="p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold">Learning Velocity</h3>
+              {/* Achievement Badges */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Quiz Master */}
+                <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mb-2">
+                    <Trophy className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
                   </div>
-                  <div className="flex gap-4">
-                    {/* Y-axis percentage scale */}
-                    <div className="flex flex-col justify-between text-xs text-muted-foreground h-24">
-                      <span>100%</span>
-                      <span>75%</span>
-                      <span>50%</span>
-                      <span>25%</span>
-                      <span>0</span>
-                    </div>
-                    <div className="flex-1">
-                      {/* Simple chart representation */}
-                      <div className="relative h-24">
-                        {/* Horizontal grid lines to connect y-axis labels to bars */}
-                        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                          {Array.from({ length: 5 }).map((_, index) => (
-                            <div key={index} className="border-t border-border/40" />
-                          ))}
-                        </div>
-                        <div className="relative h-full flex items-end justify-between gap-2">
-                          {[20, 35, 45, 60, 70, 75, 80].map((height, i) => (
-                            <div
-                              key={i}
-                              className="flex-1 bg-primary/60 rounded-t"
-                              style={{ height: `${height}%` }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label) => (
-                          <span key={label}>{label}</span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recommended Next Module */}
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium mb-1">
-                        Recommended next module: EC2 & S3 Deep Dive
-                      </p>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        Resume your started learning projects.
-                      </p>
-                      <Button size="sm" className="gap-2">
-                        Resume Learning
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column - Achievements & Progress */}
-          <div>
-            <Card className="h-full border-primary/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-semibold">Achievements & Progress</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Level Progress Circle */}
-                <div className="flex flex-col items-center justify-center p-6 bg-muted/30 rounded-lg">
-                  <div className="relative w-32 h-32">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        fill="none"
-                        className="text-muted"
-                      />
-                      <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        fill="none"
-                        strokeDasharray={`${2 * Math.PI * 56}`}
-                        strokeDashoffset={`${2 * Math.PI * 56 * (1 - progressToNextLevel / 100)}`}
-                        className="text-primary transition-all duration-500"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <p className="text-xs text-muted-foreground">Level</p>
-                      <p className="text-3xl font-bold">{level}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    Current Level XP: {pointsInCurrentLevel}/{pointsNeededForLevel}
+                  <p className="text-xs font-semibold text-center mb-1">Quiz Master</p>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Complete 50 Quizzes - {quizMasterBadge?.badge?.points || 400} XP
                   </p>
+                  {quizMasterBadge && (
+                    <Badge variant="secondary" className="mt-1 text-xs">
+                      Earned
+                    </Badge>
+                  )}
                 </div>
 
-                {/* Achievement Badges */}
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Quiz Master */}
-                  <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mb-2">
-                      <Trophy className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-                    </div>
-                    <p className="text-xs font-semibold text-center mb-1">Quiz Master</p>
-                    <p className="text-xs text-muted-foreground">
-                      Complete 50 Quizzes - {quizMasterBadge?.badge?.points || 400} XP
-                    </p>
-                    {quizMasterBadge && (
-                      <Badge variant="secondary" className="mt-1 text-xs">
-                        Earned
-                      </Badge>
-                    )}
+                {/* Video Buff */}
+                <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-2">
+                    <PlayCircle className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   </div>
-
-                  {/* Video Buff */}
-                  <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-2">
-                      <PlayCircle className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <p className="text-xs font-semibold text-center mb-1">Video Buff</p>
-                    <p className="text-xs text-muted-foreground">
-                      Watch 100 Videos - {videoBuffBadge?.badge?.points || 300} XP
-                    </p>
-                    {videoBuffBadge && (
-                      <Badge variant="secondary" className="mt-1 text-xs">
-                        Earned
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Daily Streak */}
-                  <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center mb-2">
-                      <Flame className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <p className="text-xs font-semibold text-center mb-1">Daily Streak</p>
-                    <p className="text-xs text-muted-foreground">
-                      7-Day Streak - {dailyStreakBadge?.badge?.points || 100} XP
-                    </p>
-                    {dailyStreakBadge && (
-                      <Badge variant="secondary" className="mt-1 text-xs">
-                        Earned
-                      </Badge>
-                    )}
-                  </div>
+                  <p className="text-xs font-semibold text-center mb-1">Video Buff</p>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Watch 100 Videos - {videoBuffBadge?.badge?.points || 300} XP
+                  </p>
+                  {videoBuffBadge && (
+                    <Badge variant="secondary" className="mt-1 text-xs">
+                      Earned
+                    </Badge>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+
+                {/* Daily Streak */}
+                <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center mb-2">
+                    <Flame className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <p className="text-xs font-semibold text-center mb-1">Daily Streak</p>
+                  <p className="text-xs text-muted-foreground text-center">
+                    7-Day Streak - {dailyStreakBadge?.badge?.points || 100} XP
+                  </p>
+                  {dailyStreakBadge && (
+                    <Badge variant="secondary" className="mt-1 text-xs">
+                      Earned
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Marketplace Recommendations Section */}
