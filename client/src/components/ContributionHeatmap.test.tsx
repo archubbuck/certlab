@@ -163,7 +163,7 @@ describe('ContributionHeatmap', () => {
     expect(screen.getByText(/Sign in with your Firebase account/i)).toBeInTheDocument();
   });
 
-  it('should display "last 30 days" in the title when data is available', async () => {
+  it('should display "last 28 days" in the title when data is available', async () => {
     const { isCloudSyncAvailable } = await import('@/lib/storage-factory');
     vi.mocked(isCloudSyncAvailable).mockReturnValue(true);
 
@@ -187,11 +187,11 @@ describe('ContributionHeatmap', () => {
       </QueryClientProvider>
     );
 
-    // Should show "last 30 days" in the title
-    expect(screen.getByText(/in last 30 days/i)).toBeInTheDocument();
+    // Should show "last 28 days" in the title
+    expect(screen.getByText(/in last 28 days/i)).toBeInTheDocument();
   });
 
-  it('should display "past month" in the description', async () => {
+  it('should display "past 4 weeks" in the description', async () => {
     const { isCloudSyncAvailable } = await import('@/lib/storage-factory');
     vi.mocked(isCloudSyncAvailable).mockReturnValue(true);
 
@@ -204,7 +204,7 @@ describe('ContributionHeatmap', () => {
       </QueryClientProvider>
     );
 
-    // Should show "past month" in the description
-    expect(screen.getByText(/over the past month/i)).toBeInTheDocument();
+    // Should show "past 4 weeks" in the description
+    expect(screen.getByText(/over the past 4 weeks/i)).toBeInTheDocument();
   });
 });

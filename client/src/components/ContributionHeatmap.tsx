@@ -132,13 +132,13 @@ export default function ContributionHeatmap() {
     return data;
   }, [quizzes]);
 
-  // Generate last 30 days array
-  const last30Days = useMemo(() => {
+  // Generate last 28 days array (4 weeks)
+  const last28Days = useMemo(() => {
     const days: Date[] = [];
     const today = new Date();
 
-    // Generate the last 30 days (including today)
-    for (let i = 29; i >= 0; i--) {
+    // Generate the last 28 days (including today)
+    for (let i = 27; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       days.push(date);
@@ -147,14 +147,23 @@ export default function ContributionHeatmap() {
     return days;
   }, []);
 
-  // Calculate total contributions for last 30 days
+  // Organize days into 4 rows of 7 days each
+  const gridRows = useMemo(() => {
+    const rows: Date[][] = [];
+    for (let i = 0; i < 4; i++) {
+      rows.push(last28Days.slice(i * 7, (i + 1) * 7));
+    }
+    return rows;
+  }, [last28Days]);
+
+  // Calculate total contributions for last 28 days
   const totalContributions = useMemo(() => {
-    return last30Days.reduce((total, date) => {
+    return last28Days.reduce((total, date) => {
       const dateKey = date.toISOString().split('T')[0];
       const contribution = contributionData[dateKey];
       return total + (contribution?.count || 0);
     }, 0);
-  }, [contributionData, last30Days]);
+  }, [contributionData, last28Days]);
 
   // Get contribution level (0-4) based on count
   const getContributionLevel = (count: number): number => {
@@ -231,34 +240,42 @@ export default function ContributionHeatmap() {
       <CardHeader>
         <div>
           <CardTitle className="text-base sm:text-xl">
-            {totalContributions} {totalContributions === 1 ? 'activity' : 'activities'} in last 30
+            {totalContributions} {totalContributions === 1 ? 'activity' : 'activities'} in last 28
             days
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm">
-            Your learning activity over the past month
+            Your learning activity over the past 4 weeks
           </CardDescription>
         </div>
       </CardHeader>
       <CardContent>
         <TooltipProvider delayDuration={100}>
           <div className="space-y-4">
-            {/* 30-day activity grid - single row */}
-            <div className="w-full overflow-x-auto">
-              <div className="flex gap-1 sm:gap-1.5" role="grid" aria-label="Activity heatmap">
-                {last30Days.map((date, index) => {
-                  const dateKey = date.toISOString().split('T')[0];
-                  const contribution = contributionData[dateKey];
-                  const level = getContributionLevel(contribution?.count || 0);
+            {/* 28-day activity grid - 4 rows of 7 boxes */}
+            <div className="w-full">
+              <div
+                className="flex flex-col gap-1 sm:gap-1.5"
+                role="grid"
+                aria-label="Activity heatmap"
+              >
+                {gridRows.map((week, weekIndex) => (
+                  <div key={weekIndex} className="flex gap-1 sm:gap-1.5" role="row">
+                    {week.map((date, dayIndex) => {
+                      const dateKey = date.toISOString().split('T')[0];
+                      const contribution = contributionData[dateKey];
+                      const level = getContributionLevel(contribution?.count || 0);
 
-                  return (
-                    <HeatmapCell
-                      key={index}
-                      date={date}
-                      contribution={contribution}
-                      level={level}
-                    />
-                  );
-                })}
+                      return (
+                        <HeatmapCell
+                          key={dayIndex}
+                          date={date}
+                          contribution={contribution}
+                          level={level}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             </div>
 
