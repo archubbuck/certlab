@@ -53,7 +53,7 @@ function HeatmapCell({ date, contribution, level }: HeatmapCellProps) {
       <TooltipTrigger asChild>
         <button
           type="button"
-          className={`w-2 h-2 sm:w-3 sm:h-3 rounded-sm border border-border/50 transition-all duration-200 ${colorClasses[level]}`}
+          className={`w-full aspect-square rounded-sm border border-border/50 transition-all duration-200 ${colorClasses[level]}`}
           aria-label={tooltipContent}
         >
           <span className="sr-only">{tooltipContent}</span>
@@ -254,12 +254,12 @@ export default function ContributionHeatmap() {
             {/* 28-day activity grid - 4 rows of 7 boxes */}
             <div className="w-full">
               <div
-                className="flex flex-col gap-1 sm:gap-1.5"
+                className="flex flex-col gap-2 sm:gap-3"
                 role="grid"
                 aria-label="Activity heatmap"
               >
                 {gridRows.map((week, weekIndex) => (
-                  <div key={weekIndex} className="flex gap-1 sm:gap-1.5" role="row">
+                  <div key={weekIndex} className="flex gap-2 sm:gap-3" role="row">
                     {week.map((date, dayIndex) => {
                       const dateKey = date.toISOString().split('T')[0];
                       const contribution = contributionData[dateKey];
