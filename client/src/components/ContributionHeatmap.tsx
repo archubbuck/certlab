@@ -256,8 +256,14 @@ export default function ContributionHeatmap() {
               </p>
               <ul className="text-sm list-disc list-inside mt-1 space-y-1">
                 <li>Ensure Firebase is properly configured with valid credentials</li>
-                <li>Sign in with your Firebase account to enable cloud sync</li>
-                <li>Check your internet connection</li>
+                {!user ? (
+                  <li>Sign in with your Firebase account to enable cloud sync</li>
+                ) : (
+                  <li>
+                    Firebase connectivity lost. Please check your internet connection and refresh
+                    the page
+                  </li>
+                )}
               </ul>
               <p className="text-sm mt-3 text-muted-foreground">
                 <em>

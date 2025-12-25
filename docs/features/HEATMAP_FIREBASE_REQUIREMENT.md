@@ -20,8 +20,8 @@ The Activity Heatmap requires Firebase/Firestore for several important reasons:
 
 ### Local Storage Role
 
-- **Purpose**: IndexedDB is used **only for caching and offline access**, not as a primary data source for the heatmap.
-- **Cache-only**: Local storage provides temporary offline viewing capabilities through Firestore's built-in offline persistence.
+- **Purpose**: IndexedDB is used **only for caching**, not as a primary data source for the heatmap.
+- **Cache-only**: IndexedDB is used automatically by Firestore's offline persistence layer for caching, not as a separate fallback mechanism.
 - **Not a Fallback**: The heatmap will NOT automatically display data from IndexedDB if Firebase is disconnected.
 
 ## User Experience
@@ -69,7 +69,10 @@ Location: `client/src/components/ContributionHeatmap.tsx`
 import { isCloudSyncAvailable } from '@/lib/storage-factory';
 
 export default function ContributionHeatmap() {
+  const { user } = useAuth();
+  
   // Check Firebase/Firestore connectivity - required for heatmap functionality
+  // This check occurs BEFORE any data fetching or loading states
   const isFirebaseAvailable = isCloudSyncAvailable();
   
   // Only fetch if Firebase is available
@@ -78,6 +81,7 @@ export default function ContributionHeatmap() {
     enabled: !!user?.id && isFirebaseAvailable, // Firebase check here
   });
   
+  // Firebase connectivity check happens first - before loading state
   if (!isFirebaseAvailable) {
     // Show error with Card and Alert components
     return (
@@ -100,6 +104,11 @@ export default function ContributionHeatmap() {
         </CardContent>
       </Card>
     );
+  }
+  
+  // Loading state is only shown if Firebase is available
+  if (isLoading) {
+    return <LoadingState />;
   }
   
   // Render heatmap...
@@ -192,7 +201,7 @@ For local development without Firebase credentials:
 3. **Sign in** with Google authentication
 4. **Complete quizzes** to generate activity data
 5. **Navigate to Profile** to view the heatmap
-6. **Test offline mode**: Disconnect internet after initial load (Firestore cache should work)
+6. **Verify connectivity requirement**: Confirm that if Firebase/Firestore becomes unavailable (including going offline), the heatmap shows the Firebase connectivity error instead of activity data. Offline viewing of the heatmap is **not** supported.
 
 ## Related Components
 

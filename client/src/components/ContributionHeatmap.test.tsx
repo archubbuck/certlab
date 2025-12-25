@@ -82,7 +82,8 @@ describe('ContributionHeatmap', () => {
     vi.mocked(isCloudSyncAvailable).mockReturnValue(false);
 
     const querySpy = vi.fn();
-    queryClient.setQueryDefaults(['quizzes'], {
+    // Use the actual query key structure that matches the component
+    queryClient.setQueryDefaults(['/api', 'user', 'test-user-123', 'quizzes'], {
       queryFn: querySpy,
     });
 
@@ -137,7 +138,28 @@ describe('ContributionHeatmap', () => {
 
     // Check for troubleshooting steps
     expect(screen.getByText(/To enable this feature:/i)).toBeInTheDocument();
+    // Updated: Message varies based on auth state - when user is authenticated (as in mock)
+    expect(screen.getByText(/Firebase connectivity lost/i)).toBeInTheDocument();
+    expect(screen.getByText(/check your internet connection/i)).toBeInTheDocument();
+  });
+
+  it('should show sign-in message when user is not authenticated', async () => {
+    const { isCloudSyncAvailable } = await import('@/lib/storage-factory');
+    const { useAuth } = await import('@/lib/auth-provider');
+
+    vi.mocked(isCloudSyncAvailable).mockReturnValue(false);
+    // Mock unauthenticated state
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+    } as any);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ContributionHeatmap />
+      </QueryClientProvider>
+    );
+
+    // When not authenticated, should show sign-in message
     expect(screen.getByText(/Sign in with your Firebase account/i)).toBeInTheDocument();
-    expect(screen.getByText(/Check your internet connection/i)).toBeInTheDocument();
   });
 });
