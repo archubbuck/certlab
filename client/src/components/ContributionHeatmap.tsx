@@ -86,6 +86,15 @@ export default function ContributionHeatmap() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
+  // Layout constants for responsive heatmap
+  const MOBILE_CELL_SIZE = 8; // pixels (w-2 h-2 in Tailwind)
+  const MOBILE_GAP = 2; // pixels (gap-[2px] in Tailwind)
+  const MOBILE_WEEK_WIDTH = MOBILE_CELL_SIZE + MOBILE_GAP; // 10px per week column
+
+  const DESKTOP_CELL_SIZE = 12; // pixels (w-3 h-3 in Tailwind)
+  const DESKTOP_GAP = 3; // pixels (gap-[3px] in Tailwind)
+  const DESKTOP_WEEK_WIDTH = DESKTOP_CELL_SIZE + DESKTOP_GAP; // 15px per week column
+
   // Check Firebase/Firestore connectivity - required for heatmap functionality
   const isFirebaseAvailable = isCloudSyncAvailable();
 
@@ -190,16 +199,9 @@ export default function ContributionHeatmap() {
   // For mobile, show only recent weeks to fit in viewport
   const mobileWeeksToShow = 16; // ~4 months
   const mobileCalendarGrid = useMemo(() => {
-    // Show the most recent weeks for current year, or last weeks for past years
-    const isCurrentYear = selectedYear === new Date().getFullYear();
-    if (isCurrentYear) {
-      // Show last N weeks up to today
-      return calendarGrid.slice(-mobileWeeksToShow);
-    } else {
-      // For past years, show last N weeks of that year
-      return calendarGrid.slice(-mobileWeeksToShow);
-    }
-  }, [calendarGrid, selectedYear, mobileWeeksToShow]);
+    // Show the most recent weeks for better mobile experience
+    return calendarGrid.slice(-mobileWeeksToShow);
+  }, [calendarGrid, mobileWeeksToShow]);
 
   // Get contribution level (0-4) based on count
   const getContributionLevel = (count: number): number => {
@@ -381,8 +383,7 @@ export default function ContributionHeatmap() {
               <div className="flex gap-[3px] pl-8 text-xs text-muted-foreground mb-1">
                 {monthLabels.map((label, index) => {
                   const prevOffset = index > 0 ? monthLabels[index - 1].offset : 0;
-                  const WEEK_WIDTH = 15; // 12px cell + 3px gap
-                  const spacing = (label.offset - prevOffset) * WEEK_WIDTH;
+                  const spacing = (label.offset - prevOffset) * DESKTOP_WEEK_WIDTH;
                   return (
                     <div
                       key={label.month}
@@ -441,7 +442,6 @@ export default function ContributionHeatmap() {
               <div className="flex gap-[2px] pl-6 text-[10px] text-muted-foreground mb-1">
                 {mobileMonthLabels.map((label, index) => {
                   const prevOffset = index > 0 ? mobileMonthLabels[index - 1].offset : 0;
-                  const MOBILE_WEEK_WIDTH = 10; // 8px cell + 2px gap
                   const spacing = (label.offset - prevOffset) * MOBILE_WEEK_WIDTH;
                   return (
                     <div
@@ -461,9 +461,17 @@ export default function ContributionHeatmap() {
               <div className="flex gap-1">
                 {/* Day labels - abbreviated */}
                 <div className="flex flex-col gap-[2px] text-[9px] text-muted-foreground pr-0.5">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-                    <div key={idx} className="h-2 flex items-center">
-                      {day}
+                  {[
+                    { label: 'S', full: 'Sunday' },
+                    { label: 'M', full: 'Monday' },
+                    { label: 'T', full: 'Tuesday' },
+                    { label: 'W', full: 'Wednesday' },
+                    { label: 'T', full: 'Thursday' },
+                    { label: 'F', full: 'Friday' },
+                    { label: 'S', full: 'Saturday' },
+                  ].map((day, idx) => (
+                    <div key={idx} className="h-2 flex items-center" aria-label={day.full}>
+                      {day.label}
                     </div>
                   ))}
                 </div>
