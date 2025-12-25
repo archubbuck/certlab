@@ -324,59 +324,64 @@ export default function ContributionHeatmap() {
       <CardContent>
         <TooltipProvider delayDuration={100}>
           <div className="space-y-2">
-            {/* Month labels */}
-            <div className="flex gap-[3px] pl-8 text-xs text-muted-foreground">
-              {monthLabels.map((label, index) => {
-                const prevOffset = index > 0 ? monthLabels[index - 1].offset : 0;
-                return (
-                  <div
-                    key={label.month}
-                    className="text-xs"
-                    style={{
-                      marginLeft:
-                        label.offset === 0 ? 0 : `${(label.offset - prevOffset) * 12.5}px`,
-                    }}
-                  >
-                    {label.month}
-                  </div>
-                );
-              })}
-            </div>
+            {/* Scrollable container for mobile responsiveness */}
+            <div className="overflow-x-auto -mx-6 px-6 md:overflow-x-visible md:mx-0 md:px-0">
+              <div className="min-w-max md:min-w-0">
+                {/* Month labels */}
+                <div className="flex gap-[3px] pl-8 text-xs text-muted-foreground">
+                  {monthLabels.map((label, index) => {
+                    const prevOffset = index > 0 ? monthLabels[index - 1].offset : 0;
+                    return (
+                      <div
+                        key={label.month}
+                        className="text-xs"
+                        style={{
+                          marginLeft:
+                            label.offset === 0 ? 0 : `${(label.offset - prevOffset) * 12.5}px`,
+                        }}
+                      >
+                        {label.month}
+                      </div>
+                    );
+                  })}
+                </div>
 
-            {/* Calendar grid */}
-            <div className="flex gap-2">
-              {/* Day labels */}
-              <div className="flex flex-col gap-[3px] text-xs text-muted-foreground pr-1">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                  <div key={day} className="h-3 flex items-center">
-                    {day}
+                {/* Calendar grid */}
+                <div className="flex gap-2">
+                  {/* Day labels */}
+                  <div className="flex flex-col gap-[3px] text-xs text-muted-foreground pr-1">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                      <div key={day} className="h-3 flex items-center">
+                        {day}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {/* Activity grid */}
-              <div className="flex gap-[3px]" role="grid" aria-label="Activity heatmap">
-                {calendarGrid.map((week, weekIndex) => (
-                  <div key={weekIndex} className="flex flex-col gap-[3px]" role="row">
-                    {week.map((date, dayIndex) => {
-                      const dateKey = date.toISOString().split('T')[0];
-                      const contribution = contributionData[dateKey];
-                      const level = getContributionLevel(contribution?.count || 0);
-                      const isCurrentYear = date.getFullYear() === selectedYear;
+                  {/* Activity grid */}
+                  <div className="flex gap-[3px]" role="grid" aria-label="Activity heatmap">
+                    {calendarGrid.map((week, weekIndex) => (
+                      <div key={weekIndex} className="flex flex-col gap-[3px]" role="row">
+                        {week.map((date, dayIndex) => {
+                          const dateKey = date.toISOString().split('T')[0];
+                          const contribution = contributionData[dateKey];
+                          const level = getContributionLevel(contribution?.count || 0);
+                          const isCurrentYear = date.getFullYear() === selectedYear;
 
-                      return isCurrentYear ? (
-                        <HeatmapCell
-                          key={dayIndex}
-                          date={date}
-                          contribution={contribution}
-                          level={level}
-                        />
-                      ) : (
-                        <div key={dayIndex} className="w-3 h-3 rounded-sm" aria-hidden="true" />
-                      );
-                    })}
+                          return isCurrentYear ? (
+                            <HeatmapCell
+                              key={dayIndex}
+                              date={date}
+                              contribution={contribution}
+                              level={level}
+                            />
+                          ) : (
+                            <div key={dayIndex} className="w-3 h-3 rounded-sm" aria-hidden="true" />
+                          );
+                        })}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
 
