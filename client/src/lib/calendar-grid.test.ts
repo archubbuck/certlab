@@ -4,45 +4,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { generateCalendarGrid, generateMonthLabels, MONTH_NAMES } from './calendar-utils';
 
 describe('Calendar Grid Generation', () => {
-  /**
-   * Generate calendar grid for a given year
-   * This is extracted from ContributionHeatmap component for testing
-   */
-  function generateCalendarGrid(selectedYear: number): Date[][] {
-    const startDate = new Date(selectedYear, 0, 1); // January 1st
-    const endDate = new Date(selectedYear, 11, 31); // December 31st
-
-    // Adjust start date to the previous Sunday to align grid
-    const startDay = startDate.getDay();
-    if (startDay !== 0) {
-      startDate.setDate(startDate.getDate() - startDay);
-    }
-
-    const weeks: Date[][] = [];
-    let currentWeek: Date[] = [];
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate || currentWeek.length < 7) {
-      currentWeek.push(new Date(currentDate));
-
-      if (currentWeek.length === 7) {
-        weeks.push(currentWeek);
-        currentWeek = [];
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
-
-      // Stop if we've gone too far into the next year
-      if (currentDate.getFullYear() > selectedYear && currentWeek.length === 0) {
-        break;
-      }
-    }
-
-    return weeks;
-  }
-
   it('should generate calendar grid for 2025 with all 12 months', () => {
     const grid = generateCalendarGrid(2025);
 
@@ -106,36 +70,8 @@ describe('Calendar Grid Generation', () => {
     const grid = generateCalendarGrid(2025);
     const mobileGrid = grid.slice(-16);
 
-    // Generate month labels (same logic as component)
-    const labels: { month: string; offset: number }[] = [];
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
-    let lastMonth = -1;
-    mobileGrid.forEach((week, weekIndex) => {
-      const firstDayOfWeek = week[0];
-      const month = firstDayOfWeek.getMonth();
-
-      if (month !== lastMonth && firstDayOfWeek.getFullYear() === 2025) {
-        labels.push({
-          month: months[month],
-          offset: weekIndex,
-        });
-        lastMonth = month;
-      }
-    });
+    // Generate month labels using the shared utility
+    const labels = generateMonthLabels(mobileGrid, 2025);
 
     // Should have December label
     const decemberLabel = labels.find((label) => label.month === 'Dec');

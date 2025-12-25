@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-provider';
 import { queryKeys } from '@/lib/queryClient';
 import { isCloudSyncAvailable } from '@/lib/storage-factory';
+import { generateCalendarGrid, generateMonthLabels, MONTH_NAMES } from '@/lib/calendar-utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -163,38 +164,7 @@ export default function ContributionHeatmap() {
   }, [contributionData, selectedYear]);
 
   // Generate calendar grid for selected year
-  const calendarGrid = useMemo(() => {
-    const startDate = new Date(selectedYear, 0, 1); // January 1st of selected year
-    const endDate = new Date(selectedYear, 11, 31); // December 31st of selected year
-
-    // Adjust start date to the previous Sunday to align grid
-    const startDay = startDate.getDay();
-    if (startDay !== 0) {
-      startDate.setDate(startDate.getDate() - startDay);
-    }
-
-    const weeks: Date[][] = [];
-    let currentWeek: Date[] = [];
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate || currentWeek.length < 7) {
-      currentWeek.push(new Date(currentDate));
-
-      if (currentWeek.length === 7) {
-        weeks.push(currentWeek);
-        currentWeek = [];
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
-
-      // Stop if we've gone too far into the next year
-      if (currentDate.getFullYear() > selectedYear && currentWeek.length === 0) {
-        break;
-      }
-    }
-
-    return weeks;
-  }, [selectedYear]);
+  const calendarGrid = useMemo(() => generateCalendarGrid(selectedYear), [selectedYear]);
 
   // For mobile, show only recent weeks to fit in viewport
   const mobileWeeksToShow = 16; // ~4 months
@@ -213,74 +183,16 @@ export default function ContributionHeatmap() {
   };
 
   // Generate month labels
-  const monthLabels = useMemo(() => {
-    const labels: { month: string; offset: number }[] = [];
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
-    let lastMonth = -1;
-    calendarGrid.forEach((week, weekIndex) => {
-      const firstDayOfWeek = week[0];
-      const month = firstDayOfWeek.getMonth();
-
-      if (month !== lastMonth && firstDayOfWeek.getFullYear() === selectedYear) {
-        labels.push({
-          month: months[month],
-          offset: weekIndex,
-        });
-        lastMonth = month;
-      }
-    });
-
-    return labels;
-  }, [calendarGrid, selectedYear]);
+  const monthLabels = useMemo(
+    () => generateMonthLabels(calendarGrid, selectedYear),
+    [calendarGrid, selectedYear]
+  );
 
   // Generate month labels for mobile (based on mobileCalendarGrid)
-  const mobileMonthLabels = useMemo(() => {
-    const labels: { month: string; offset: number }[] = [];
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
-    let lastMonth = -1;
-    mobileCalendarGrid.forEach((week, weekIndex) => {
-      const firstDayOfWeek = week[0];
-      const month = firstDayOfWeek.getMonth();
-
-      if (month !== lastMonth && firstDayOfWeek.getFullYear() === selectedYear) {
-        labels.push({
-          month: months[month],
-          offset: weekIndex,
-        });
-        lastMonth = month;
-      }
-    });
-
-    return labels;
-  }, [mobileCalendarGrid, selectedYear]);
+  const mobileMonthLabels = useMemo(
+    () => generateMonthLabels(mobileCalendarGrid, selectedYear),
+    [mobileCalendarGrid, selectedYear]
+  );
 
   // Show Firebase connectivity error if Firebase is not available
   if (!isFirebaseAvailable) {
