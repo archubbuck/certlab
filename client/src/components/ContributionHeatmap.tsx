@@ -2,9 +2,12 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-provider';
 import { queryKeys } from '@/lib/queryClient';
+import { isCloudSyncAvailable } from '@/lib/storage-factory';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CloudOff, AlertTriangle } from 'lucide-react';
 import type { Quiz } from '@shared/schema';
 
 interface DailyContribution {
@@ -83,10 +86,14 @@ export default function ContributionHeatmap() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
+  // Check Firebase/Firestore connectivity - required for heatmap functionality
+  const isFirebaseAvailable = isCloudSyncAvailable();
+
   // Fetch user's quizzes to calculate contributions
+  // Only fetch if Firebase is available - heatmap requires cloud storage
   const { data: quizzes = [], isLoading } = useQuery<Quiz[]>({
     queryKey: queryKeys.user.quizzes(user?.id),
-    enabled: !!user?.id,
+    enabled: !!user?.id && isFirebaseAvailable,
   });
 
   // Calculate contribution data
@@ -224,12 +231,53 @@ export default function ContributionHeatmap() {
     return labels;
   }, [calendarGrid, selectedYear]);
 
+  // Show Firebase connectivity error if Firebase is not available
+  if (!isFirebaseAvailable) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CloudOff className="h-5 w-5" />
+            Activity Level
+          </CardTitle>
+          <CardDescription>Firebase connectivity required</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Firebase Not Connected</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">
+                The activity heatmap requires full Firebase/Firestore connectivity to display your
+                learning progress across devices.
+              </p>
+              <p className="text-sm">
+                <strong>To enable this feature:</strong>
+              </p>
+              <ul className="text-sm list-disc list-inside mt-1 space-y-1">
+                <li>Ensure Firebase is properly configured with valid credentials</li>
+                <li>Sign in with your Firebase account to enable cloud sync</li>
+                <li>Check your internet connection</li>
+              </ul>
+              <p className="text-sm mt-3 text-muted-foreground">
+                <em>
+                  Note: Local browser storage (IndexedDB) is used only for caching and offline
+                  access, not as the primary data source for this feature.
+                </em>
+              </p>
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Activity Level</CardTitle>
-          <CardDescription>Loading your activity history...</CardDescription>
+          <CardDescription>Loading your activity history from Firebase...</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center py-8">
           <LoadingSpinner />
