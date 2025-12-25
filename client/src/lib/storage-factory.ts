@@ -2,20 +2,34 @@
  * Storage Factory
  *
  * Provides a unified storage interface using Firestore for cloud storage.
- * Firebase and Firestore are now mandatory for the application.
+ * Firebase and Firestore are now mandatory for the application in production.
  *
  * ## Architecture
  *
- * - **Primary storage**: Uses Firestore via firestore-storage.ts
- * - **Offline fallback**: IndexedDB cache for offline access (read-only)
+ * - **Primary storage**: Uses Firestore via firestore-storage.ts (REQUIRED in production)
+ * - **Development fallback**: IndexedDB available in development mode only when Firebase is not configured
+ * - **Offline support**: Firestore SDK provides automatic offline persistence with IndexedDB cache
+ * - **Heatmap requirement**: Activity heatmap and analytics features require full Firebase/Firestore connectivity
+ *
+ * ## Important Notes
+ *
+ * - **Production**: Firebase/Firestore is MANDATORY. Application will not function without it.
+ * - **Development**: Can fallback to IndexedDB for local development without Firebase credentials.
+ * - **Local storage role**: IndexedDB is used ONLY for caching and offline access, NOT as primary data source.
+ * - **Heatmap data**: Always requires Firebase connectivity - no local storage fallback for analytics.
  *
  * ## Usage
  *
  * ```typescript
  * import { storage } from './storage-factory';
  *
- * // Use storage (always uses Firestore)
+ * // Use storage (routes to Firestore in production, IndexedDB fallback in dev)
  * const quizzes = await storage.getUserQuizzes(userId);
+ *
+ * // Check if cloud sync is available (required for heatmap)
+ * if (isCloudSyncAvailable()) {
+ *   // Heatmap can be displayed
+ * }
  * ```
  *
  * @module storage-factory
