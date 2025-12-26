@@ -38,12 +38,25 @@ import {
   Coins,
   ShoppingCart,
   Snowflake,
+  Bell,
 } from 'lucide-react';
 import MobileNavigationEnhanced from '@/components/MobileNavigationEnhanced';
 import TenantSwitcher from '@/components/TenantSwitcher';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
-import type { UserGameStats } from '@shared/schema';
+import type { UserGameStats, UserBadge, Badge as BadgeType } from '@shared/schema';
+
+// Type for the achievements query response
+type AchievementsData = {
+  badges: Array<UserBadge & { badge: BadgeType; isNotified: boolean }>;
+  gameStats: {
+    totalPoints: number;
+    currentStreak: number;
+    longestStreak: number;
+    totalBadgesEarned: number;
+  };
+  newBadges: number;
+};
 
 export default function Header() {
   const location = useLocation();
@@ -64,6 +77,16 @@ export default function Header() {
     queryKey: queryKeys.user.stats(currentUser?.id),
     enabled: !!currentUser?.id,
   });
+
+  // Get achievements to check for unread notifications
+  const { data: achievements } = useQuery<AchievementsData>({
+    queryKey: queryKeys.user.achievements(currentUser?.id),
+    enabled: !!currentUser?.id,
+    refetchInterval: 5000, // Check for new achievements every 5 seconds
+  });
+
+  // Count unread notifications
+  const unreadCount = achievements?.badges?.filter((b) => !b.isNotified)?.length || 0;
 
   const handleSignOut = async () => {
     // Navigate to home page BEFORE logout to prevent 404 flash
@@ -443,16 +466,29 @@ export default function Header() {
                   <Button
                     variant="ghost"
                     className="relative h-10 rounded-full px-2 hover:bg-accent/10"
-                    aria-label={`User menu for ${getUserDisplayName(currentUser)}`}
+                    aria-label={
+                      unreadCount > 0
+                        ? `User menu - ${unreadCount} new notification${unreadCount > 1 ? 's' : ''}`
+                        : `User menu for ${getUserDisplayName(currentUser)}`
+                    }
                   >
                     <div className="flex items-center space-x-2">
-                      <div
-                        className="w-8 h-8 gradient-primary rounded-full flex items-center justify-center shadow-glow"
-                        aria-hidden="true"
-                      >
-                        <span className="text-primary-foreground text-sm font-semibold">
-                          {getInitials(currentUser.firstName, currentUser.lastName)}
-                        </span>
+                      <div className="relative">
+                        <div
+                          className="w-8 h-8 gradient-primary rounded-full flex items-center justify-center shadow-glow"
+                          aria-hidden="true"
+                        >
+                          <span className="text-primary-foreground text-sm font-semibold">
+                            {getInitials(currentUser.firstName, currentUser.lastName)}
+                          </span>
+                        </div>
+                        {/* Red ring indicator for unread notifications */}
+                        {unreadCount > 0 && (
+                          <span
+                            className="absolute inset-0 rounded-full ring-2 ring-red-500 pointer-events-none"
+                            aria-hidden="true"
+                          />
+                        )}
                       </div>
                       <span className="hidden lg:block text-foreground text-sm font-medium max-w-[120px] truncate">
                         {getUserDisplayName(currentUser)}
@@ -510,6 +546,32 @@ export default function Header() {
                             </div>
                           )}
                         </div>
+                      </div>
+                    </>
+                  )}
+                  {/* Notifications Section */}
+                  {unreadCount > 0 && (
+                    <>
+                      <DropdownMenuSeparator className="my-2" />
+                      <div className="px-3 py-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-medium text-muted-foreground">Notifications</p>
+                          <Badge variant="destructive" className="text-xs h-5 px-2">
+                            {unreadCount}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          You have {unreadCount} new achievement{unreadCount > 1 ? 's' : ''}!
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => navigate('/app/achievements')}
+                        >
+                          <Bell className="w-4 h-4 mr-2" />
+                          View All Notifications
+                        </Button>
                       </div>
                     </>
                   )}

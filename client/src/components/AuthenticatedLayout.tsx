@@ -159,42 +159,40 @@ function AuthenticatedHeader() {
             </div>
           </div>
 
-          {/* Notifications */}
+          {/* User Avatar - with red ring indicator when notifications exist */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon"
-                className="rounded-full relative bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-10"
-                onClick={() => togglePanel('notifications')}
-                aria-label="Open notifications panel"
+                className="relative h-10 w-10 rounded-full p-0 bg-white hover:bg-white/90"
+                onClick={() => {
+                  // If there are unread notifications, open notifications panel, otherwise open user panel
+                  togglePanel(unreadCount > 0 ? 'notifications' : 'user');
+                }}
+                aria-label={
+                  unreadCount > 0 ? `Open notifications - ${unreadCount} unread` : 'Open user menu'
+                }
               >
-                <Bell className="h-5 w-5" />
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-white text-foreground font-semibold text-sm border-2 border-border">
+                    {currentUser ? getInitials(currentUser.firstName, currentUser.lastName) : '?'}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Red ring indicator for unread notifications */}
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-background"></span>
+                  <span
+                    className="absolute inset-0 rounded-full ring-2 ring-red-500 pointer-events-none"
+                    aria-hidden="true"
+                  />
                 )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
               {unreadCount > 0
                 ? `${unreadCount} new notification${unreadCount > 1 ? 's' : ''}`
-                : 'Notifications'}
+                : 'User menu'}
             </TooltipContent>
           </Tooltip>
-
-          {/* User Avatar */}
-          <Button
-            variant="ghost"
-            className="relative h-10 w-10 rounded-full p-0 bg-white hover:bg-white/90"
-            onClick={() => togglePanel('user')}
-            aria-label="Open user panel"
-          >
-            <Avatar className="h-10 w-10">
-              <AvatarFallback className="bg-white text-foreground font-semibold text-sm border-2 border-border">
-                {currentUser ? getInitials(currentUser.firstName, currentUser.lastName) : '?'}
-              </AvatarFallback>
-            </Avatar>
-          </Button>
         </div>
       </div>
     </header>
