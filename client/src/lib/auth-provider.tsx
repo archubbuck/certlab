@@ -35,9 +35,48 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Session storage keys for optimistic auth state
+const AUTH_STATE_KEY = 'certlab_auth_state';
+const AUTH_USER_KEY = 'certlab_auth_user';
+
+// Helper to get cached auth state synchronously
+function getCachedAuthState(): { isAuthenticated: boolean; user: User | null } {
+  try {
+    const authState = sessionStorage.getItem(AUTH_STATE_KEY);
+    const userJson = sessionStorage.getItem(AUTH_USER_KEY);
+
+    if (authState === 'authenticated' && userJson) {
+      const user = JSON.parse(userJson) as User;
+      return { isAuthenticated: true, user };
+    }
+  } catch (error) {
+    console.warn('[Auth] Failed to read cached auth state:', error);
+  }
+
+  return { isAuthenticated: false, user: null };
+}
+
+// Helper to cache auth state synchronously
+function cacheAuthState(isAuthenticated: boolean, user: User | null) {
+  try {
+    if (isAuthenticated && user) {
+      sessionStorage.setItem(AUTH_STATE_KEY, 'authenticated');
+      sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    } else {
+      sessionStorage.removeItem(AUTH_STATE_KEY);
+      sessionStorage.removeItem(AUTH_USER_KEY);
+    }
+  } catch (error) {
+    console.warn('[Auth] Failed to cache auth state:', error);
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Initialize with cached auth state to prevent flash
+  const cachedAuth = getCachedAuthState();
+  const [user, setUser] = useState<User | null>(cachedAuth.user);
+  // Only show loading if we don't have cached auth state
+  const [isLoading, setIsLoading] = useState(!cachedAuth.isAuthenticated);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
   const [initError, setInitError] = useState<Error | null>(null);
@@ -69,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const existingUser = await storage.getUserById(currentUserId);
             if (existingUser) {
               setUser(existingUser);
+              cacheAuthState(true, existingUser);
               identifyUser(existingUser.id);
             }
           }
@@ -109,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Firebase user is now the only source of authentication
       if (!firebaseUser) {
         setUser(null);
+        cacheAuthState(false, null);
         return;
       }
 
@@ -133,13 +174,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (firestoreUser) {
         setUser(firestoreUser);
+        cacheAuthState(true, firestoreUser);
         identifyUser(firestoreUser.id);
       } else {
         setUser(null);
+        cacheAuthState(false, null);
       }
     } catch (error) {
       logError('loadUser', error);
       setUser(null);
+      cacheAuthState(false, null);
     }
   }, [firebaseUser]);
 
@@ -207,6 +251,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(null);
       setFirebaseUser(null);
+
+      // Clear cached auth state
+      cacheAuthState(false, null);
     } catch (error) {
       logError('logout', error);
     }
