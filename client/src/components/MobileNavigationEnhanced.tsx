@@ -46,7 +46,7 @@ export default function MobileNavigationEnhanced() {
       id: 'dashboard',
       label: 'Dashboard',
       icon: <Home className="w-5 h-5" />,
-      href: '/',
+      href: '/app',
     },
     {
       id: 'achievements',
@@ -106,6 +106,13 @@ export default function MobileNavigationEnhanced() {
         ]
       : []),
   ];
+
+  const isPathActive = (path: string) => {
+    if (path === '/app') {
+      return location.pathname === '/app' || location.pathname === '/app/dashboard';
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
 
   const handleItemClick = (comingSoon?: boolean) => {
     if (comingSoon) return;
@@ -183,13 +190,13 @@ export default function MobileNavigationEnhanced() {
                         className={`
                           flex items-center gap-3 px-4 py-3 rounded-lg transition-colors mb-1
                           hover:bg-accent active:bg-accent/80
-                          ${location.pathname === item.href ? 'bg-accent text-accent-foreground font-medium' : ''}
+                          ${isPathActive(item.href) ? 'bg-accent text-accent-foreground font-medium' : ''}
                         `}
                       >
                         <div
                           className={`
                             flex-shrink-0 
-                            ${location.pathname === item.href ? 'text-primary' : 'text-muted-foreground'}
+                            ${isPathActive(item.href) ? 'text-primary' : 'text-muted-foreground'}
                           `}
                         >
                           {item.icon}
