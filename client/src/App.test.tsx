@@ -11,6 +11,11 @@ vi.mock('react-router-dom', async () => {
     ...actual,
     useLocation: () => mockUseLocation(),
     BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Navigate: ({ to }: { to: string }) => (
+      <div data-testid="navigate" data-to={to}>
+        Redirecting to {to}...
+      </div>
+    ),
   };
 });
 
@@ -138,7 +143,7 @@ describe('App Router - Authentication Flash Prevention', () => {
     expect(screen.queryByTestId('page-loader')).not.toBeInTheDocument();
   });
 
-  it('shows landing page on root path when auth is not loading and user is authenticated', async () => {
+  it('redirects to /app when authenticated user visits root path', async () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
@@ -147,10 +152,11 @@ describe('App Router - Authentication Flash Prevention', () => {
 
     render(<App />);
 
-    // Should show landing page (landing page will handle redirect internally)
+    // Should redirect to /app instead of showing landing page
     await waitFor(() => {
-      expect(screen.getByTestId('landing-page')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toBeInTheDocument();
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/app');
     });
-    expect(screen.queryByTestId('page-loader')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('landing-page')).not.toBeInTheDocument();
   });
 });
