@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { queryClient } from './lib/queryClient';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -53,7 +53,7 @@ const BASE_PATH =
   import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL.replace(/\/$/, '');
 
 function Router() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const location = useLocation();
   const isAdmin = user?.role === 'admin';
 
@@ -63,6 +63,13 @@ function Router() {
     // before redirecting authenticated users to dashboard
     if (isLoading) {
       return <SessionLoader message="Initializing application..." />;
+    }
+
+    // Redirect authenticated users to dashboard
+    // This ensures that users who refresh on /app and briefly get redirected to /
+    // will automatically be sent back to /app once auth state is confirmed
+    if (isAuthenticated) {
+      return <Navigate to="/app" replace />;
     }
 
     return (
