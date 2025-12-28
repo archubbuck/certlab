@@ -399,7 +399,9 @@ class IndexedDBService {
           userDailyRewardsStore.createIndex('tenantId', 'tenantId');
           userDailyRewardsStore.createIndex('day', 'day');
           userDailyRewardsStore.createIndex('userDay', ['userId', 'day']);
-          userDailyRewardsStore.createIndex('userTenantDay', ['userId', 'tenantId', 'day']);
+          userDailyRewardsStore.createIndex('userTenantDay', ['userId', 'tenantId', 'day'], {
+            unique: true,
+          });
         }
 
         // Gamification V2: User Titles store (added in version 7)

@@ -321,9 +321,9 @@ class StorageRouter implements IClientStorage {
   // Daily Rewards
   // ==========================================
 
-  async hasClaimedDailyReward(userId: string, day: number): Promise<boolean> {
+  async hasClaimedDailyReward(userId: string, day: number, tenantId?: number): Promise<boolean> {
     return this.executeStorageOperation(
-      (s) => s.hasClaimedDailyReward(userId, day),
+      (s) => s.hasClaimedDailyReward(userId, day, tenantId),
       'hasClaimedDailyReward'
     );
   }

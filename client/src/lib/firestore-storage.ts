@@ -1912,8 +1912,12 @@ class FirestoreStorage implements IClientStorage {
     tenantId: number
   ): Promise<UserQuestProgress | null> {
     try {
-      const allProgress = await this.getUserQuestProgress(userId, tenantId);
-      return allProgress.find((p) => p.questId === questId) || null;
+      // Query directly by document ID pattern instead of fetching all progress
+      // This is more efficient for Firestore but requires knowing the document structure
+      // For now, we'll optimize by fetching filtered results
+      const progressRecords = await getUserDocuments<UserQuestProgress>(userId, 'questProgress');
+      const match = progressRecords.find((p) => p.questId === questId && p.tenantId === tenantId);
+      return match ? convertTimestamps<UserQuestProgress>(match) : null;
     } catch (error) {
       logError('getUserQuestProgressByQuest', error, { userId, questId, tenantId });
       return null;
@@ -1937,8 +1941,9 @@ class FirestoreStorage implements IClientStorage {
         });
       } else {
         // Create new progress record
+        // Use timestamp plus random component to reduce collision risk
         const newProgress: UserQuestProgress = {
-          id: Date.now(),
+          id: Date.now() * 1000 + Math.floor(Math.random() * 1000),
           userId,
           tenantId,
           questId,
@@ -1968,12 +1973,15 @@ class FirestoreStorage implements IClientStorage {
         });
       } else {
         // Create new progress record as completed
+        // Note: This creates a completed quest with progress=0. The caller should have
+        // called updateUserQuestProgress first to set the actual progress value.
+        // This method is primarily used when marking a quest complete after progress updates.
         const newProgress: UserQuestProgress = {
-          id: Date.now(),
+          id: Date.now() * 1000 + Math.floor(Math.random() * 1000),
           userId,
           tenantId,
           questId,
-          progress: 0, // Will be set by caller
+          progress: 0,
           isCompleted: true,
           completedAt: new Date(),
           rewardClaimed: false,
@@ -2026,7 +2034,7 @@ class FirestoreStorage implements IClientStorage {
       }
 
       const newTitle: UserTitle = {
-        id: Date.now(),
+        id: Date.now() * 1000 + Math.floor(Math.random() * 1000),
         userId,
         tenantId,
         title,
@@ -2087,35 +2095,55 @@ class FirestoreStorage implements IClientStorage {
     }
   }
 
-  async hasClaimedDailyReward(userId: string, day: number): Promise<boolean> {
+  async hasClaimedDailyReward(userId: string, day: number, tenantId?: number): Promise<boolean> {
     try {
       const claims = await getUserDocuments<UserDailyReward>(userId, 'dailyRewardClaims');
+      if (tenantId !== undefined) {
+        return claims.some((c) => c.day === day && c.tenantId === tenantId);
+      }
       return claims.some((c) => c.day === day);
     } catch (error) {
-      logError('hasClaimedDailyReward', error, { userId, day });
+      logError('hasClaimedDailyReward', error, { userId, day, tenantId });
       return false;
     }
   }
 
   async claimDailyReward(userId: string, day: number, tenantId: number): Promise<UserDailyReward> {
     try {
+      // Validate day parameter
+      if (!Number.isInteger(day) || day < 1) {
+        throw new Error(`Invalid day ${day}. Must be a positive integer.`);
+      }
+
       // Get the reward configuration
       const allRewards = await this.getDailyRewards();
-      const rewardConfig = allRewards.find((r) => r.day === day);
 
+      if (allRewards.length === 0) {
+        throw new Error('No daily rewards are configured');
+      }
+
+      const minDay = allRewards[0].day;
+      const maxDay = allRewards[allRewards.length - 1].day;
+
+      if (day < minDay || day > maxDay) {
+        throw new Error(`Invalid day ${day}. Must be between ${minDay} and ${maxDay}.`);
+      }
+
+      const rewardConfig = allRewards.find((r) => r.day === day);
       if (!rewardConfig) {
         throw new Error(`Daily reward for day ${day} not found`);
       }
 
-      // Check if already claimed
-      const alreadyClaimed = await this.hasClaimedDailyReward(userId, day);
+      // Check if already claimed (filter by tenant to support multi-tenant rewards)
+      const alreadyClaimed = await this.hasClaimedDailyReward(userId, day, tenantId);
       if (alreadyClaimed) {
         throw new Error(`Daily reward for day ${day} already claimed`);
       }
 
-      // Create claim record
+      // Create claim record with timestamp-based ID plus random component to reduce collision risk
+      const id = Date.now() * 1000 + Math.floor(Math.random() * 1000);
       const claim: UserDailyReward = {
-        id: Date.now(),
+        id,
         userId,
         tenantId,
         day,

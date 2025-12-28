@@ -1652,11 +1652,14 @@ class ClientStorage implements IClientStorage {
       });
     } else {
       // Create new progress record as completed
+      // Note: This creates a completed quest with progress=0. The caller should have
+      // called updateUserQuestProgress first to set the actual progress value.
+      // This method is primarily used when marking a quest complete after progress updates.
       const newProgress: Omit<UserQuestProgress, 'id'> = {
         userId,
         tenantId,
         questId,
-        progress: 0, // Will be set by caller
+        progress: 0,
         isCompleted: true,
         completedAt: new Date(),
         rewardClaimed: false,
@@ -1753,31 +1756,51 @@ class ClientStorage implements IClientStorage {
     return allRewards.filter((r) => r.tenantId === tenantId);
   }
 
-  async hasClaimedDailyReward(userId: string, day: number): Promise<boolean> {
+  async hasClaimedDailyReward(userId: string, day: number, tenantId?: number): Promise<boolean> {
     const claims = await indexedDBService.getByIndex<UserDailyReward>(
       STORES.userDailyRewards,
       'userId',
       userId
     );
+    if (tenantId !== undefined) {
+      return claims.some((c) => c.day === day && c.tenantId === tenantId);
+    }
     return claims.some((c) => c.day === day);
   }
 
   async claimDailyReward(userId: string, day: number, tenantId: number): Promise<UserDailyReward> {
+    // Validate day parameter
+    if (!Number.isInteger(day) || day < 1) {
+      throw new Error(`Invalid day ${day}. Must be a positive integer.`);
+    }
+
     // Get the reward configuration
     const allRewards = await this.getDailyRewards();
-    const rewardConfig = allRewards.find((r) => r.day === day);
 
+    if (allRewards.length === 0) {
+      throw new Error('No daily rewards are configured');
+    }
+
+    const minDay = allRewards[0].day;
+    const maxDay = allRewards[allRewards.length - 1].day;
+
+    if (day < minDay || day > maxDay) {
+      throw new Error(`Invalid day ${day}. Must be between ${minDay} and ${maxDay}.`);
+    }
+
+    const rewardConfig = allRewards.find((r) => r.day === day);
     if (!rewardConfig) {
       throw new Error(`Daily reward for day ${day} not found`);
     }
 
-    // Check if already claimed
-    const alreadyClaimed = await this.hasClaimedDailyReward(userId, day);
+    // Check if already claimed (filter by tenant to support multi-tenant rewards)
+    const alreadyClaimed = await this.hasClaimedDailyReward(userId, day, tenantId);
     if (alreadyClaimed) {
       throw new Error(`Daily reward for day ${day} already claimed`);
     }
 
     // Create claim record
+    // The unique index on userTenantDay will prevent duplicate claims at the database level
     const claim: Omit<UserDailyReward, 'id'> = {
       userId,
       tenantId,
@@ -1786,8 +1809,16 @@ class ClientStorage implements IClientStorage {
       rewardData: rewardConfig.reward,
     };
 
-    const id = await indexedDBService.add(STORES.userDailyRewards, claim);
-    return { ...claim, id: Number(id) };
+    try {
+      const id = await indexedDBService.add(STORES.userDailyRewards, claim);
+      return { ...claim, id: Number(id) };
+    } catch (error: any) {
+      // Check if this is a constraint violation (duplicate claim)
+      if (error.name === 'ConstraintError') {
+        throw new Error(`Daily reward for day ${day} already claimed`);
+      }
+      throw error;
+    }
   }
 
   // ==========================================

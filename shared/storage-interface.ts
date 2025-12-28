@@ -738,8 +738,8 @@ export interface IClientStorage extends IStorageAdapter {
   /** Get user's daily reward claims */
   getUserDailyRewards(userId: string, tenantId: number): Promise<UserDailyReward[]>;
 
-  /** Check if user has claimed daily reward for a specific day */
-  hasClaimedDailyReward(userId: string, day: number): Promise<boolean>;
+  /** Check if user has claimed daily reward for a specific day (optionally filtered by tenant) */
+  hasClaimedDailyReward(userId: string, day: number, tenantId?: number): Promise<boolean>;
 
   /** Claim daily reward for a specific day */
   claimDailyReward(userId: string, day: number, tenantId: number): Promise<UserDailyReward>;
