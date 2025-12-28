@@ -69,6 +69,7 @@ import type {
   UserQuestProgress,
   UserTitle,
   UserDailyReward,
+  DailyReward,
 } from '@shared/schema';
 import type {
   IClientStorage,
@@ -1860,15 +1861,49 @@ class FirestoreStorage implements IClientStorage {
   // ==========================================
 
   async getQuests(): Promise<Quest[]> {
-    // TODO: Implement Firestore collection for quests
-    console.warn('[FirestoreStorage] getQuests not yet implemented');
-    return [];
+    try {
+      const quests = await getSharedDocuments<Quest>('quests');
+      return quests.map((q) => convertTimestamps<Quest>(q));
+    } catch (error) {
+      logError('getQuests', error);
+      return [];
+    }
   }
 
   async getActiveQuests(): Promise<Quest[]> {
-    // TODO: Implement Firestore collection for quests
-    console.warn('[FirestoreStorage] getActiveQuests not yet implemented');
-    return [];
+    try {
+      const quests = await this.getQuests();
+      const now = new Date();
+      return quests.filter((q) => {
+        if (!q.isActive) return false;
+        if (q.validUntil && new Date(q.validUntil) < now) return false;
+        return true;
+      });
+    } catch (error) {
+      logError('getActiveQuests', error);
+      return [];
+    }
+  }
+
+  async getQuestsByType(type: string): Promise<Quest[]> {
+    try {
+      const quests = await this.getActiveQuests();
+      return quests.filter((q) => q.type === type);
+    } catch (error) {
+      logError('getQuestsByType', error, { type });
+      return [];
+    }
+  }
+
+  async getUserQuestProgress(userId: string, tenantId: number): Promise<UserQuestProgress[]> {
+    try {
+      const progressRecords = await getUserDocuments<UserQuestProgress>(userId, 'questProgress');
+      const filtered = progressRecords.filter((p) => p.tenantId === tenantId);
+      return filtered.map((p) => convertTimestamps<UserQuestProgress>(p));
+    } catch (error) {
+      logError('getUserQuestProgress', error, { userId, tenantId });
+      return [];
+    }
   }
 
   async getUserQuestProgressByQuest(
@@ -1876,9 +1911,13 @@ class FirestoreStorage implements IClientStorage {
     questId: number,
     tenantId: number
   ): Promise<UserQuestProgress | null> {
-    // TODO: Implement Firestore collection for quest progress
-    console.warn('[FirestoreStorage] getUserQuestProgressByQuest not yet implemented');
-    return null;
+    try {
+      const allProgress = await this.getUserQuestProgress(userId, tenantId);
+      return allProgress.find((p) => p.questId === questId) || null;
+    } catch (error) {
+      logError('getUserQuestProgressByQuest', error, { userId, questId, tenantId });
+      return null;
+    }
   }
 
   async updateUserQuestProgress(
@@ -1887,18 +1926,83 @@ class FirestoreStorage implements IClientStorage {
     progress: number,
     tenantId: number
   ): Promise<void> {
-    // TODO: Implement Firestore collection for quest progress
-    console.warn('[FirestoreStorage] updateUserQuestProgress not yet implemented');
+    try {
+      const existing = await this.getUserQuestProgressByQuest(userId, questId, tenantId);
+
+      if (existing) {
+        // Update existing progress
+        await updateUserDocument(userId, 'questProgress', String(existing.id), {
+          progress,
+          updatedAt: new Date(),
+        });
+      } else {
+        // Create new progress record
+        const newProgress: UserQuestProgress = {
+          id: Date.now(),
+          userId,
+          tenantId,
+          questId,
+          progress,
+          isCompleted: false,
+          completedAt: null,
+          rewardClaimed: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        await setUserDocument(userId, 'questProgress', String(newProgress.id), newProgress);
+      }
+    } catch (error) {
+      logError('updateUserQuestProgress', error, { userId, questId, progress, tenantId });
+    }
   }
 
   async completeQuest(userId: string, questId: number, tenantId: number): Promise<void> {
-    // TODO: Implement Firestore collection for quest progress
-    console.warn('[FirestoreStorage] completeQuest not yet implemented');
+    try {
+      const existing = await this.getUserQuestProgressByQuest(userId, questId, tenantId);
+
+      if (existing) {
+        await updateUserDocument(userId, 'questProgress', String(existing.id), {
+          isCompleted: true,
+          completedAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } else {
+        // Create new progress record as completed
+        const newProgress: UserQuestProgress = {
+          id: Date.now(),
+          userId,
+          tenantId,
+          questId,
+          progress: 0, // Will be set by caller
+          isCompleted: true,
+          completedAt: new Date(),
+          rewardClaimed: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        await setUserDocument(userId, 'questProgress', String(newProgress.id), newProgress);
+      }
+    } catch (error) {
+      logError('completeQuest', error, { userId, questId, tenantId });
+    }
   }
 
   async claimQuestReward(userId: string, questId: number, tenantId: number): Promise<void> {
-    // TODO: Implement Firestore collection for quest rewards
-    console.warn('[FirestoreStorage] claimQuestReward not yet implemented');
+    try {
+      const existing = await this.getUserQuestProgressByQuest(userId, questId, tenantId);
+
+      if (!existing) {
+        throw new Error('Quest progress not found');
+      }
+
+      await updateUserDocument(userId, 'questProgress', String(existing.id), {
+        rewardClaimed: true,
+        updatedAt: new Date(),
+      });
+    } catch (error) {
+      logError('claimQuestReward', error, { userId, questId, tenantId });
+      throw error;
+    }
   }
 
   // ==========================================
@@ -1912,35 +2016,119 @@ class FirestoreStorage implements IClientStorage {
     source: string,
     tenantId: number
   ): Promise<void> {
-    // TODO: Implement Firestore collection for titles
-    console.warn('[FirestoreStorage] unlockTitle not yet implemented');
+    try {
+      // Check if title already exists
+      const existing = await getUserDocuments<UserTitle>(userId, 'titles');
+      const alreadyUnlocked = existing.some((t) => t.title === title && t.tenantId === tenantId);
+
+      if (alreadyUnlocked) {
+        return; // Title already unlocked
+      }
+
+      const newTitle: UserTitle = {
+        id: Date.now(),
+        userId,
+        tenantId,
+        title,
+        description: description || null,
+        unlockedAt: new Date(),
+        source: source || null,
+      };
+
+      await setUserDocument(userId, 'titles', String(newTitle.id), newTitle);
+    } catch (error) {
+      logError('unlockTitle', error, { userId, title, source, tenantId });
+    }
   }
 
   async getUserTitles(userId: string, tenantId: number): Promise<UserTitle[]> {
-    // TODO: Implement Firestore collection for titles
-    console.warn('[FirestoreStorage] getUserTitles not yet implemented');
-    return [];
+    try {
+      const titles = await getUserDocuments<UserTitle>(userId, 'titles');
+      const filtered = titles.filter((t) => t.tenantId === tenantId);
+      return filtered.map((t) => convertTimestamps<UserTitle>(t));
+    } catch (error) {
+      logError('getUserTitles', error, { userId, tenantId });
+      return [];
+    }
   }
 
   async setSelectedTitle(userId: string, title: string | null): Promise<void> {
-    // TODO: Implement Firestore collection for selected title
-    console.warn('[FirestoreStorage] setSelectedTitle not yet implemented');
+    try {
+      await updateUserProfile(userId, {
+        selectedTitle: title,
+      });
+    } catch (error) {
+      logError('setSelectedTitle', error, { userId, title });
+    }
   }
 
   // ==========================================
   // Daily Rewards
   // ==========================================
 
+  async getDailyRewards(): Promise<DailyReward[]> {
+    try {
+      const rewards = await getSharedDocuments<DailyReward>('dailyRewards');
+      return rewards.sort((a, b) => a.day - b.day);
+    } catch (error) {
+      logError('getDailyRewards', error);
+      return [];
+    }
+  }
+
+  async getUserDailyRewards(userId: string, tenantId: number): Promise<UserDailyReward[]> {
+    try {
+      const rewards = await getUserDocuments<UserDailyReward>(userId, 'dailyRewardClaims');
+      const filtered = rewards.filter((r) => r.tenantId === tenantId);
+      return filtered.map((r) => convertTimestamps<UserDailyReward>(r));
+    } catch (error) {
+      logError('getUserDailyRewards', error, { userId, tenantId });
+      return [];
+    }
+  }
+
   async hasClaimedDailyReward(userId: string, day: number): Promise<boolean> {
-    // TODO: Implement Firestore collection for daily rewards
-    console.warn('[FirestoreStorage] hasClaimedDailyReward not yet implemented');
-    return false;
+    try {
+      const claims = await getUserDocuments<UserDailyReward>(userId, 'dailyRewardClaims');
+      return claims.some((c) => c.day === day);
+    } catch (error) {
+      logError('hasClaimedDailyReward', error, { userId, day });
+      return false;
+    }
   }
 
   async claimDailyReward(userId: string, day: number, tenantId: number): Promise<UserDailyReward> {
-    // TODO: Implement Firestore collection for daily rewards
-    console.warn('[FirestoreStorage] claimDailyReward not yet implemented');
-    throw new Error('Daily rewards not yet implemented for Firestore');
+    try {
+      // Get the reward configuration
+      const allRewards = await this.getDailyRewards();
+      const rewardConfig = allRewards.find((r) => r.day === day);
+
+      if (!rewardConfig) {
+        throw new Error(`Daily reward for day ${day} not found`);
+      }
+
+      // Check if already claimed
+      const alreadyClaimed = await this.hasClaimedDailyReward(userId, day);
+      if (alreadyClaimed) {
+        throw new Error(`Daily reward for day ${day} already claimed`);
+      }
+
+      // Create claim record
+      const claim: UserDailyReward = {
+        id: Date.now(),
+        userId,
+        tenantId,
+        day,
+        claimedAt: new Date(),
+        rewardData: rewardConfig.reward,
+      };
+
+      await setUserDocument(userId, 'dailyRewardClaims', String(claim.id), claim);
+      return claim;
+    } catch (error) {
+      logError('claimDailyReward', error, { userId, day, tenantId });
+      throw error;
+    }
   }
 
   // ==========================================

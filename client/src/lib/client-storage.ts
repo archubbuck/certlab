@@ -73,6 +73,7 @@ import type {
   UserQuestProgress,
   UserTitle,
   UserDailyReward,
+  DailyReward,
 } from '@shared/schema';
 import type {
   IClientStorage,
@@ -1571,15 +1572,31 @@ class ClientStorage implements IClientStorage {
   // ==========================================
 
   async getQuests(): Promise<Quest[]> {
-    // TODO: Implement IndexedDB store for quests
-    console.warn('[ClientStorage] getQuests not yet implemented for IndexedDB');
-    return [];
+    return await indexedDBService.getAll<Quest>(STORES.quests);
   }
 
   async getActiveQuests(): Promise<Quest[]> {
-    // TODO: Implement IndexedDB store for quests
-    console.warn('[ClientStorage] getActiveQuests not yet implemented for IndexedDB');
-    return [];
+    const allQuests = await this.getQuests();
+    const now = new Date();
+    return allQuests.filter((q) => {
+      if (!q.isActive) return false;
+      if (q.validUntil && new Date(q.validUntil) < now) return false;
+      return true;
+    });
+  }
+
+  async getQuestsByType(type: string): Promise<Quest[]> {
+    const activeQuests = await this.getActiveQuests();
+    return activeQuests.filter((q) => q.type === type);
+  }
+
+  async getUserQuestProgress(userId: string, tenantId: number): Promise<UserQuestProgress[]> {
+    const allProgress = await indexedDBService.getByIndex<UserQuestProgress>(
+      STORES.userQuestProgress,
+      'userId',
+      userId
+    );
+    return allProgress.filter((p) => p.tenantId === tenantId);
   }
 
   async getUserQuestProgressByQuest(
@@ -1587,9 +1604,8 @@ class ClientStorage implements IClientStorage {
     questId: number,
     tenantId: number
   ): Promise<UserQuestProgress | null> {
-    // TODO: Implement IndexedDB store for quest progress
-    console.warn('[ClientStorage] getUserQuestProgressByQuest not yet implemented for IndexedDB');
-    return null;
+    const allProgress = await this.getUserQuestProgress(userId, tenantId);
+    return allProgress.find((p) => p.questId === questId) || null;
   }
 
   async updateUserQuestProgress(
@@ -1598,18 +1614,71 @@ class ClientStorage implements IClientStorage {
     progress: number,
     tenantId: number
   ): Promise<void> {
-    // TODO: Implement IndexedDB store for quest progress
-    console.warn('[ClientStorage] updateUserQuestProgress not yet implemented for IndexedDB');
+    const existing = await this.getUserQuestProgressByQuest(userId, questId, tenantId);
+
+    if (existing) {
+      // Update existing progress
+      await indexedDBService.put(STORES.userQuestProgress, {
+        ...existing,
+        progress,
+        updatedAt: new Date(),
+      });
+    } else {
+      // Create new progress record
+      const newProgress: Omit<UserQuestProgress, 'id'> = {
+        userId,
+        tenantId,
+        questId,
+        progress,
+        isCompleted: false,
+        completedAt: null,
+        rewardClaimed: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await indexedDBService.add(STORES.userQuestProgress, newProgress);
+    }
   }
 
   async completeQuest(userId: string, questId: number, tenantId: number): Promise<void> {
-    // TODO: Implement IndexedDB store for quest progress
-    console.warn('[ClientStorage] completeQuest not yet implemented for IndexedDB');
+    const existing = await this.getUserQuestProgressByQuest(userId, questId, tenantId);
+
+    if (existing) {
+      await indexedDBService.put(STORES.userQuestProgress, {
+        ...existing,
+        isCompleted: true,
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      });
+    } else {
+      // Create new progress record as completed
+      const newProgress: Omit<UserQuestProgress, 'id'> = {
+        userId,
+        tenantId,
+        questId,
+        progress: 0, // Will be set by caller
+        isCompleted: true,
+        completedAt: new Date(),
+        rewardClaimed: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await indexedDBService.add(STORES.userQuestProgress, newProgress);
+    }
   }
 
   async claimQuestReward(userId: string, questId: number, tenantId: number): Promise<void> {
-    // TODO: Implement IndexedDB store for quest rewards
-    console.warn('[ClientStorage] claimQuestReward not yet implemented for IndexedDB');
+    const existing = await this.getUserQuestProgressByQuest(userId, questId, tenantId);
+
+    if (!existing) {
+      throw new Error('Quest progress not found');
+    }
+
+    await indexedDBService.put(STORES.userQuestProgress, {
+      ...existing,
+      rewardClaimed: true,
+      updatedAt: new Date(),
+    });
   }
 
   // ==========================================
@@ -1623,35 +1692,102 @@ class ClientStorage implements IClientStorage {
     source: string,
     tenantId: number
   ): Promise<void> {
-    // TODO: Implement IndexedDB store for titles
-    console.warn('[ClientStorage] unlockTitle not yet implemented for IndexedDB');
+    // Check if title already exists
+    const existing = await indexedDBService.getByIndex<UserTitle>(
+      STORES.userTitles,
+      'userId',
+      userId
+    );
+    const alreadyUnlocked = existing.some((t) => t.title === title && t.tenantId === tenantId);
+
+    if (alreadyUnlocked) {
+      return; // Title already unlocked
+    }
+
+    const newTitle: Omit<UserTitle, 'id'> = {
+      userId,
+      tenantId,
+      title,
+      description: description || null,
+      unlockedAt: new Date(),
+      source: source || null,
+    };
+
+    await indexedDBService.add(STORES.userTitles, newTitle);
   }
 
   async getUserTitles(userId: string, tenantId: number): Promise<UserTitle[]> {
-    // TODO: Implement IndexedDB store for titles
-    console.warn('[ClientStorage] getUserTitles not yet implemented for IndexedDB');
-    return [];
+    const allTitles = await indexedDBService.getByIndex<UserTitle>(
+      STORES.userTitles,
+      'userId',
+      userId
+    );
+    return allTitles.filter((t) => t.tenantId === tenantId);
   }
 
   async setSelectedTitle(userId: string, title: string | null): Promise<void> {
-    // TODO: Implement IndexedDB store for selected title
-    console.warn('[ClientStorage] setSelectedTitle not yet implemented for IndexedDB');
+    const user = await this.getUser(userId);
+    if (user) {
+      await indexedDBService.put(STORES.users, {
+        ...user,
+        selectedTitle: title,
+      });
+    }
   }
 
   // ==========================================
   // Daily Rewards
   // ==========================================
 
+  async getDailyRewards(): Promise<DailyReward[]> {
+    const rewards = await indexedDBService.getAll<DailyReward>(STORES.dailyRewards);
+    return rewards.sort((a, b) => a.day - b.day);
+  }
+
+  async getUserDailyRewards(userId: string, tenantId: number): Promise<UserDailyReward[]> {
+    const allRewards = await indexedDBService.getByIndex<UserDailyReward>(
+      STORES.userDailyRewards,
+      'userId',
+      userId
+    );
+    return allRewards.filter((r) => r.tenantId === tenantId);
+  }
+
   async hasClaimedDailyReward(userId: string, day: number): Promise<boolean> {
-    // TODO: Implement IndexedDB store for daily rewards
-    console.warn('[ClientStorage] hasClaimedDailyReward not yet implemented for IndexedDB');
-    return false;
+    const claims = await indexedDBService.getByIndex<UserDailyReward>(
+      STORES.userDailyRewards,
+      'userId',
+      userId
+    );
+    return claims.some((c) => c.day === day);
   }
 
   async claimDailyReward(userId: string, day: number, tenantId: number): Promise<UserDailyReward> {
-    // TODO: Implement IndexedDB store for daily rewards
-    console.warn('[ClientStorage] claimDailyReward not yet implemented for IndexedDB');
-    throw new Error('Daily rewards not yet implemented for IndexedDB');
+    // Get the reward configuration
+    const allRewards = await this.getDailyRewards();
+    const rewardConfig = allRewards.find((r) => r.day === day);
+
+    if (!rewardConfig) {
+      throw new Error(`Daily reward for day ${day} not found`);
+    }
+
+    // Check if already claimed
+    const alreadyClaimed = await this.hasClaimedDailyReward(userId, day);
+    if (alreadyClaimed) {
+      throw new Error(`Daily reward for day ${day} already claimed`);
+    }
+
+    // Create claim record
+    const claim: Omit<UserDailyReward, 'id'> = {
+      userId,
+      tenantId,
+      day,
+      claimedAt: new Date(),
+      rewardData: rewardConfig.reward,
+    };
+
+    const id = await indexedDBService.add(STORES.userDailyRewards, claim);
+    return { ...claim, id: Number(id) };
   }
 
   // ==========================================

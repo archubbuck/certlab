@@ -68,7 +68,7 @@
  */
 
 const DB_NAME = 'certlab';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 // Define all stores (tables)
 const STORES = {
@@ -95,6 +95,11 @@ const STORES = {
   marketplacePurchases: 'marketplacePurchases', // For tracking purchased study materials
   studyTimerSessions: 'studyTimerSessions', // For Pomodoro timer sessions
   studyTimerSettings: 'studyTimerSettings', // For user timer preferences
+  quests: 'quests', // For gamification V2 quests
+  userQuestProgress: 'userQuestProgress', // For user quest progress tracking
+  dailyRewards: 'dailyRewards', // For daily reward configuration
+  userDailyRewards: 'userDailyRewards', // For user daily reward claims
+  userTitles: 'userTitles', // For user unlocked titles
 } as const;
 
 class IndexedDBService {
@@ -348,6 +353,65 @@ class IndexedDBService {
           timerSettingsStore.createIndex('userId', 'userId', { unique: true });
           timerSettingsStore.createIndex('tenantId', 'tenantId');
           timerSettingsStore.createIndex('userTenant', ['userId', 'tenantId'], { unique: true });
+        }
+
+        // Gamification V2: Quests store (added in version 7)
+        if (!db.objectStoreNames.contains(STORES.quests)) {
+          const questStore = db.createObjectStore(STORES.quests, {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+          questStore.createIndex('type', 'type');
+          questStore.createIndex('isActive', 'isActive');
+        }
+
+        // Gamification V2: User Quest Progress store (added in version 7)
+        if (!db.objectStoreNames.contains(STORES.userQuestProgress)) {
+          const userQuestProgressStore = db.createObjectStore(STORES.userQuestProgress, {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+          userQuestProgressStore.createIndex('userId', 'userId');
+          userQuestProgressStore.createIndex('tenantId', 'tenantId');
+          userQuestProgressStore.createIndex('questId', 'questId');
+          userQuestProgressStore.createIndex('userQuest', ['userId', 'questId']);
+          userQuestProgressStore.createIndex('userTenantQuest', ['userId', 'tenantId', 'questId'], {
+            unique: true,
+          });
+        }
+
+        // Gamification V2: Daily Rewards store (added in version 7)
+        if (!db.objectStoreNames.contains(STORES.dailyRewards)) {
+          const dailyRewardsStore = db.createObjectStore(STORES.dailyRewards, {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+          dailyRewardsStore.createIndex('day', 'day', { unique: true });
+        }
+
+        // Gamification V2: User Daily Rewards store (added in version 7)
+        if (!db.objectStoreNames.contains(STORES.userDailyRewards)) {
+          const userDailyRewardsStore = db.createObjectStore(STORES.userDailyRewards, {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+          userDailyRewardsStore.createIndex('userId', 'userId');
+          userDailyRewardsStore.createIndex('tenantId', 'tenantId');
+          userDailyRewardsStore.createIndex('day', 'day');
+          userDailyRewardsStore.createIndex('userDay', ['userId', 'day']);
+          userDailyRewardsStore.createIndex('userTenantDay', ['userId', 'tenantId', 'day']);
+        }
+
+        // Gamification V2: User Titles store (added in version 7)
+        if (!db.objectStoreNames.contains(STORES.userTitles)) {
+          const userTitlesStore = db.createObjectStore(STORES.userTitles, {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+          userTitlesStore.createIndex('userId', 'userId');
+          userTitlesStore.createIndex('tenantId', 'tenantId');
+          userTitlesStore.createIndex('title', 'title');
+          userTitlesStore.createIndex('userTenant', ['userId', 'tenantId']);
         }
       };
     });
