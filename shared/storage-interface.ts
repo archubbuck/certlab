@@ -2,11 +2,11 @@
  * Shared Storage Interface
  *
  * This file defines the common interface for storage operations.
- * CertLab currently uses IndexedDB as its primary storage mechanism.
+ * CertLab uses Cloud Firestore as its storage mechanism.
  *
  * Using the adapter pattern, the storage layer can support different
- * implementations (IndexedDB, future Firebase/Firestore integration, testing mocks)
- * while maintaining consistent API contracts across the application.
+ * implementations (Firestore production, testing mocks) while maintaining
+ * consistent API contracts across the application.
  *
  * Note: References to "server" implementations are legacy from the previous
  * PostgreSQL-based architecture and are maintained for backward compatibility.
@@ -108,7 +108,7 @@ export interface CertificationMasteryScore {
  * Core storage interface for data operations.
  *
  * This interface defines storage operations for CertLab. The current
- * implementation uses IndexedDB as the primary storage mechanism.
+ * implementation uses Cloud Firestore as the storage mechanism.
  *
  * The adapter pattern allows for different implementations (testing mocks,
  * future cloud sync integrations) while maintaining consistent API contracts.
@@ -368,7 +368,7 @@ export interface IStorageAdapter {
  * CertLab no longer uses a server-side backend. These methods are part of
  * the legacy architecture when the app used PostgreSQL.
  *
- * Current implementation uses IClientStorage with IndexedDB.
+ * Current implementation uses IClientStorage with Cloud Firestore.
  */
 export interface IServerStorage extends IStorageAdapter {
   // ==========================================

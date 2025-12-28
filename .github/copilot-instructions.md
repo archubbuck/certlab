@@ -2,7 +2,7 @@
 
 ## Repository Overview
 
-**CertLab** is a client-side certification learning platform that runs entirely in the browser using IndexedDB for local data storage. Users can study for certifications like CISSP and CISM with adaptive quizzes, achievements, and progress tracking. **No backend server is required** - all data stays in the browser.
+**CertLab** is a cloud-first certification learning platform that uses Firebase/Firestore for data storage. Users can study for certifications like CISSP and CISM with adaptive quizzes, achievements, and progress tracking. **Firebase/Firestore is mandatory** - all data is stored in the cloud with automatic offline support via Firestore's built-in caching.
 
 **Key Characteristics:**
 - **Size**: Medium (~171 files, ~152 TypeScript/JavaScript files)
@@ -19,7 +19,7 @@
 - **Styling**: TailwindCSS 3.4.17, Radix UI components
 - **State Management**: TanStack Query (React Query)
 - **Routing**: Wouter (client-side routing)
-- **Storage**: IndexedDB via custom `client-storage.ts`
+- **Storage**: Cloud Firestore with automatic offline persistence
 - **Build Tool**: Vite with `@vitejs/plugin-react`
 
 ## Build & Validation Commands
@@ -131,9 +131,11 @@ vite.config.ts       # Vite build configuration with path aliases
     /components/           # 37 React components (Header, Badge components, etc.)
     /pages/                # 17 page components (dashboard, quiz, results, etc.)
     /lib/                  # Core utilities
-      client-storage.ts    # IndexedDB wrapper (mimics server storage API)
-      indexeddb.ts         # Low-level IndexedDB service
-      seed-data.ts         # Initial data seeding (categories, questions, badges)
+      storage-factory.ts   # Firestore storage router (cloud storage)
+      firestore-storage.ts # Firestore storage implementation
+      firestore-service.ts # Low-level Firestore operations
+      firebase.ts          # Firebase initialization and auth
+      seed-data.ts         # Data seeding (disabled - use admin tools)
       auth-provider.tsx    # Client-side authentication context
       queryClient.ts       # TanStack Query configuration
       theme-provider.tsx   # Theme management (7 themes available)
@@ -205,36 +207,32 @@ ls -lh dist/
 
 ## Data Architecture
 
-### IndexedDB Stores
-The app uses these stores (defined in `client/src/lib/indexeddb.ts`):
-- `users` - User accounts with hashed passwords (SHA-256)
-- `categories` - Certification categories (CISSP, CISM, etc.)
-- `subcategories` - Topic subcategories
-- `questions` - Question bank with answers
-- `quizzes` - Quiz attempts and results
-- `userProgress` - Learning progress tracking
-- `lectures` - Study materials
-- `masteryScores` - Performance metrics
-- `badges` - Achievement definitions
-- `userBadges` - User's earned badges
-- `userGameStats` - Gamification statistics
-- `challenges` - Daily/quick challenges
-- `challengeAttempts` - Challenge completion records
-- `studyGroups` - Study group definitions
-- `studyGroupMembers` - Group membership records
-- `practiceTests` - Practice test definitions
-- `practiceTestAttempts` - Practice test results
-- `settings` - App settings (including currentUserId)
+### Cloud Firestore Storage
+The app uses Firestore for all data storage with automatic offline persistence:
+- `users` - User accounts and profiles (per-user collections)
+- `categories` - Certification categories (CISSP, CISM, etc.) - shared content
+- `subcategories` - Topic subcategories - shared content
+- `questions` - Question bank with answers - shared content
+- `quizzes` - Quiz attempts and results (per-user)
+- `userProgress` - Learning progress tracking (per-user)
+- `lectures` - Study materials (per-user)
+- `masteryScores` - Performance metrics (per-user)
+- `badges` - Achievement definitions - shared content
+- `userBadges` - User's earned badges (per-user)
+- `userGameStats` - Gamification statistics (per-user)
+- `challenges` - Daily/quick challenges - shared content
+- `challengeAttempts` - Challenge completion records (per-user)
+- `studyGroups` - Study group definitions - shared content
+- `studyGroupMembers` - Group membership records (per-user)
+- `practiceTests` - Practice test definitions - shared content
+- `practiceTestAttempts` - Practice test results (per-user)
 
-### Initial Data Seeding
-**File**: `client/src/lib/seed-data.ts`  
-**Version**: 1 (tracked in IndexedDB settings)  
-**Seeds**:
-- 2 certification categories (CISSP, CISM)
-- 5 subcategories
-- 6 sample questions
-- 5 achievement badges
-- Runs automatically on first app load for new users
+### Data Seeding
+**Files**: `client/src/lib/seed-data.ts`  
+**Note**: Client-side seeding is disabled. Shared content (categories, questions, badges) must be seeded via:
+- Firestore admin SDK scripts
+- Firebase console
+- Initial database setup procedures
 
 ## Known Issues & Workarounds
 
@@ -257,14 +255,15 @@ The app uses these stores (defined in `client/src/lib/indexeddb.ts`):
 
 ### Server Code Present but Unused
 - **Issue**: `/server/` directory exists with server-side code
-- **Context**: CertLab was migrated from server-based to client-only architecture
+- **Context**: CertLab was migrated from server-based to cloud-based architecture
 - **Workaround**: Server code is not built or deployed (Vite only builds client/)
 - **Action**: Ignore server code unless working on legacy features or migration
 
-### Base Path Configuration
-- **Default**: App uses root path `/` for Firebase Hosting
-- **Configuration**: `vite.config.ts` can be overridden with `VITE_BASE_PATH` environment variable
-- **Example**: `VITE_BASE_PATH=/my-path/ npm run build`
+### Firestore Required
+- **Issue**: Application requires Firebase/Firestore to function
+- **Context**: IndexedDB standalone storage has been removed
+- **Workaround**: Must configure Firebase credentials for development and production
+- **Action**: See Firebase setup documentation
 
 ## Best Practices for Code Changes
 
@@ -290,15 +289,17 @@ The app uses these stores (defined in `client/src/lib/indexeddb.ts`):
 ### File Modifications
 - **Components**: Located in `/client/src/components/` - 37 files
 - **Pages**: Located in `/client/src/pages/` - 17 page files
-- **Storage Logic**: `/client/src/lib/client-storage.ts` - handles all data operations
+- **Storage Logic**: `/client/src/lib/storage-factory.ts` - routes to Firestore
+- **Firestore Implementation**: `/client/src/lib/firestore-storage.ts` - handles all data operations
 - **Styles**: Global styles in `/client/src/index.css`, component styles use Tailwind classes
 - **Routing**: Defined in `/client/src/App.tsx` using Wouter
 
 ### Common Pitfalls
 1. **Don't modify** `vite.config.ts` base path without understanding deployment impact
-2. **Don't add** backend dependencies - this is a client-only app
-3. **Don't break** IndexedDB schema without migration plan
+2. **Don't add** backend dependencies - this is a cloud-first client app
+3. **Don't bypass** storage-factory - always import `storage` from `storage-factory.ts`, not directly from firestore-storage
 4. **Don't commit** `dist/`, `node_modules/`, or `.env` files (already in .gitignore)
+5. **Don't forget** Firebase credentials are required for the app to function
 
 ## Path Aliases
 When importing, use these aliases:
@@ -330,7 +331,8 @@ import type { User } from '@shared/schema';
 
 **Main Entry**: `/client/src/main.tsx`  
 **App Root**: `/client/src/App.tsx`  
-**Storage**: `/client/src/lib/client-storage.ts`  
+**Storage**: `/client/src/lib/storage-factory.ts` (routes to Firestore)
+**Firestore**: `/client/src/lib/firestore-storage.ts` (implementation)
 **Types**: `/shared/schema.ts`  
 **Config**: `vite.config.ts`, `tsconfig.json`, `tailwind.config.ts`, `vitest.config.ts`  
 
@@ -354,6 +356,8 @@ import type { User } from '@shared/schema';
 
 **Test in browser**: This is a browser app. After building, test functionality manually at http://localhost:5000 using `npm run dev`.
 
-**IndexedDB is critical**: Don't break the storage layer without a migration strategy.
+**Firestore is critical**: The app requires Firebase/Firestore to function. Storage operations always go through `storage` from `storage-factory.ts`.
 
 **Base path matters**: The app deploys to root path `/` on Firebase Hosting. Don't change `vite.config.ts` base path without good reason.
+
+**Use storage factory**: Always import `storage` from `storage-factory.ts`, never directly from `firestore-storage.ts`.
