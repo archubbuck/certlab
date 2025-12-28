@@ -54,18 +54,18 @@ export const buildEnvSchema = z.object({
 /**
  * @deprecated Legacy server/script environment variables.
  * CertLab no longer uses a PostgreSQL backend or server-side sessions.
- * The app uses IndexedDB for local storage with optional Firebase cloud sync.
+ * The app uses Cloud Firestore for storage with automatic offline support.
  *
  * These variables are maintained for backward compatibility with legacy scripts only.
  */
 export const serverEnvSchema = z.object({
   /**
-   * @deprecated No longer used. CertLab uses local authentication (PBKDF2) stored in IndexedDB.
+   * @deprecated No longer used. CertLab uses Firebase Authentication.
    */
   SESSION_SECRET: z.string().optional(),
 
   /**
-   * @deprecated No longer used. CertLab uses IndexedDB for storage, not PostgreSQL.
+   * @deprecated No longer used. CertLab uses Cloud Firestore for storage, not PostgreSQL.
    */
   DATABASE_URL: z.string().optional(),
 
