@@ -698,42 +698,37 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getStudyTimerSettings(userId: string): Promise<StudyTimerSettings | null> {
-    try {
-      return await clientStorage.getStudyTimerSettings(userId);
-    } catch (error) {
-      logError('getStudyTimerSettings', error);
-      throw error;
-    }
+    return this.executeStorageOperation(
+      (s) => s.getStudyTimerSettings(userId),
+      'getStudyTimerSettings'
+    );
   }
 
-  async saveStudyTimerSettings(settings: Partial<StudyTimerSettings>): Promise<StudyTimerSettings> {
-    try {
-      return await clientStorage.saveStudyTimerSettings(settings);
-    } catch (error) {
-      logError('saveStudyTimerSettings', error);
-      throw error;
-    }
+  async updateStudyTimerSettings(
+    userId: string,
+    settings: Partial<StudyTimerSettings>
+  ): Promise<StudyTimerSettings> {
+    return this.executeStorageOperation(
+      (s) => s.updateStudyTimerSettings(userId, settings),
+      'updateStudyTimerSettings'
+    );
   }
 
   async createStudyTimerSession(session: Partial<StudyTimerSession>): Promise<StudyTimerSession> {
-    try {
-      return await clientStorage.createStudyTimerSession(session);
-    } catch (error) {
-      logError('createStudyTimerSession', error);
-      throw error;
-    }
+    return this.executeStorageOperation(
+      (s) => s.createStudyTimerSession(session),
+      'createStudyTimerSession'
+    );
   }
 
   async updateStudyTimerSession(
-    sessionId: number,
+    sessionId: string | number,
     updates: Partial<StudyTimerSession>
   ): Promise<StudyTimerSession> {
-    try {
-      return await clientStorage.updateStudyTimerSession(sessionId, updates);
-    } catch (error) {
-      logError('updateStudyTimerSession', error);
-      throw error;
-    }
+    return this.executeStorageOperation(
+      (s) => s.updateStudyTimerSession(sessionId, updates),
+      'updateStudyTimerSession'
+    );
   }
 
   async getStudyTimerSessionsByDateRange(
@@ -741,30 +736,14 @@ class StorageRouter implements IClientStorage {
     startDate: Date,
     endDate: Date
   ): Promise<StudyTimerSession[]> {
-    try {
-      return await clientStorage.getStudyTimerSessionsByDateRange(userId, startDate, endDate);
-    } catch (error) {
-      logError('getStudyTimerSessionsByDateRange', error);
-      throw error;
-    }
-  }
-
-  async getStudyTimerSessions(userId: string): Promise<StudyTimerSession[]> {
-    try {
-      return await clientStorage.getStudyTimerSessions(userId);
-    } catch (error) {
-      logError('getStudyTimerSessions', error);
-      throw error;
-    }
+    return this.executeStorageOperation(
+      (s) => s.getStudyTimerSessionsByDateRange(userId, startDate, endDate),
+      'getStudyTimerSessionsByDateRange'
+    );
   }
 
   async getStudyTimerStats(userId: string): Promise<StudyTimerStats> {
-    try {
-      return await clientStorage.getStudyTimerStats(userId);
-    } catch (error) {
-      logError('getStudyTimerStats', error);
-      throw error;
-    }
+    return this.executeStorageOperation((s) => s.getStudyTimerStats(userId), 'getStudyTimerStats');
   }
 
   // ==========================================
