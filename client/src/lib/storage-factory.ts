@@ -698,27 +698,34 @@ class StorageRouter implements IClientStorage {
   // ==========================================
 
   async getStudyTimerSettings(userId: string): Promise<StudyTimerSettings | null> {
-    // TODO: Implement Study Timer methods in firestore-storage.ts
-    // For now, return null to indicate no settings found
-    return null;
+    return this.executeStorageOperation(
+      (s) => (s as any).getStudyTimerSettings(userId),
+      'getStudyTimerSettings'
+    );
   }
 
   async saveStudyTimerSettings(settings: Partial<StudyTimerSettings>): Promise<StudyTimerSettings> {
-    // TODO: Implement Study Timer methods in firestore-storage.ts
-    throw new Error('Study Timer settings not yet implemented in Firestore storage');
+    return this.executeStorageOperation(
+      (s) => (s as any).saveStudyTimerSettings(settings),
+      'saveStudyTimerSettings'
+    );
   }
 
   async createStudyTimerSession(session: Partial<StudyTimerSession>): Promise<StudyTimerSession> {
-    // TODO: Implement Study Timer methods in firestore-storage.ts
-    throw new Error('Study Timer sessions not yet implemented in Firestore storage');
+    return this.executeStorageOperation(
+      (s) => (s as any).createStudyTimerSession(session),
+      'createStudyTimerSession'
+    );
   }
 
   async updateStudyTimerSession(
     sessionId: number,
     updates: Partial<StudyTimerSession>
   ): Promise<StudyTimerSession> {
-    // TODO: Implement Study Timer methods in firestore-storage.ts
-    throw new Error('Study Timer sessions not yet implemented in Firestore storage');
+    return this.executeStorageOperation(
+      (s) => (s as any).updateStudyTimerSession(sessionId, updates),
+      'updateStudyTimerSession'
+    );
   }
 
   async getStudyTimerSessionsByDateRange(
@@ -726,30 +733,24 @@ class StorageRouter implements IClientStorage {
     startDate: Date,
     endDate: Date
   ): Promise<StudyTimerSession[]> {
-    // TODO: Implement Study Timer methods in firestore-storage.ts
-    // Return empty array to indicate no sessions found
-    return [];
+    return this.executeStorageOperation(
+      (s) => (s as any).getStudyTimerSessionsByDateRange(userId, startDate, endDate),
+      'getStudyTimerSessionsByDateRange'
+    );
   }
 
   async getStudyTimerSessions(userId: string): Promise<StudyTimerSession[]> {
-    // TODO: Implement Study Timer methods in firestore-storage.ts
-    // Return empty array to indicate no sessions found
-    return [];
+    return this.executeStorageOperation(
+      (s) => (s as any).getStudyTimerSessions(userId),
+      'getStudyTimerSessions'
+    );
   }
 
   async getStudyTimerStats(userId: string): Promise<StudyTimerStats> {
-    // TODO: Implement Study Timer methods in firestore-storage.ts
-    // Return default empty stats
-    return {
-      todayMinutes: 0,
-      weekMinutes: 0,
-      monthMinutes: 0,
-      totalSessions: 0,
-      completedSessions: 0,
-      averageSessionLength: 0,
-      longestStreak: 0,
-      currentStreak: 0,
-    };
+    return this.executeStorageOperation(
+      (s) => (s as any).getStudyTimerStats(userId),
+      'getStudyTimerStats'
+    );
   }
 
   // ==========================================
