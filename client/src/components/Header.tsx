@@ -109,6 +109,16 @@ export default function Header() {
     return 'User';
   };
 
+  // Helper function to check if a path is active
+  const isActivePath = (path: string) => {
+    // For exact match routes
+    if (path === '/app' || path === '/app/dashboard') {
+      return location.pathname === '/app' || location.pathname === '/app/dashboard';
+    }
+    // For all other routes, check if pathname starts with the path
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <header className="bg-card shadow-sm border-b border-border sticky top-0 z-50 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -201,7 +211,11 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       onClick={() => navigate('/app')}
-                      className="text-muted-foreground hover:text-primary h-10 px-4 py-2"
+                      className={`h-10 px-4 py-2 ${
+                        isActivePath('/app')
+                          ? 'text-primary font-semibold border-b-2 border-primary rounded-b-none'
+                          : 'text-muted-foreground hover:text-primary'
+                      }`}
                     >
                       <Home className="w-4 h-4 mr-2" />
                       Dashboard
@@ -213,7 +227,11 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       onClick={() => navigate('/app/achievements')}
-                      className="text-muted-foreground hover:text-primary h-10 px-4 py-2"
+                      className={`h-10 px-4 py-2 ${
+                        isActivePath('/app/achievements')
+                          ? 'text-primary font-semibold border-b-2 border-primary rounded-b-none'
+                          : 'text-muted-foreground hover:text-primary'
+                      }`}
                     >
                       <Trophy className="w-4 h-4 mr-2" />
                       Achievements
@@ -225,7 +243,11 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       onClick={() => navigate('/app/daily-challenges')}
-                      className="text-muted-foreground hover:text-primary h-10 px-4 py-2"
+                      className={`h-10 px-4 py-2 ${
+                        isActivePath('/app/daily-challenges')
+                          ? 'text-primary font-semibold border-b-2 border-primary rounded-b-none'
+                          : 'text-muted-foreground hover:text-primary'
+                      }`}
                     >
                       <Target className="w-4 h-4 mr-2" />
                       Daily Challenges
@@ -240,7 +262,11 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       onClick={() => navigate('/app/performance')}
-                      className="text-muted-foreground hover:text-primary h-10 px-4 py-2"
+                      className={`h-10 px-4 py-2 ${
+                        isActivePath('/app/performance')
+                          ? 'text-primary font-semibold border-b-2 border-primary rounded-b-none'
+                          : 'text-muted-foreground hover:text-primary'
+                      }`}
                     >
                       <BarChart3 className="w-4 h-4 mr-2" />
                       Performance
@@ -263,7 +289,11 @@ export default function Header() {
                           </h3>
                           <div className="grid grid-cols-4 gap-3">
                             <NavigationMenuLink
-                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                              className={`block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all cursor-pointer ${
+                                isActivePath('/app/achievements')
+                                  ? 'bg-primary/10 border-2 border-primary'
+                                  : 'hover:bg-accent/10'
+                              }`}
                               onClick={() => navigate('/app/achievements')}
                             >
                               <div className="flex items-center text-sm font-medium leading-none text-foreground">
@@ -277,7 +307,11 @@ export default function Header() {
                               </p>
                             </NavigationMenuLink>
                             <NavigationMenuLink
-                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                              className={`block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all cursor-pointer ${
+                                isActivePath('/app/analytics')
+                                  ? 'bg-primary/10 border-2 border-primary'
+                                  : 'hover:bg-accent/10'
+                              }`}
                               onClick={() => navigate('/app/analytics')}
                             >
                               <div className="flex items-center text-sm font-medium leading-none text-foreground">
@@ -291,7 +325,11 @@ export default function Header() {
                               </p>
                             </NavigationMenuLink>
                             <NavigationMenuLink
-                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                              className={`block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all cursor-pointer ${
+                                isActivePath('/app/practice-tests')
+                                  ? 'bg-primary/10 border-2 border-primary'
+                                  : 'hover:bg-accent/10'
+                              }`}
                               onClick={() => navigate('/app/practice-tests')}
                             >
                               <div className="flex items-center text-sm font-medium leading-none text-foreground">
@@ -305,7 +343,11 @@ export default function Header() {
                               </p>
                             </NavigationMenuLink>
                             <NavigationMenuLink
-                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                              className={`block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all cursor-pointer ${
+                                isActivePath('/app/study-notes')
+                                  ? 'bg-primary/10 border-2 border-primary'
+                                  : 'hover:bg-accent/10'
+                              }`}
                               onClick={() => navigate('/app/study-notes')}
                             >
                               <div className="flex items-center text-sm font-medium leading-none text-foreground">
@@ -319,7 +361,11 @@ export default function Header() {
                               </p>
                             </NavigationMenuLink>
                             <NavigationMenuLink
-                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                              className={`block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all cursor-pointer ${
+                                isActivePath('/app/marketplace')
+                                  ? 'bg-primary/10 border-2 border-primary'
+                                  : 'hover:bg-accent/10'
+                              }`}
                               onClick={() => navigate('/app/marketplace')}
                             >
                               <div className="flex items-center text-sm font-medium leading-none text-foreground">
@@ -344,7 +390,11 @@ export default function Header() {
                             </h3>
                             <div className="grid grid-cols-2 gap-3">
                               <NavigationMenuLink
-                                className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                                className={`block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all cursor-pointer ${
+                                  isActivePath('/accessibility')
+                                    ? 'bg-primary/10 border-2 border-primary'
+                                    : 'hover:bg-accent/10'
+                                }`}
                                 onClick={() => navigate('/accessibility')}
                               >
                                 <div className="flex items-center text-sm font-medium leading-none text-foreground">
@@ -358,7 +408,11 @@ export default function Header() {
                                 </p>
                               </NavigationMenuLink>
                               <NavigationMenuLink
-                                className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                                className={`block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all cursor-pointer ${
+                                  isActivePath('/ui-structure')
+                                    ? 'bg-primary/10 border-2 border-primary'
+                                    : 'hover:bg-accent/10'
+                                }`}
                                 onClick={() => navigate('/ui-structure')}
                               >
                                 <div className="flex items-center text-sm font-medium leading-none text-foreground">
@@ -383,7 +437,11 @@ export default function Header() {
                               Administration
                             </h3>
                             <NavigationMenuLink
-                              className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                              className={`block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all cursor-pointer ${
+                                isActivePath('/admin')
+                                  ? 'bg-primary/10 border-2 border-primary'
+                                  : 'hover:bg-accent/10'
+                              }`}
                               onClick={() => navigate('/admin')}
                             >
                               <div className="flex items-center text-sm font-medium leading-none text-foreground">
@@ -406,7 +464,11 @@ export default function Header() {
                             Data Management
                           </h3>
                           <NavigationMenuLink
-                            className="block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all hover:bg-accent/10 cursor-pointer"
+                            className={`block select-none space-y-2 rounded-lg p-3 leading-none no-underline outline-none transition-all cursor-pointer ${
+                              isActivePath('/app/data-import')
+                                ? 'bg-primary/10 border-2 border-primary'
+                                : 'hover:bg-accent/10'
+                            }`}
                             onClick={() => navigate('/app/data-import')}
                           >
                             <div className="flex items-center text-sm font-medium leading-none text-foreground">
