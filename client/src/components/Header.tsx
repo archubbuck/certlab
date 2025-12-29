@@ -111,12 +111,13 @@ export default function Header() {
 
   // Helper function to check if a path is active
   const isActivePath = (path: string) => {
-    // For exact match routes
+    // For exact match routes (Dashboard can be /app or /app/dashboard)
     if (path === '/app' || path === '/app/dashboard') {
       return location.pathname === '/app' || location.pathname === '/app/dashboard';
     }
     // For all other routes, check if pathname starts with the path
-    return location.pathname.startsWith(path);
+    // This handles both exact matches and sub-routes (e.g., /app/marketplace and /app/marketplace/123)
+    return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   return (
