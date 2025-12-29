@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { InsufficientTokensDialog } from '@/components/InsufficientTokensDialog';
 import { CertificationSelectionDialog } from '@/components/CertificationSelectionDialog';
-import { StudyTimer } from '@/components/StudyTimer';
 import { studyMaterials } from '@/data/study-materials';
 import { calculateLevelFromPoints, calculatePointsForLevel } from '@/lib/level-utils';
 import { PlayCircle, Trophy, Target, History, FileText, ArrowRight, Flame } from 'lucide-react';
@@ -313,17 +312,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Study Timer Section */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-foreground">Study Timer</h2>
-            <p className="text-xs text-muted-foreground">
-              Use the Pomodoro technique to boost your focus and productivity
-            </p>
-          </div>
-          <StudyTimer compact />
-        </div>
-
         {/* Learning Velocity Section */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
