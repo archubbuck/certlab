@@ -2380,9 +2380,10 @@ class FirestoreStorage implements IClientStorage {
       // Get all sessions for the user
       const allSessions = await getUserDocuments<StudyTimerSession>(userId, 'timerSessions');
 
+      const MS_PER_DAY = 24 * 60 * 60 * 1000;
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const weekStart = new Date(now.getTime() - 7 * MS_PER_DAY);
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
       // Calculate statistics
@@ -2432,9 +2433,7 @@ class FirestoreStorage implements IClientStorage {
 
       // Calculate current streak (must include today or yesterday)
       const todayKey = todayStart.toISOString().split('T')[0];
-      const yesterdayKey = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0];
+      const yesterdayKey = new Date(now.getTime() - MS_PER_DAY).toISOString().split('T')[0];
 
       if (sortedDays.length > 0 && (sortedDays[0] === todayKey || sortedDays[0] === yesterdayKey)) {
         let checkDate = new Date(sortedDays[0]);
@@ -2442,7 +2441,7 @@ class FirestoreStorage implements IClientStorage {
           const expectedKey = checkDate.toISOString().split('T')[0];
           if (sortedDays[i] === expectedKey) {
             currentStreak++;
-            checkDate = new Date(checkDate.getTime() - 24 * 60 * 60 * 1000);
+            checkDate = new Date(checkDate.getTime() - MS_PER_DAY);
           } else {
             break;
           }
@@ -2457,9 +2456,7 @@ class FirestoreStorage implements IClientStorage {
 
         for (let i = 1; i < sortedDays.length; i++) {
           const currDate = new Date(sortedDays[i]);
-          const dayDiff = Math.floor(
-            (prevDate.getTime() - currDate.getTime()) / (24 * 60 * 60 * 1000)
-          );
+          const dayDiff = Math.floor((prevDate.getTime() - currDate.getTime()) / MS_PER_DAY);
 
           if (dayDiff === 1) {
             tempStreak++;
