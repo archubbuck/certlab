@@ -381,8 +381,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-foreground">Activity Timer</h2>
             <p className="text-xs text-muted-foreground">
-              Track any activity with custom labels - work, study, exercise, meditation, or anything
-              else
+              Track work, study, exercise, meditation, or any activity with custom labels.
             </p>
           </div>
           <StudyTimer />
