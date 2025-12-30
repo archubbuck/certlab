@@ -23,6 +23,7 @@ import {
   Bell,
   Volume2,
   VolumeX,
+  Pencil,
 } from 'lucide-react';
 import type { StudyTimerSession, StudyTimerSettings } from '@shared/schema';
 
@@ -512,6 +513,12 @@ export function StudyTimer() {
   };
 
   const applyManualDuration = () => {
+    // Handle empty input by canceling edit mode
+    if (manualDuration.trim() === '') {
+      cancelEditingDuration();
+      return;
+    }
+
     const minutes = parseInt(manualDuration, 10);
     if (!isNaN(minutes) && minutes > 0 && minutes <= 999) {
       setTimeLeft(minutes * 60);
@@ -528,7 +535,7 @@ export function StudyTimer() {
 
   const startEditingDuration = () => {
     if (!isRunning && !isPaused) {
-      const currentMinutes = Math.ceil(timeLeft / 60);
+      const currentMinutes = Math.floor(timeLeft / 60);
       setManualDuration(currentMinutes.toString());
       setIsEditingDuration(true);
     }
@@ -598,6 +605,7 @@ export function StudyTimer() {
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
+                            maxLength={3}
                             value={manualDuration}
                             onChange={(e) => handleManualDurationChange(e.target.value)}
                             onKeyDown={(e) => {
@@ -631,18 +639,23 @@ export function StudyTimer() {
                           </div>
                         </div>
                       ) : (
-                        <button
-                          onClick={startEditingDuration}
-                          disabled={isRunning || isPaused}
-                          className={`text-5xl font-bold font-mono tabular-nums ${
-                            sessionType === 'work'
-                              ? 'text-blue-600 dark:text-blue-400'
-                              : 'text-green-600 dark:text-green-400'
-                          } ${!isRunning && !isPaused ? 'hover:opacity-70 cursor-pointer' : 'cursor-default'}`}
-                          aria-label="Click to edit duration"
-                        >
-                          {formatTime(timeLeft)}
-                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={startEditingDuration}
+                            disabled={isRunning || isPaused}
+                            className={`text-5xl font-bold font-mono tabular-nums ${
+                              sessionType === 'work'
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : 'text-green-600 dark:text-green-400'
+                            } ${!isRunning && !isPaused ? 'hover:opacity-70 cursor-pointer' : 'cursor-default'}`}
+                            aria-label="Click to edit duration"
+                          >
+                            {formatTime(timeLeft)}
+                          </button>
+                          {!isRunning && !isPaused && (
+                            <Pencil className="absolute -top-2 -right-6 h-4 w-4 text-muted-foreground opacity-50" />
+                          )}
+                        </div>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
                         {sessionType === 'work' && activityLabel
@@ -774,7 +787,14 @@ export function StudyTimer() {
               )}
               {!isRunning && !isPaused && !isEditingDuration && (
                 <div className="text-center text-sm text-muted-foreground">
-                  Click Start to begin your activity session
+                  Click Start to begin your{' '}
+                  {sessionType === 'work' && activityLabel
+                    ? activityLabel.toLowerCase()
+                    : sessionType === 'work'
+                      ? 'work session'
+                      : sessionType === 'break'
+                        ? 'short break'
+                        : 'long break'}
                 </div>
               )}
             </div>
