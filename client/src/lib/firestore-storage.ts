@@ -2114,17 +2114,76 @@ class FirestoreStorage implements IClientStorage {
   /**
    * Get all daily rewards configuration
    * Stored in shared 'dailyRewards' collection
+   * Returns default rewards if none are configured in Firestore
    */
   async getDailyRewards(): Promise<DailyReward[]> {
     try {
       const rewards = await getSharedDocuments<DailyReward>('dailyRewards', [
         orderBy('day', 'asc'),
       ]);
+
+      // If no rewards are configured in Firestore, return default 7-day cycle
+      if (rewards.length === 0) {
+        return this.getDefaultDailyRewards();
+      }
+
       return rewards;
     } catch (error) {
       logError('getDailyRewards', error);
-      return [];
+      // Return default rewards on error to ensure feature works
+      return this.getDefaultDailyRewards();
     }
+  }
+
+  /**
+   * Get default daily rewards configuration
+   * Used as fallback when no rewards are seeded in Firestore
+   */
+  private getDefaultDailyRewards(): DailyReward[] {
+    return [
+      {
+        id: 1,
+        day: 1,
+        reward: { points: 10 },
+        description: 'Day 1 login reward',
+      },
+      {
+        id: 2,
+        day: 2,
+        reward: { points: 15 },
+        description: 'Day 2 login reward',
+      },
+      {
+        id: 3,
+        day: 3,
+        reward: { points: 20 },
+        description: 'Day 3 login reward',
+      },
+      {
+        id: 4,
+        day: 4,
+        reward: { points: 25 },
+        description: 'Day 4 login reward',
+      },
+      {
+        id: 5,
+        day: 5,
+        reward: { points: 30 },
+        description: 'Day 5 login reward',
+      },
+      {
+        id: 6,
+        day: 6,
+        reward: { points: 40 },
+        description: 'Day 6 login reward',
+      },
+      {
+        id: 7,
+        day: 7,
+        reward: { points: 50, streakFreeze: true },
+        description: 'Day 7 login reward - includes streak freeze!',
+      },
+    ];
   }
 
   /**
