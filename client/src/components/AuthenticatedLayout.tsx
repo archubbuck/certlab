@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { Home, ShoppingBag, Shield, Timer, Flame, Trophy } from 'lucide-react';
+import { Home, ShoppingBag, Shield, Flame, Trophy } from 'lucide-react';
 import { getInitials, formatNotificationCount } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-provider';
 import { RightSidebarProvider, useRightSidebar } from '@/lib/right-sidebar-provider';
@@ -122,10 +122,7 @@ function AuthenticatedHeader() {
             {/* Level Badge */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge
-                  variant="secondary"
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 hover:from-purple-500/20 hover:to-blue-500/20 transition-all cursor-help"
-                >
+                <Badge className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 hover:from-purple-500/20 hover:to-blue-500/20 transition-all cursor-help">
                   <Trophy className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                   <span className="text-xs font-bold text-foreground">Level {level}</span>
                 </Badge>
@@ -144,7 +141,6 @@ function AuthenticatedHeader() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge
-                  variant="secondary"
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1.5 border transition-all cursor-help',
                     dayStreak === 0
