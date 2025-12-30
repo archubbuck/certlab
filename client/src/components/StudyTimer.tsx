@@ -20,7 +20,6 @@ import {
   Settings,
   Clock,
   Coffee,
-  Calendar,
   Bell,
   Volume2,
   VolumeX,
@@ -109,7 +108,7 @@ export function StudyTimer() {
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [sessionType, setSessionType] = useState<'work' | 'break' | 'long_break'>('work');
-  const [activityLabel, setActivityLabel] = useState('Work Session');
+  const [activityLabel, setActivityLabel] = useState('');
   const [timeLeft, setTimeLeft] = useState(25 * 60); // Default 25 minutes in seconds
   const [workSessionsCompleted, setWorkSessionsCompleted] = useState(0);
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
