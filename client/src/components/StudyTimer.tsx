@@ -523,6 +523,35 @@ export function StudyTimer({ compact = false }: StudyTimerProps) {
                     </p>
                     <p className="text-xs text-muted-foreground">{formatTime(timeLeft)}</p>
                   </div>
+      <div className="space-y-4">
+        {/* Main Timer Card - Compact with Improved Styling */}
+        <Card className="shadow-md">
+          <CardContent className="p-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              {/* Left: Timer Display with Mini Progress Ring */}
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <CircularProgress value={getProgress()} size={80} strokeWidth={4}>
+                    <div
+                      className={`text-2xl font-bold font-mono tabular-nums ${
+                        sessionType === 'work'
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-green-600 dark:text-green-400'
+                      }`}
+                    >
+                      {formatTime(timeLeft).split(':')[0]}
+                    </div>
+                  </CircularProgress>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">
+                    {sessionType === 'work'
+                      ? 'Work Session'
+                      : sessionType === 'break'
+                        ? 'Short Break'
+                        : 'Long Break'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{formatTime(timeLeft)}</p>
                 </div>
 
                 {/* Right: Controls */}
@@ -666,6 +695,38 @@ export function StudyTimer({ compact = false }: StudyTimerProps) {
                   <span className="text-xs text-muted-foreground">This Round</span>
                   <span className="text-xs font-medium">
                     {workSessionsCompleted} / {timerSettings?.sessionsUntilLongBreak || 4}
+            {/* Status Messages */}
+            {isPaused && (
+              <div className="text-center text-xs text-muted-foreground mt-3">
+                Timer paused - click Resume to continue
+              </div>
+            )}
+            {!isRunning && !isPaused && (
+              <div className="text-center text-xs text-muted-foreground mt-3">
+                Click Start to begin your {sessionType === 'work' ? 'work' : 'break'} session
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Settings - Compact - Full Width with Improved Design */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Settings className="h-4 w-4" />
+              Quick Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="flex flex-col items-center justify-center p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                <div className="flex items-center gap-1 mb-1">
+                  <Clock className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Work</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-base font-semibold">
+                    {timerSettings?.workDuration || 25}m
                   </span>
                 </div>
                 <PomodoroPips
