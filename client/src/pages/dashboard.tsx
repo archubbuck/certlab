@@ -321,7 +321,7 @@ export default function Dashboard() {
               Use the Pomodoro technique to boost your focus and productivity
             </p>
           </div>
-          <StudyTimer />
+          <StudyTimer compact={true} />
         </div>
 
         {/* Learning Velocity Section */}
