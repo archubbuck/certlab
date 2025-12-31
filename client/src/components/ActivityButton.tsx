@@ -14,10 +14,10 @@ export function ActivityButton({ label, isSelected, onClick, disabled }: Activit
       onClick={onClick}
       disabled={disabled}
       aria-pressed={isSelected}
-      className={`px-6 py-6 text-base font-normal transition-all ${
+      className={`px-6 py-6 text-base font-normal transition-all rounded-xl ${
         isSelected
-          ? 'bg-foreground text-background hover:bg-foreground/90'
-          : 'bg-background text-foreground border-2 border-foreground hover:bg-muted'
+          ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg'
+          : 'hover:bg-accent hover:text-accent-foreground shadow-sm hover:shadow-md'
       }`}
     >
       {label}
