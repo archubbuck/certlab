@@ -413,7 +413,12 @@ export function StudyTimer() {
     <div className="space-y-6">
       {/* Header with Settings */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Activity Timer</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Activity Timer</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track work, study, exercise, meditation, or any activity with custom labels.
+          </p>
+        </div>
         <Button
           size="sm"
           variant="ghost"
@@ -440,7 +445,7 @@ export function StudyTimer() {
           variant="outline"
           onClick={() => setIsAddActivityDialogOpen(true)}
           disabled={isRunning}
-          className="px-4 py-6 text-base border-2 border-dashed border-foreground hover:bg-muted"
+          className="px-6 py-6 text-base rounded-xl border-2 border-dashed hover:bg-accent hover:text-accent-foreground shadow-sm hover:shadow-md"
         >
           <Plus className="h-5 w-5 mr-2" />
           Add
@@ -450,7 +455,7 @@ export function StudyTimer() {
       {/* Timer and History Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Timer Card */}
-        <Card className="shadow-md">
+        <Card>
           <CardHeader>
             <CardTitle className="text-center">
               {selectedActivity || 'Select an activity'}
@@ -471,7 +476,7 @@ export function StudyTimer() {
                   size="lg"
                   onClick={handleStart}
                   disabled={!selectedActivity}
-                  className="min-w-[140px] px-8 py-6 text-lg bg-foreground text-background hover:bg-foreground/90"
+                  className="min-w-[140px] px-8 py-6 text-lg"
                 >
                   Start
                 </Button>
@@ -480,7 +485,7 @@ export function StudyTimer() {
                   size="lg"
                   onClick={handleStop}
                   variant="outline"
-                  className="min-w-[140px] px-8 py-6 text-lg border-2 border-foreground"
+                  className="min-w-[140px] px-8 py-6 text-lg"
                 >
                   Stop
                 </Button>
