@@ -721,6 +721,8 @@ class FirestoreStorage implements IClientStorage {
       return {
         totalQuizzes,
         averageScore,
+        // Both studyStreak and currentStreak are set to the same value
+        // for backward compatibility - different components use different field names
         studyStreak: currentStreak,
         currentStreak,
         certifications,
