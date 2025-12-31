@@ -69,7 +69,6 @@ function AddActivityDialog({
             }}
             maxLength={30}
             autoFocus
-            aria-label="Activity name"
           />
         </div>
         <DialogFooter>

@@ -101,6 +101,11 @@ export function HandDrawnCircularProgress({
         style={{
           color: 'currentColor',
         }}
+        role="progressbar"
+        aria-label="Progress"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={100}
       />
       {/* Center content */}
       <div className="absolute inset-0 flex items-center justify-center">{children}</div>

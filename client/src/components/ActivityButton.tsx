@@ -13,6 +13,7 @@ export function ActivityButton({ label, isSelected, onClick, disabled }: Activit
       variant={isSelected ? 'default' : 'outline'}
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={isSelected}
       className={`px-6 py-6 text-base font-normal transition-all ${
         isSelected
           ? 'bg-foreground text-background hover:bg-foreground/90'
