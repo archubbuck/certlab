@@ -1,15 +1,16 @@
 # Learning Velocity Chart - Before and After
 
 ## Issue Description
-The Learning Velocity chart on the dashboard was showing hardcoded percentage values that did not represent actual experience gained by users.
+The Learning Velocity chart on the dashboard was showing hardcoded percentage values that did not represent actual experience gained by users. Additionally, it only showed the current week (Monday-Sunday) instead of a rolling 10-day window.
 
-## Before (Issue)
+## Before (Original Issue)
 ```
 Chart displayed hardcoded values:
 [20, 35, 45, 60, 70, 75, 80]
 
 Y-axis: Generic percentages (100%, 75%, 50%, 25%, 0%)
 Data: Static values unrelated to user activity
+Time window: Current week (7 days, Monday-Sunday)
 ```
 
 **Problems:**
@@ -17,15 +18,18 @@ Data: Static values unrelated to user activity
 - Did not reflect actual quiz completions
 - Percentages had no meaningful context
 - Chart never changed based on user activity
+- Only showed current week instead of rolling window
 
-## After (Fixed)
+## After (Fixed - Version 2.0)
 
 ```
-Chart displays real experience points:
-Example: [35, 0, 135, 80, 0, 75, 100]
+Chart displays real experience points for last 10 days:
+Example: [0, 35, 0, 0, 135, 80, 0, 75, 100, 90]
 
 Y-axis: Actual XP values (e.g., 135, 100, 75, 50, 25, 0)
-Data: Calculated from completed quizzes in current week
+X-axis: Date labels in M/D format (e.g., 1/1, 1/2, 1/10)
+Data: Calculated from completed quizzes in last 10 days
+Time window: Last 10 days (rolling window)
 ```
 
 **Improvements:**
@@ -35,7 +39,10 @@ Data: Calculated from completed quizzes in current week
 - ✅ Dynamically scales based on data
 - ✅ Hover tooltips show exact XP amounts
 - ✅ Updates in real-time as users complete quizzes
-- ✅ Handles empty weeks gracefully
+- ✅ Handles empty days gracefully with 0 values
+- ✅ **NEW**: Shows last 10 days instead of current week
+- ✅ **NEW**: Date labels (M/D format) instead of day names
+- ✅ **NEW**: Rolling window for better activity tracking
 
 ## Experience Point System
 
@@ -47,57 +54,61 @@ Data: Calculated from completed quizzes in current week
 
 ## Chart Scaling Example
 
-If user earns: `[35, 0, 135, 80, 0, 75, 100]` XP throughout the week
+If user earns XP over 10 days: `[0, 35, 0, 0, 135, 80, 0, 75, 100, 90]`
 
 ```
 Max XP: 135
-┌─────────────────────────────────┐
-│ Y-axis shows:                   │
-│ 135 (max)                    █  │
-│ 100                          █  │ 
-│  75                    █  █  █  │
-│  50                    █  █  █  │
-│  25  █     █           █  █  █  │
-│   0  █  ▁  █     █  ▁  █  █  █  │
-└─────────────────────────────────┘
-   Mon Tue Wed Thu Fri Sat Sun
+┌──────────────────────────────────────────────────────┐
+│ Y-axis shows:                                        │
+│ 135 (max)                        █                   │
+│ 100                              █           █       │
+│  75                              █     █     █       │
+│  50                              █     █     █       │
+│  25      █                       █     █     █   █   │
+│   0  ▁   █   ▁   ▁               █     █     █   █   │
+└──────────────────────────────────────────────────────┘
+   1/1  1/2  1/3  1/4  1/5  1/6  1/7  1/8  1/9  1/10
 ```
 
-Each bar's height is proportional to XP earned that day, scaled to the week's maximum.
+Each bar's height is proportional to XP earned that day, scaled to the 10-day maximum.
 
 ## Technical Implementation
 
-### Code Changes
-1. **`calculateDailyExperience()` function** - Aggregates XP by day
-2. **Point calculation** - Matches achievement-service.ts logic
-3. **Chart rendering** - Uses actual data instead of hardcoded values
-4. **Y-axis labels** - Show real XP values dynamically
+### Code Changes (Version 2.0 Update)
+1. **`calculateDailyExperience()` function** - Updated to aggregate XP for last 10 days instead of current week
+2. **Point calculation** - Matches achievement-service.ts logic (unchanged)
+3. **Chart rendering** - Displays 10 bars instead of 7
+4. **X-axis labels** - Generate date labels dynamically in M/D format
+5. **Y-axis labels** - Show real XP values dynamically (unchanged)
+6. **Time window** - Changed from "Monday of current week" to "today - 9 days"
 
 ### Test Coverage
-- 9 new unit tests covering all scenarios
+- 9 unit tests updated for 10-day behavior
 - Tests verify correct point calculation
-- Tests validate daily aggregation logic
-- Tests ensure proper scaling and edge cases
+- Tests validate daily aggregation logic for 10-day window
+- Tests ensure proper scaling and edge cases with 10 elements
 
-### Files Modified
-- `client/src/pages/dashboard.tsx` (+87 lines)
-- `client/src/pages/dashboard.test.tsx` (+175 lines, new file)
-- `docs/features/LEARNING_VELOCITY_IMPLEMENTATION.md` (+94 lines, new file)
-
-**Total changes: +356 lines, -9 lines**
+### Files Modified (Version 2.0)
+- `client/src/pages/dashboard.tsx` - Updated calculation logic and labels
+- `client/src/pages/dashboard.test.tsx` - Updated tests for 10-day behavior
+- `docs/features/LEARNING_VELOCITY_IMPLEMENTATION.md` - Updated documentation
+- `docs/features/LEARNING_VELOCITY_BEFORE_AFTER.md` - This file
 
 ## User Impact
 
-### Before
+### Before (Version 1.0)
 - Users saw a chart that never changed
 - No connection to actual studying activity
 - Meaningless percentage values
+- Only showed current week (Monday-Sunday)
 
-### After
-- Users see their actual daily progress
-- Chart reflects real studying effort
+### After (Version 2.0)
+- Users see their actual daily progress over last 10 days
+- Chart reflects real studying effort with rolling window
 - XP values encourage consistent daily practice
 - Visual feedback on productive vs. inactive days
+- Better tracking with 10-day history instead of weekly boundaries
+- Days with no activity clearly show 0 XP
 
 ## Developer Notes
 
