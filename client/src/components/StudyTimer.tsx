@@ -21,8 +21,19 @@ import { ActivityTimeline } from '@/components/ActivityTimeline';
 import { Plus } from 'lucide-react';
 import type { StudyTimerSession, StudyTimerSettings } from '@shared/schema';
 
-// Default activities
-const DEFAULT_ACTIVITIES = ['Study', 'Work', 'Exercise', 'Meditation'];
+// Activity configuration type
+interface ActivityConfig {
+  label: string;
+  duration: number; // in minutes
+}
+
+// Default activities with durations
+const DEFAULT_ACTIVITIES: ActivityConfig[] = [
+  { label: 'Study', duration: 25 },
+  { label: 'Work', duration: 25 },
+  { label: 'Exercise', duration: 30 },
+  { label: 'Meditation', duration: 10 },
+];
 
 // Timer input dimensions for editing mode
 const TIMER_INPUT_DIMENSIONS = 'w-[200px] h-[80px]';
@@ -180,7 +191,7 @@ export function StudyTimer() {
   // Timer state
   const [isRunning, setIsRunning] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<string>('');
-  const [activities, setActivities] = useState<string[]>(DEFAULT_ACTIVITIES);
+  const [activities, setActivities] = useState<ActivityConfig[]>(DEFAULT_ACTIVITIES);
   const [timeLeft, setTimeLeft] = useState(25 * 60); // Default 25 minutes in seconds
   const [initialDuration, setInitialDuration] = useState(25 * 60);
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
@@ -381,6 +392,13 @@ export function StudyTimer() {
   const handleActivitySelect = (activity: string) => {
     if (!isRunning) {
       setSelectedActivity(activity);
+      // Set timer to the activity's configured duration
+      const activityConfig = activities.find((a) => a.label === activity);
+      if (activityConfig) {
+        const durationInSeconds = activityConfig.duration * 60;
+        setTimeLeft(durationInSeconds);
+        setInitialDuration(durationInSeconds);
+      }
     }
   };
 
@@ -388,10 +406,11 @@ export function StudyTimer() {
   const handleAddActivity = (activity: string, duration: number) => {
     // Case-insensitive duplicate check
     const activityLower = activity.toLowerCase();
-    const isDuplicate = activities.some((a) => a.toLowerCase() === activityLower);
+    const isDuplicate = activities.some((a) => a.label.toLowerCase() === activityLower);
 
     if (!isDuplicate) {
-      setActivities([...activities, activity]);
+      const newActivityConfig: ActivityConfig = { label: activity, duration };
+      setActivities([...activities, newActivityConfig]);
       setSelectedActivity(activity);
       // Set the timer to the specified duration
       const durationInSeconds = duration * 60;
@@ -468,10 +487,10 @@ export function StudyTimer() {
       <div className="flex flex-wrap gap-3">
         {activities.map((activity) => (
           <ActivityButton
-            key={activity}
-            label={activity}
-            isSelected={selectedActivity === activity}
-            onClick={() => handleActivitySelect(activity)}
+            key={activity.label}
+            label={activity.label}
+            isSelected={selectedActivity === activity.label}
+            onClick={() => handleActivitySelect(activity.label)}
             disabled={isRunning}
           />
         ))}
