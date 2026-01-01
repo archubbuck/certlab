@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StudyTimer } from './StudyTimer';
@@ -22,9 +22,10 @@ vi.mock('@/lib/storage-factory', () => ({
 }));
 
 // Mock toast
+const mockToast = vi.fn();
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
-    toast: vi.fn(),
+    toast: mockToast,
   }),
 }));
 
@@ -154,7 +155,7 @@ describe('StudyTimer - Activity Label Limit', () => {
     });
   });
 
-  it('should show title text explaining the limit when Add button is disabled', async () => {
+  it('should disable Add button when 5 activities exist', async () => {
     const user = userEvent.setup();
     render(<StudyTimer />, { wrapper: createWrapper() });
 
@@ -183,10 +184,46 @@ describe('StudyTimer - Activity Label Limit', () => {
       expect(activityButton).toBeInTheDocument();
     });
 
-    // Check the title attribute of the disabled Add button
+    // Verify the Add button is now disabled when 5 activities exist
     await waitFor(() => {
       const addButtonAfter = screen.getByRole('button', { name: /add/i });
-      expect(addButtonAfter).toHaveAttribute('title', 'Maximum of 5 activities allowed');
+      expect(addButtonAfter).toBeDisabled();
+    });
+  });
+
+  it('should show toast notification for duplicate activity names', async () => {
+    const user = userEvent.setup();
+    render(<StudyTimer />, { wrapper: createWrapper() });
+
+    // Wait for component to load
+    await waitFor(() => {
+      expect(screen.getByText('Activity Timer')).toBeInTheDocument();
+    });
+
+    // Clear any previous toast calls
+    mockToast.mockClear();
+
+    // Try to add an activity with a name that already exists (case-insensitive)
+    const addButton = screen.getByRole('button', { name: /add/i });
+    await user.click(addButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    const input = screen.getByPlaceholderText(/activity name/i);
+    await user.type(input, 'study'); // lowercase version of existing "Study"
+
+    const dialogAddButton = screen.getByRole('button', { name: /add activity/i });
+    await user.click(dialogAddButton);
+
+    // Verify toast was called with duplicate message
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith({
+        title: 'Activity Already Exists',
+        description: 'This activity name is already in your list.',
+        variant: 'destructive',
+      });
     });
   });
 });
