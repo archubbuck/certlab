@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ActivityButton } from '@/components/ActivityButton';
 import { HandDrawnCircularProgress } from '@/components/HandDrawnCircularProgress';
 import { ActivityTimeline } from '@/components/ActivityTimeline';
@@ -35,6 +36,9 @@ const DEFAULT_ACTIVITIES: ActivityConfig[] = [
   { label: 'Meditation', duration: 10 },
 ];
 
+// Maximum number of activity labels allowed
+const MAX_ACTIVITIES = 5;
+
 // Timer input dimensions for editing mode
 const TIMER_INPUT_DIMENSIONS = 'w-[200px] h-[80px]';
 
@@ -46,6 +50,7 @@ const MAX_TIMER_MINUTES = 480;
 
 // Status messages
 const TIMER_EDIT_TIP = 'Click timer to edit duration';
+const MAX_ACTIVITIES_REACHED_MESSAGE = 'Maximum Activities Reached';
 
 // Add activity dialog component
 function AddActivityDialog({
@@ -471,6 +476,16 @@ export function StudyTimer() {
 
   // Handle add activity
   const handleAddActivity = (activity: string, duration: number) => {
+    // Check if we've reached the maximum number of activities
+    if (activities.length >= MAX_ACTIVITIES) {
+      toast({
+        title: MAX_ACTIVITIES_REACHED_MESSAGE,
+        description: `You can only have up to ${MAX_ACTIVITIES} activity labels.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Case-insensitive duplicate check
     const activityLower = activity.toLowerCase();
     const isDuplicate = activities.some((a) => a.label.toLowerCase() === activityLower);
@@ -565,15 +580,28 @@ export function StudyTimer() {
             disabled={isRunning}
           />
         ))}
-        <Button
-          variant="outline"
-          onClick={() => setIsAddActivityDialogOpen(true)}
-          disabled={isRunning}
-          className="px-6 py-6 text-base border-2 border-dashed"
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          Add
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={() => setIsAddActivityDialogOpen(true)}
+                disabled={isRunning || activities.length >= MAX_ACTIVITIES}
+                className="px-6 py-6 text-base border-2 border-dashed"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {activities.length >= MAX_ACTIVITIES
+                  ? `Maximum of ${MAX_ACTIVITIES} activities allowed`
+                  : 'Add new activity'}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Timer and History Grid */}
