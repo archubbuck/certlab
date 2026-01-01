@@ -344,8 +344,16 @@ export function StudyTimer() {
     setCurrentSessionId(null);
     sessionStartTimeRef.current = null;
 
-    // Reset timer to initial duration
-    if (timerSettings) {
+    // Reset timer to the selected activity's configured duration
+    if (selectedActivity) {
+      const activityConfig = activities.find((a) => a.label === selectedActivity);
+      if (activityConfig) {
+        const durationInSeconds = activityConfig.duration * 60;
+        setTimeLeft(durationInSeconds);
+        setInitialDuration(durationInSeconds);
+      }
+    } else if (timerSettings) {
+      // Fallback to default work duration if no activity is selected
       const duration = timerSettings.workDuration ?? 25;
       const durationInSeconds = duration * 60;
       setTimeLeft(durationInSeconds);
@@ -358,7 +366,15 @@ export function StudyTimer() {
         description: `Great job on your ${selectedActivity} session!`,
       });
     }
-  }, [currentSessionId, saveSessionMutation, timeLeft, timerSettings, selectedActivity, toast]);
+  }, [
+    currentSessionId,
+    saveSessionMutation,
+    timeLeft,
+    timerSettings,
+    selectedActivity,
+    activities,
+    toast,
+  ]);
 
   // Handle session completion
   const handleSessionComplete = useCallback(() => {
