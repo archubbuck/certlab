@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ActivityButton } from '@/components/ActivityButton';
 import { HandDrawnCircularProgress } from '@/components/HandDrawnCircularProgress';
 import { ActivityTimeline } from '@/components/ActivityTimeline';
@@ -489,20 +490,28 @@ export function StudyTimer() {
             disabled={isRunning}
           />
         ))}
-        <Button
-          variant="outline"
-          onClick={() => setIsAddActivityDialogOpen(true)}
-          disabled={isRunning || activities.length >= MAX_ACTIVITIES}
-          className="px-6 py-6 text-base border-2 border-dashed"
-          title={
-            activities.length >= MAX_ACTIVITIES
-              ? `Maximum of ${MAX_ACTIVITIES} activities allowed`
-              : 'Add new activity'
-          }
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          Add
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={() => setIsAddActivityDialogOpen(true)}
+                disabled={isRunning || activities.length >= MAX_ACTIVITIES}
+                className="px-6 py-6 text-base border-2 border-dashed"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {activities.length >= MAX_ACTIVITIES
+                  ? `Maximum of ${MAX_ACTIVITIES} activities allowed`
+                  : 'Add new activity'}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Timer and History Grid */}
