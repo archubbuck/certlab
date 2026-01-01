@@ -352,7 +352,7 @@ describe('StudyTimer - Component Integration Tests', () => {
       customActivities: [
         { label: 'Reading', duration: 15 },
         { label: 'Coding', duration: 45 },
-      ] as any,
+      ] as unknown,
       updatedAt: new Date(),
     });
 

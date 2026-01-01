@@ -235,12 +235,23 @@ export function StudyTimer() {
   useEffect(() => {
     if (timerSettings?.customActivities) {
       try {
-        // Parse stored custom activities
-        const customActivities = timerSettings.customActivities as unknown as ActivityConfig[];
-        if (Array.isArray(customActivities)) {
+        // Validate and parse stored custom activities
+        const customActivities = timerSettings.customActivities;
+        if (
+          Array.isArray(customActivities) &&
+          customActivities.every(
+            (a) =>
+              typeof a === 'object' &&
+              a !== null &&
+              typeof a.label === 'string' &&
+              typeof a.duration === 'number'
+          )
+        ) {
           // Merge default activities with custom activities (custom activities override defaults)
           const defaultLabels = DEFAULT_ACTIVITIES.map((a) => a.label);
-          const customOnly = customActivities.filter((a) => !defaultLabels.includes(a.label));
+          const customOnly = (customActivities as ActivityConfig[]).filter(
+            (a) => !defaultLabels.includes(a.label)
+          );
           const mergedActivities = [...DEFAULT_ACTIVITIES, ...customOnly];
           setActivities(mergedActivities);
         }
@@ -301,8 +312,9 @@ export function StudyTimer() {
       const defaultLabels = DEFAULT_ACTIVITIES.map((a) => a.label);
       const customOnly = activitiesToSave.filter((a) => !defaultLabels.includes(a.label));
 
+      // Store as jsonb - TypeScript will accept this as the type is unknown in the schema
       await storage.updateStudyTimerSettings(user.id, {
-        customActivities: customOnly as any,
+        customActivities: customOnly as unknown,
       });
     },
     onSuccess: () => {
