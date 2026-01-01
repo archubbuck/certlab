@@ -1,10 +1,9 @@
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Home, ShoppingBag, Shield, Flame, Trophy } from 'lucide-react';
-import { getInitials, formatNotificationCount } from '@/lib/utils';
+import { getInitials, formatNotificationCount, getUserDisplayName } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-provider';
 import { RightSidebarProvider, useRightSidebar } from '@/lib/right-sidebar-provider';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { RightSidebar } from '@/components/RightSidebar';
@@ -18,6 +17,7 @@ import { cn } from '@/lib/utils';
 import MobileNavigationEnhanced from '@/components/MobileNavigationEnhanced';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { Badge } from '@/components/ui/badge';
+import { UserDropdownMenu } from '@/components/UserDropdownMenu';
 import { calculateLevelFromPoints, calculatePointsForLevel } from '@/lib/level-utils';
 
 interface AuthenticatedLayoutProps {
@@ -40,7 +40,7 @@ const getNavigationItems = (isAdmin: boolean) => {
 
 function AuthenticatedHeader() {
   const { user: currentUser } = useAuth();
-  const { togglePanel } = useRightSidebar();
+  const { openPanel } = useRightSidebar();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -194,47 +194,12 @@ function AuthenticatedHeader() {
             </Tooltip>
           </div>
 
-          {/* User Avatar - with red ring indicator when notifications exist */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                className="relative h-10 w-10 rounded-full p-0 bg-white hover:bg-white/90"
-                onClick={() => {
-                  // Smart behavior: Open notifications panel if unread notifications exist,
-                  // otherwise open user panel for profile/settings access
-                  togglePanel(unreadCount > 0 ? 'notifications' : 'user');
-                }}
-                aria-label={
-                  unreadCount > 0
-                    ? `Open notifications - ${formatNotificationCount(unreadCount)}`
-                    : 'Open user menu'
-                }
-              >
-                <Avatar className="h-10 w-10">
-                  {currentUser?.profileImageUrl && (
-                    <AvatarImage
-                      src={currentUser.profileImageUrl}
-                      alt={currentUser.firstName || currentUser.email}
-                    />
-                  )}
-                  <AvatarFallback className="bg-white text-foreground font-semibold text-sm border-2 border-border">
-                    {currentUser ? getInitials(currentUser.firstName, currentUser.lastName) : '?'}
-                  </AvatarFallback>
-                </Avatar>
-                {/* Red ring indicator for unread notifications */}
-                {unreadCount > 0 && (
-                  <span
-                    className="absolute inset-0 rounded-full ring-2 ring-red-500 pointer-events-none"
-                    aria-hidden="true"
-                  />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {unreadCount > 0 ? formatNotificationCount(unreadCount) : 'User menu'}
-            </TooltipContent>
-          </Tooltip>
+          {/* User Avatar Dropdown with integrated account menu */}
+          <UserDropdownMenu
+            currentUser={currentUser}
+            unreadCount={unreadCount}
+            onOpenNotificationsPanel={() => openPanel('notifications')}
+          />
         </div>
       </div>
     </header>
