@@ -336,6 +336,7 @@ describe('StudyTimer - Component Integration Tests', () => {
 
   it('should load custom activities from settings on mount', async () => {
     // Mock settings with custom activities
+    // Note: customActivities is typed as unknown (jsonb in schema), so we cast here
     vi.mocked(storageFactory.storage.getStudyTimerSettings).mockResolvedValue({
       id: 1,
       userId: 'test-user',

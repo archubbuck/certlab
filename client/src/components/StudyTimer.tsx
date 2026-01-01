@@ -312,7 +312,8 @@ export function StudyTimer() {
       const defaultLabels = DEFAULT_ACTIVITIES.map((a) => a.label);
       const customOnly = activitiesToSave.filter((a) => !defaultLabels.includes(a.label));
 
-      // Store as jsonb - TypeScript will accept this as the type is unknown in the schema
+      // Cast to unknown as the schema uses jsonb type which is typed as unknown
+      // The validation happens when loading the data back (see useEffect above)
       await storage.updateStudyTimerSettings(user.id, {
         customActivities: customOnly as unknown,
       });
