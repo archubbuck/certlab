@@ -62,6 +62,67 @@ const MAX_TIMER_MINUTES = 480;
 const TIMER_EDIT_TIP = 'Click timer to edit duration';
 const MAX_ACTIVITIES_REACHED_MESSAGE = 'Maximum Activities Reached';
 
+// Helper function to validate activity name
+const validateActivityName = (name: string): string | null => {
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    return 'Activity Name Required: Please enter a name for the activity.';
+  }
+  return null;
+};
+
+// Helper function to validate duration
+const validateDuration = (
+  duration: string
+): { isValid: boolean; error: string | null; value: number } => {
+  if (!duration) {
+    return {
+      isValid: false,
+      error: 'Duration Required: Please enter a duration for the timer.',
+      value: 0,
+    };
+  }
+
+  const durationValue = parseInt(duration, 10);
+  if (isNaN(durationValue)) {
+    return {
+      isValid: false,
+      error: 'Invalid Duration: Duration must be a valid number.',
+      value: 0,
+    };
+  }
+
+  if (durationValue < 1) {
+    return {
+      isValid: false,
+      error: 'Duration Too Short: Duration must be at least 1 minute.',
+      value: 0,
+    };
+  }
+
+  if (durationValue > MAX_TIMER_MINUTES) {
+    return {
+      isValid: false,
+      error: `Duration Too Long: Duration cannot exceed ${MAX_TIMER_MINUTES} minutes (8 hours).`,
+      value: 0,
+    };
+  }
+
+  return { isValid: true, error: null, value: durationValue };
+};
+
+// Helper function to check for duplicate activity names (case-insensitive)
+const isDuplicateActivity = (
+  activities: ActivityConfig[],
+  newLabel: string,
+  excludeLabel?: string
+): boolean => {
+  const newLabelLower = newLabel.toLowerCase();
+  return activities.some(
+    (a) => a.label.toLowerCase() === newLabelLower && a.label !== excludeLabel
+  );
+};
+
 // Edit activity dialog component
 function EditActivityDialog({
   open,
@@ -96,54 +157,31 @@ function EditActivityDialog({
   };
 
   const handleSave = () => {
-    const newLabel = activityLabel.trim();
-    if (!newLabel) {
+    // Validate activity name
+    const nameError = validateActivityName(activityLabel);
+    if (nameError) {
+      const [title, description] = nameError.split(': ');
       toast({
-        title: 'Activity Name Required',
-        description: 'Please enter a name for the activity.',
+        title,
+        description,
         variant: 'destructive',
       });
       return;
     }
 
-    if (!duration) {
+    // Validate duration
+    const { isValid, error, value } = validateDuration(duration);
+    if (!isValid) {
+      const [title, description] = error!.split(': ');
       toast({
-        title: 'Duration Required',
-        description: 'Please enter a duration for the timer.',
+        title,
+        description,
         variant: 'destructive',
       });
       return;
     }
 
-    const durationValue = parseInt(duration, 10);
-    if (isNaN(durationValue)) {
-      toast({
-        title: 'Invalid Duration',
-        description: 'Duration must be a valid number.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (durationValue < 1) {
-      toast({
-        title: 'Duration Too Short',
-        description: 'Duration must be at least 1 minute.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (durationValue > MAX_TIMER_MINUTES) {
-      toast({
-        title: 'Duration Too Long',
-        description: `Duration cannot exceed ${MAX_TIMER_MINUTES} minutes (8 hours).`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    onSave(initialLabel, newLabel, durationValue);
+    onSave(initialLabel, activityLabel.trim(), value);
     onOpenChange(false);
   };
 
@@ -231,54 +269,31 @@ function AddActivityDialog({
   };
 
   const handleAdd = () => {
-    const activityName = newActivity.trim();
-    if (!activityName) {
+    // Validate activity name
+    const nameError = validateActivityName(newActivity);
+    if (nameError) {
+      const [title, description] = nameError.split(': ');
       toast({
-        title: 'Activity Name Required',
-        description: 'Please enter a name for the activity.',
+        title,
+        description,
         variant: 'destructive',
       });
       return;
     }
 
-    if (!duration) {
+    // Validate duration
+    const { isValid, error, value } = validateDuration(duration);
+    if (!isValid) {
+      const [title, description] = error!.split(': ');
       toast({
-        title: 'Duration Required',
-        description: 'Please enter a duration for the timer.',
+        title,
+        description,
         variant: 'destructive',
       });
       return;
     }
 
-    const durationValue = parseInt(duration, 10);
-    if (isNaN(durationValue)) {
-      toast({
-        title: 'Invalid Duration',
-        description: 'Duration must be a valid number.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (durationValue < 1) {
-      toast({
-        title: 'Duration Too Short',
-        description: 'Duration must be at least 1 minute.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (durationValue > MAX_TIMER_MINUTES) {
-      toast({
-        title: 'Duration Too Long',
-        description: `Duration cannot exceed ${MAX_TIMER_MINUTES} minutes (8 hours).`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    onAdd(activityName, durationValue);
+    onAdd(newActivity.trim(), value);
     setNewActivity('');
     setDuration('25');
     onOpenChange(false);
@@ -647,45 +662,39 @@ export function StudyTimer() {
       return;
     }
 
-    // Case-insensitive duplicate check
-    const activityLower = activity.toLowerCase();
-    const isDuplicate = activities.some((a) => a.label.toLowerCase() === activityLower);
-
-    if (!isDuplicate) {
-      const newActivityConfig: ActivityConfig = { label: activity, duration };
-      const updatedActivities = [...activities, newActivityConfig];
-      setActivities(updatedActivities);
-      setSelectedActivity(activity);
-      // Set the timer to the specified duration
-      const durationInSeconds = duration * 60;
-      setTimeLeft(durationInSeconds);
-      setInitialDuration(durationInSeconds);
-
-      // Save to storage
-      saveActivitiesMutation.mutate(updatedActivities);
-    } else {
+    // Check for duplicates using helper function
+    if (isDuplicateActivity(activities, activity)) {
       toast({
         title: 'Activity Already Exists',
         description: 'This activity name is already in your list.',
         variant: 'destructive',
       });
+      return;
     }
+
+    const newActivityConfig: ActivityConfig = { label: activity, duration };
+    const updatedActivities = [...activities, newActivityConfig];
+    setActivities(updatedActivities);
+    setSelectedActivity(activity);
+    // Set the timer to the specified duration
+    const durationInSeconds = duration * 60;
+    setTimeLeft(durationInSeconds);
+    setInitialDuration(durationInSeconds);
+
+    // Save to storage
+    saveActivitiesMutation.mutate(updatedActivities);
   };
 
   // Handle edit activity
   const handleEditActivity = (oldLabel: string, newLabel: string, duration: number) => {
     // Check if new label is different and already exists (case-insensitive)
-    if (oldLabel.toLowerCase() !== newLabel.toLowerCase()) {
-      const newLabelLower = newLabel.toLowerCase();
-      const isDuplicate = activities.some((a) => a.label.toLowerCase() === newLabelLower);
-      if (isDuplicate) {
-        toast({
-          title: 'Activity Already Exists',
-          description: 'An activity with this name already exists.',
-          variant: 'destructive',
-        });
-        return;
-      }
+    if (isDuplicateActivity(activities, newLabel, oldLabel)) {
+      toast({
+        title: 'Activity Already Exists',
+        description: 'An activity with this name already exists.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     // Update activities array
