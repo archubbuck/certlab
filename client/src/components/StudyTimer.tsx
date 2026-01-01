@@ -15,6 +15,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ActivityButton } from '@/components/ActivityButton';
 import { HandDrawnCircularProgress } from '@/components/HandDrawnCircularProgress';
@@ -52,6 +62,195 @@ const MAX_TIMER_MINUTES = 480;
 const TIMER_EDIT_TIP = 'Click timer to edit duration';
 const MAX_ACTIVITIES_REACHED_MESSAGE = 'Maximum Activities Reached';
 
+// Helper function to validate activity name
+const validateActivityName = (
+  name: string
+): { isValid: boolean; title?: string; description?: string } => {
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    return {
+      isValid: false,
+      title: 'Activity Name Required',
+      description: 'Please enter a name for the activity.',
+    };
+  }
+  return { isValid: true };
+};
+
+// Helper function to validate duration
+const validateDuration = (
+  duration: string
+): { isValid: boolean; title?: string; description?: string; value?: number } => {
+  if (!duration) {
+    return {
+      isValid: false,
+      title: 'Duration Required',
+      description: 'Please enter a duration for the timer.',
+    };
+  }
+
+  const durationValue = parseInt(duration, 10);
+  if (isNaN(durationValue)) {
+    return {
+      isValid: false,
+      title: 'Invalid Duration',
+      description: 'Duration must be a valid number.',
+    };
+  }
+
+  if (durationValue < 1) {
+    return {
+      isValid: false,
+      title: 'Duration Too Short',
+      description: 'Duration must be at least 1 minute.',
+    };
+  }
+
+  if (durationValue > MAX_TIMER_MINUTES) {
+    return {
+      isValid: false,
+      title: 'Duration Too Long',
+      description: `Duration cannot exceed ${MAX_TIMER_MINUTES} minutes (8 hours).`,
+    };
+  }
+
+  return { isValid: true, value: durationValue };
+};
+
+// Helper function to check for duplicate activity names (case-insensitive)
+const isDuplicateActivity = (
+  activities: ActivityConfig[],
+  newLabel: string,
+  excludeLabel?: string
+): boolean => {
+  const newLabelLower = newLabel.toLowerCase();
+  const excludeLower = excludeLabel?.toLowerCase();
+  return activities.some((a) => {
+    const labelLower = a.label.toLowerCase();
+    return (
+      labelLower === newLabelLower && (excludeLower === undefined || labelLower !== excludeLower)
+    );
+  });
+};
+
+// Edit activity dialog component
+function EditActivityDialog({
+  open,
+  onOpenChange,
+  onSave,
+  initialLabel,
+  initialDuration,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (oldLabel: string, newLabel: string, duration: number) => void;
+  initialLabel: string;
+  initialDuration: number;
+}) {
+  const { toast } = useToast();
+  const [activityLabel, setActivityLabel] = useState(initialLabel);
+  const [duration, setDuration] = useState(initialDuration.toString());
+
+  // Reset state when dialog opens with new values
+  useEffect(() => {
+    if (open) {
+      setActivityLabel(initialLabel);
+      setDuration(initialDuration.toString());
+    }
+  }, [open, initialLabel, initialDuration]);
+
+  // Validate duration input using helper function
+  const isDurationValid = () => validateDuration(duration).isValid;
+
+  const handleSave = () => {
+    // Validate activity name
+    const nameValidation = validateActivityName(activityLabel);
+    if (!nameValidation.isValid) {
+      toast({
+        title: nameValidation.title,
+        description: nameValidation.description,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate duration
+    const durationValidation = validateDuration(duration);
+    if (!durationValidation.isValid) {
+      toast({
+        title: durationValidation.title,
+        description: durationValidation.description,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    onSave(initialLabel, activityLabel.trim(), durationValidation.value!);
+    onOpenChange(false);
+  };
+
+  const handleCancel = () => {
+    setActivityLabel(initialLabel);
+    setDuration(initialDuration.toString());
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit Activity</DialogTitle>
+          <DialogDescription>Update the activity name or timer duration.</DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div>
+            <label htmlFor="edit-activity-input" className="sr-only">
+              Activity name
+            </label>
+            <Input
+              id="edit-activity-input"
+              placeholder="Activity name"
+              value={activityLabel}
+              onChange={(e) => setActivityLabel(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSave();
+                } else if (e.key === 'Escape') {
+                  handleCancel();
+                }
+              }}
+              maxLength={30}
+              autoFocus
+            />
+          </div>
+          <div>
+            <label htmlFor="edit-duration-input" className="text-sm font-medium">
+              Timer Duration (minutes)
+            </label>
+            <Input
+              id="edit-duration-input"
+              type="number"
+              min="1"
+              max={MAX_TIMER_MINUTES}
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              placeholder="25"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={!activityLabel.trim() || !isDurationValid()}>
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Add activity dialog component
 function AddActivityDialog({
   open,
@@ -66,62 +265,33 @@ function AddActivityDialog({
   const [newActivity, setNewActivity] = useState('');
   const [duration, setDuration] = useState('25');
 
-  // Validate duration input
-  const isDurationValid = () => {
-    if (!duration) return false;
-    const durationValue = parseInt(duration, 10);
-    return !isNaN(durationValue) && durationValue > 0 && durationValue <= MAX_TIMER_MINUTES;
-  };
+  // Validate duration input using helper function
+  const isDurationValid = () => validateDuration(duration).isValid;
 
   const handleAdd = () => {
-    const activityName = newActivity.trim();
-    if (!activityName) {
+    // Validate activity name
+    const nameValidation = validateActivityName(newActivity);
+    if (!nameValidation.isValid) {
       toast({
-        title: 'Activity Name Required',
-        description: 'Please enter a name for the activity.',
+        title: nameValidation.title,
+        description: nameValidation.description,
         variant: 'destructive',
       });
       return;
     }
 
-    if (!duration) {
+    // Validate duration
+    const durationValidation = validateDuration(duration);
+    if (!durationValidation.isValid) {
       toast({
-        title: 'Duration Required',
-        description: 'Please enter a duration for the timer.',
+        title: durationValidation.title,
+        description: durationValidation.description,
         variant: 'destructive',
       });
       return;
     }
 
-    const durationValue = parseInt(duration, 10);
-    if (isNaN(durationValue)) {
-      toast({
-        title: 'Invalid Duration',
-        description: 'Duration must be a valid number.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (durationValue < 1) {
-      toast({
-        title: 'Duration Too Short',
-        description: 'Duration must be at least 1 minute.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (durationValue > MAX_TIMER_MINUTES) {
-      toast({
-        title: 'Duration Too Long',
-        description: `Duration cannot exceed ${MAX_TIMER_MINUTES} minutes (8 hours).`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    onAdd(activityName, durationValue);
+    onAdd(newActivity.trim(), durationValidation.value!);
     setNewActivity('');
     setDuration('25');
     onOpenChange(false);
@@ -201,6 +371,10 @@ export function StudyTimer() {
   const [initialDuration, setInitialDuration] = useState(25 * 60);
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
   const [isAddActivityDialogOpen, setIsAddActivityDialogOpen] = useState(false);
+  const [isEditActivityDialogOpen, setIsEditActivityDialogOpen] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [activityToEdit, setActivityToEdit] = useState<ActivityConfig | null>(null);
+  const [activityToDelete, setActivityToDelete] = useState<string | null>(null);
   const [isEditingTime, setIsEditingTime] = useState(false);
   const [editTimeValue, setEditTimeValue] = useState('');
 
@@ -486,28 +660,111 @@ export function StudyTimer() {
       return;
     }
 
-    // Case-insensitive duplicate check
-    const activityLower = activity.toLowerCase();
-    const isDuplicate = activities.some((a) => a.label.toLowerCase() === activityLower);
-
-    if (!isDuplicate) {
-      const newActivityConfig: ActivityConfig = { label: activity, duration };
-      const updatedActivities = [...activities, newActivityConfig];
-      setActivities(updatedActivities);
-      setSelectedActivity(activity);
-      // Set the timer to the specified duration
-      const durationInSeconds = duration * 60;
-      setTimeLeft(durationInSeconds);
-      setInitialDuration(durationInSeconds);
-
-      // Save to storage
-      saveActivitiesMutation.mutate(updatedActivities);
-    } else {
+    // Check for duplicates using helper function
+    if (isDuplicateActivity(activities, activity)) {
       toast({
         title: 'Activity Already Exists',
         description: 'This activity name is already in your list.',
         variant: 'destructive',
       });
+      return;
+    }
+
+    const newActivityConfig: ActivityConfig = { label: activity, duration };
+    const updatedActivities = [...activities, newActivityConfig];
+    setActivities(updatedActivities);
+    setSelectedActivity(activity);
+    // Set the timer to the specified duration
+    const durationInSeconds = duration * 60;
+    setTimeLeft(durationInSeconds);
+    setInitialDuration(durationInSeconds);
+
+    // Save to storage
+    saveActivitiesMutation.mutate(updatedActivities);
+  };
+
+  // Handle edit activity
+  const handleEditActivity = (oldLabel: string, newLabel: string, duration: number) => {
+    // Check if new label is different and already exists (case-insensitive)
+    if (isDuplicateActivity(activities, newLabel, oldLabel)) {
+      toast({
+        title: 'Activity Already Exists',
+        description: 'An activity with this name already exists.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Update activities array
+    const updatedActivities = activities.map((a) =>
+      a.label === oldLabel ? { label: newLabel, duration } : a
+    );
+    setActivities(updatedActivities);
+
+    // If the edited activity is currently selected, update selected activity and timer
+    if (selectedActivity === oldLabel) {
+      setSelectedActivity(newLabel);
+      // Only update timer if not running
+      if (!isRunning) {
+        const durationInSeconds = duration * 60;
+        setTimeLeft(durationInSeconds);
+        setInitialDuration(durationInSeconds);
+      }
+    }
+
+    // Save to storage
+    saveActivitiesMutation.mutate(updatedActivities);
+
+    toast({
+      title: 'Activity Updated',
+      description: 'Your activity has been updated successfully.',
+    });
+  };
+
+  // Handle delete activity - open confirmation dialog
+  const handleDeleteActivityClick = (label: string) => {
+    setActivityToDelete(label);
+    setIsDeleteAlertOpen(true);
+  };
+
+  // Confirm delete activity
+  const handleConfirmDelete = () => {
+    if (!activityToDelete) return;
+
+    // Remove activity from array
+    const updatedActivities = activities.filter((a) => a.label !== activityToDelete);
+    setActivities(updatedActivities);
+
+    // If the deleted activity was selected, clear selection and reset timer
+    if (selectedActivity === activityToDelete) {
+      setSelectedActivity('');
+      // Reset to default duration
+      if (timerSettings) {
+        const duration = timerSettings.workDuration ?? 25;
+        const durationInSeconds = duration * 60;
+        setTimeLeft(durationInSeconds);
+        setInitialDuration(durationInSeconds);
+      }
+    }
+
+    // Save to storage
+    saveActivitiesMutation.mutate(updatedActivities);
+
+    toast({
+      title: 'Activity Deleted',
+      description: 'Your activity has been removed.',
+    });
+
+    setActivityToDelete(null);
+    setIsDeleteAlertOpen(false);
+  };
+
+  // Handle edit activity click
+  const handleEditActivityClick = (label: string) => {
+    const activity = activities.find((a) => a.label === label);
+    if (activity) {
+      setActivityToEdit(activity);
+      setIsEditActivityDialogOpen(true);
     }
   };
 
@@ -571,15 +828,21 @@ export function StudyTimer() {
 
       {/* Activity Buttons */}
       <div className="flex flex-wrap gap-3">
-        {activities.map((activity) => (
-          <ActivityButton
-            key={activity.label}
-            label={activity.label}
-            isSelected={selectedActivity === activity.label}
-            onClick={() => handleActivitySelect(activity.label)}
-            disabled={isRunning}
-          />
-        ))}
+        {activities.map((activity) => {
+          const isDefault = DEFAULT_ACTIVITIES.some((a) => a.label === activity.label);
+          return (
+            <ActivityButton
+              key={activity.label}
+              label={activity.label}
+              isSelected={selectedActivity === activity.label}
+              onClick={() => handleActivitySelect(activity.label)}
+              disabled={isRunning}
+              isDefault={isDefault}
+              onEdit={!isDefault ? () => handleEditActivityClick(activity.label) : undefined}
+              onDelete={!isDefault ? () => handleDeleteActivityClick(activity.label) : undefined}
+            />
+          );
+        })}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -696,6 +959,28 @@ export function StudyTimer() {
         onOpenChange={setIsAddActivityDialogOpen}
         onAdd={handleAddActivity}
       />
+      <EditActivityDialog
+        open={isEditActivityDialogOpen}
+        onOpenChange={setIsEditActivityDialogOpen}
+        onSave={handleEditActivity}
+        initialLabel={activityToEdit?.label || ''}
+        initialDuration={activityToEdit?.duration || 25}
+      />
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the "{activityToDelete}" activity? This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setActivityToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
