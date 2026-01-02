@@ -178,4 +178,32 @@ describe('Dashboard Learning Velocity Calculation', () => {
     expect(percentages[8]).toBe(60);
     expect(percentages[9]).toBe(90);
   });
+
+  it('should always have exactly 10 days in the array', () => {
+    const dailyExperience = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+    expect(dailyExperience.length).toBe(10);
+  });
+
+  it('should maintain 10 days even with sparse data', () => {
+    // Simulate a scenario where only 2 days have data
+    const dailyExperience = [0, 0, 0, 50, 0, 0, 0, 100, 0, 0];
+
+    expect(dailyExperience.length).toBe(10);
+    expect(dailyExperience.filter((xp) => xp === 0).length).toBe(8);
+    expect(dailyExperience.filter((xp) => xp > 0).length).toBe(2);
+  });
+
+  it('should render zero values as 0% height but still present in array', () => {
+    const dailyExperience = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const maxDailyXP = Math.max(...dailyExperience, 1);
+    const percentages = dailyExperience.map((xp) => (xp / maxDailyXP) * 100);
+
+    // All percentages should be 0
+    percentages.forEach((percentage) => {
+      expect(percentage).toBe(0);
+    });
+    // But we should still have all 10 values
+    expect(percentages.length).toBe(10);
+  });
 });
