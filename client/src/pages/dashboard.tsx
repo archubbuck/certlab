@@ -505,57 +505,55 @@ export default function Dashboard() {
             </div>
             <Card className="flex-1">
               <CardContent className="p-6 h-full flex flex-col">
-                {dailyExperience.every((xp) => xp === 0) ? (
-                  <div className="text-center py-12">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      No activity in the last 10 days
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Complete quizzes to see your learning velocity chart
-                    </p>
+                <div className="flex gap-4 flex-1">
+                  {/* Y-axis XP scale */}
+                  <div className="flex flex-col justify-between h-full text-xs text-muted-foreground">
+                    <span>{Math.round(maxDailyXP)}</span>
+                    <span>{Math.round(maxDailyXP * 0.75)}</span>
+                    <span>{Math.round(maxDailyXP * 0.5)}</span>
+                    <span>{Math.round(maxDailyXP * 0.25)}</span>
+                    <span>0</span>
                   </div>
-                ) : (
-                  <div className="flex gap-4 flex-1">
-                    {/* Y-axis XP scale */}
-                    <div className="flex flex-col justify-between h-full text-xs text-muted-foreground">
-                      <span>{Math.round(maxDailyXP)}</span>
-                      <span>{Math.round(maxDailyXP * 0.75)}</span>
-                      <span>{Math.round(maxDailyXP * 0.5)}</span>
-                      <span>{Math.round(maxDailyXP * 0.25)}</span>
-                      <span>0</span>
-                    </div>
-                    <div className="flex-1 flex flex-col">
-                      {/* Simple chart representation */}
-                      <div className="relative flex-1">
-                        {/* Horizontal grid lines to connect y-axis labels to bars */}
-                        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                          {Array.from({ length: 5 }).map((_, index) => (
-                            <div key={index} className="border-t border-border/40" />
-                          ))}
-                        </div>
-                        <div className="relative h-full flex items-end justify-between gap-2">
-                          {dailyXPPercentages.map((height, i) => (
-                            <div
-                              key={i}
-                              className="flex-1 bg-primary/60 rounded-t relative group"
-                              style={{ height: `${height}%`, minHeight: height > 0 ? '2px' : '0' }}
-                            >
-                              {/* Tooltip showing actual XP value on hover */}
-                              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                {dailyExperience[i]} XP
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                  <div className="flex-1 flex flex-col">
+                    {/* Simple chart representation */}
+                    <div className="relative flex-1">
+                      {/* Horizontal grid lines to connect y-axis labels to bars */}
+                      <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                        {Array.from({ length: 5 }).map((_, index) => (
+                          <div key={index} className="border-t border-border/40" />
+                        ))}
                       </div>
-                      <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                        {dayLabels.map((label, index) => (
-                          <span key={index}>{label}</span>
+                      <div className="relative h-full flex items-end justify-between gap-2">
+                        {dailyXPPercentages.map((height, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 rounded-t relative group ${
+                              dailyExperience[i] === 0 ? 'bg-muted/50' : 'bg-primary/60'
+                            }`}
+                            style={{ height: `${height}%`, minHeight: '2px' }}
+                          >
+                            {/* Tooltip showing actual XP value on hover */}
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                              {dailyExperience[i]} XP
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>
+                    <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                      {dayLabels.map((label, index) => (
+                        <span key={index}>{label}</span>
+                      ))}
+                    </div>
+                    {dailyExperience.every((xp) => xp === 0) && (
+                      <div className="text-center py-2 mt-2">
+                        <p className="text-xs text-muted-foreground">
+                          No activity in the last 10 days. Complete quizzes to track your progress!
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           </div>
