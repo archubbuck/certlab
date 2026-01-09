@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import { ContentSkeleton } from '@/components/ui/content-skeleton';
 import { queryKeys } from '@/lib/queryClient';
+import { MetadataDisplay } from '@/components/MetadataDisplay';
 
 export default function LecturePage() {
   const { id } = useParams<{ id: string }>();
@@ -62,16 +63,26 @@ export default function LecturePage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <BookOpen className="h-6 w-6 text-purple-600" />
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <BookOpen className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{lecture.title}</h1>
+                <p className="text-gray-600">
+                  Generated on {new Date(lecture.createdAt).toLocaleDateString()}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{lecture.title}</h1>
-              <p className="text-gray-600">
-                Generated on {new Date(lecture.createdAt).toLocaleDateString()}
-              </p>
-            </div>
+            {/* Display metadata */}
+            <MetadataDisplay
+              tags={lecture.tags}
+              difficultyLevel={lecture.difficultyLevel}
+              authorName={lecture.authorName}
+              createdAt={lecture.createdAt}
+              updatedAt={lecture.updatedAt}
+            />
           </div>
         </div>
 
