@@ -353,6 +353,26 @@ export const lectures = pgTable('lectures', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at'), // Last modification timestamp
   isRead: boolean('is_read').default(false),
+  // Multiple content type support
+  contentType: text('content_type').default('text'), // 'text', 'video', 'pdf', 'interactive', 'code'
+  videoUrl: text('video_url'), // URL for video content (YouTube, Vimeo, uploaded)
+  videoProvider: text('video_provider'), // 'youtube', 'vimeo', 'upload'
+  videoDuration: integer('video_duration'), // Duration in seconds
+  pdfUrl: text('pdf_url'), // URL to PDF file
+  pdfPages: integer('pdf_pages'), // Number of pages in PDF
+  interactiveUrl: text('interactive_url'), // URL to interactive content
+  interactiveType: text('interactive_type'), // Type of interactive content: 'code', 'widget', 'quiz'
+  codeLanguage: text('code_language'), // Programming language for code examples
+  codeContent: text('code_content'), // Code snippet content
+  hasCodeHighlighting: boolean('has_code_highlighting').default(false), // Whether content includes syntax highlighting
+  thumbnailUrl: text('thumbnail_url'), // Thumbnail/preview image URL
+  fileSize: integer('file_size'), // File size in bytes (for PDFs, videos)
+  accessibilityFeatures: jsonb('accessibility_features').$type<{
+    hasTranscript?: boolean;
+    hasClosedCaptions?: boolean;
+    hasAudioDescription?: boolean;
+    altText?: string;
+  }>(), // Accessibility metadata
 });
 
 // Study Notes table for user-generated study notes from quiz results
@@ -467,6 +487,74 @@ export const insertLectureSchema = createInsertSchema(lectures)
       .object({
         quizIds: z.array(z.number()).optional(),
         lectureIds: z.array(z.number()).optional(),
+      })
+      .optional()
+      .nullable(),
+    // Multiple content type validation
+    contentType: z.enum(['text', 'video', 'pdf', 'interactive', 'code']).default('text'),
+    videoUrl: z
+      .string()
+      .url('Video URL must be valid')
+      .max(1000, 'Video URL must be 1000 characters or less')
+      .optional()
+      .nullable(),
+    videoProvider: z.enum(['youtube', 'vimeo', 'upload']).optional().nullable(),
+    videoDuration: z
+      .number()
+      .int()
+      .min(1, 'Video duration must be at least 1 second')
+      .max(36000, 'Video duration must be less than 10 hours')
+      .optional()
+      .nullable(),
+    pdfUrl: z
+      .string()
+      .url('PDF URL must be valid')
+      .max(1000, 'PDF URL must be 1000 characters or less')
+      .optional()
+      .nullable(),
+    pdfPages: z
+      .number()
+      .int()
+      .min(1, 'PDF must have at least 1 page')
+      .max(10000, 'PDF must have less than 10000 pages')
+      .optional()
+      .nullable(),
+    interactiveUrl: z
+      .string()
+      .url('Interactive URL must be valid')
+      .max(1000, 'Interactive URL must be 1000 characters or less')
+      .optional()
+      .nullable(),
+    interactiveType: z.enum(['code', 'widget', 'quiz']).optional().nullable(),
+    codeLanguage: z
+      .string()
+      .max(50, 'Code language must be 50 characters or less')
+      .optional()
+      .nullable(),
+    codeContent: z
+      .string()
+      .max(50000, 'Code content must be 50000 characters or less')
+      .optional()
+      .nullable(),
+    thumbnailUrl: z
+      .string()
+      .url('Thumbnail URL must be valid')
+      .max(1000, 'Thumbnail URL must be 1000 characters or less')
+      .optional()
+      .nullable(),
+    fileSize: z
+      .number()
+      .int()
+      .min(0, 'File size must be non-negative')
+      .max(1073741824, 'File size must be less than 1GB')
+      .optional()
+      .nullable(),
+    accessibilityFeatures: z
+      .object({
+        hasTranscript: z.boolean().optional(),
+        hasClosedCaptions: z.boolean().optional(),
+        hasAudioDescription: z.boolean().optional(),
+        altText: z.string().max(500, 'Alt text must be 500 characters or less').optional(),
       })
       .optional()
       .nullable(),

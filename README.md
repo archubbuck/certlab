@@ -13,9 +13,10 @@ CertLab is a modern, cloud-based certification study platform. Study for certifi
 - **Multi-Tenancy**: Switch between different learning environments
 - **Study Groups**: Create and join study groups
 - **Practice Tests**: Full-length practice exams
+- **Multiple Content Types**: Support for text, video, PDF, interactive content, and code examples
 - **Export/Import**: Backup and restore your data
 - **Theme Options**: Seven themes including dark mode
-- **Accessibility**: Keyboard navigation, skip links, ARIA support
+- **Accessibility**: Keyboard navigation, skip links, ARIA support, video captions, and screen reader support
 
 📋 **[View Complete Feature List](FEATURES.md)** | 🗺️ **[View Roadmap](ROADMAP.md)**
 

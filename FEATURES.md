@@ -107,11 +107,21 @@ CertLab uses cloud-first storage with offline support:
 **Status**: ✅ Fully Implemented
 
 - **Lectures**
-  - Text-based study materials
+  - Multiple content type support:
+    - **Text**: Markdown-formatted study guides with syntax highlighting
+    - **Video**: YouTube, Vimeo, and uploaded video support with embedded player
+    - **PDF**: In-app PDF rendering with navigation controls
+    - **Interactive Content**: Embedded interactive widgets, code playgrounds, and quizzes
+    - **Code Examples**: Syntax-highlighted code snippets with copy functionality
   - Organized by category and subcategory
-  - Markdown support for formatting
   - Read tracking
   - Bookmarking capability
+  - Accessibility features:
+    - Closed captions for videos
+    - Transcripts for audio/video content
+    - Audio descriptions
+    - Alt text for visual content
+    - Screen reader support
   
 - **Study Notes**
   - Personal note-taking system
