@@ -850,6 +850,21 @@ class FirestoreStorage implements IClientStorage {
         isRead: false,
         createdAt: new Date(),
         updatedAt: null,
+        // Multiple content type fields
+        contentType: 'text',
+        videoUrl: null,
+        videoProvider: null,
+        videoDuration: null,
+        pdfUrl: null,
+        pdfPages: null,
+        interactiveUrl: null,
+        interactiveType: null,
+        codeLanguage: null,
+        codeContent: null,
+        hasCodeHighlighting: false,
+        thumbnailUrl: null,
+        fileSize: null,
+        accessibilityFeatures: null,
       };
 
       await setUserDocument(userId, 'lectures', id.toString(), lecture);

@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import { ContentSkeleton } from '@/components/ui/content-skeleton';
 import { queryKeys } from '@/lib/queryClient';
 import { MetadataDisplay } from '@/components/MetadataDisplay';
+import { ContentRenderer } from '@/components/ContentRenderer';
 
 export default function LecturePage() {
   const { id } = useParams<{ id: string }>();
@@ -86,105 +87,8 @@ export default function LecturePage() {
           </div>
         </div>
 
-        {/* Study Guide Content */}
-        <Card className="material-shadow">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-purple-600" />
-              Personalized Study Guide
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-8">
-            <div className="prose prose-gray max-w-none">
-              {lecture.content.split('\n').map((line: string, index: number) => {
-                // Handle headers
-                if (line.startsWith('# ')) {
-                  return (
-                    <h1
-                      key={index}
-                      className="text-3xl font-bold text-gray-900 mb-4 border-b border-gray-200 pb-2"
-                    >
-                      {line.replace('# ', '')}
-                    </h1>
-                  );
-                }
-                if (line.startsWith('## ')) {
-                  return (
-                    <h2 key={index} className="text-2xl font-semibold text-gray-800 mt-8 mb-4">
-                      {line.replace('## ', '')}
-                    </h2>
-                  );
-                }
-                if (line.startsWith('### ')) {
-                  return (
-                    <h3 key={index} className="text-xl font-semibold text-gray-700 mt-6 mb-3">
-                      {line.replace('### ', '')}
-                    </h3>
-                  );
-                }
-
-                // Handle bold text
-                if (line.includes('**')) {
-                  const boldText = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                  return (
-                    <p
-                      key={index}
-                      className="mb-3 text-gray-700"
-                      dangerouslySetInnerHTML={{ __html: boldText }}
-                    />
-                  );
-                }
-
-                // Handle list items
-                if (line.startsWith('- ')) {
-                  return (
-                    <li key={index} className="mb-2 text-gray-700 ml-4">
-                      {line.replace('- ', '')}
-                    </li>
-                  );
-                }
-
-                // Handle numbered lists
-                if (line.match(/^\d+\./)) {
-                  return (
-                    <li key={index} className="mb-2 text-gray-700 ml-4 list-decimal">
-                      {line.replace(/^\d+\.\s*/, '')}
-                    </li>
-                  );
-                }
-
-                // Handle horizontal rules
-                if (line === '---') {
-                  return <hr key={index} className="my-6 border-gray-200" />;
-                }
-
-                // Handle empty lines
-                if (line.trim() === '') {
-                  return <br key={index} />;
-                }
-
-                // Handle emojis and special formatting
-                if (line.includes('🎉') || line.includes('📈') || line.includes('🎯')) {
-                  return (
-                    <div
-                      key={index}
-                      className="my-4 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg"
-                    >
-                      <p className="text-blue-800 font-medium">{line}</p>
-                    </div>
-                  );
-                }
-
-                // Regular paragraphs
-                return (
-                  <p key={index} className="mb-3 text-gray-700 leading-relaxed">
-                    {line}
-                  </p>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Study Guide Content with Multiple Content Type Support */}
+        <ContentRenderer lecture={lecture} />
 
         {/* Action Buttons */}
         <div className="mt-6 flex gap-4">
