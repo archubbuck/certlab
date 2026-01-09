@@ -44,6 +44,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import 'katex/dist/katex.min.css';
 
 // Create lowlight instance with common languages
@@ -68,6 +69,7 @@ function MenuBar({ editor }: MenuBarProps) {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const addLink = useCallback(() => {
     if (linkUrl && editor) {
@@ -92,13 +94,21 @@ function MenuBar({ editor }: MenuBarProps) {
 
       // Check file type
       if (!file.type.startsWith('image/')) {
-        alert('Please upload an image file');
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file',
+          variant: 'destructive',
+        });
         return;
       }
 
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size must be less than 5MB');
+        toast({
+          title: 'File too large',
+          description: 'Image size must be less than 5MB',
+          variant: 'destructive',
+        });
         return;
       }
 
@@ -108,6 +118,14 @@ function MenuBar({ editor }: MenuBarProps) {
         const base64 = e.target?.result as string;
         editor.chain().focus().setImage({ src: base64 }).run();
       };
+      reader.onerror = () => {
+        console.error('Failed to read image file', reader.error);
+        toast({
+          title: 'Failed to read file',
+          description: 'Failed to read the image file. Please try again with a different file.',
+          variant: 'destructive',
+        });
+      };
       reader.readAsDataURL(file);
 
       // Reset input
@@ -115,7 +133,7 @@ function MenuBar({ editor }: MenuBarProps) {
         fileInputRef.current.value = '';
       }
     },
-    [editor]
+    [editor, toast]
   );
 
   if (!editor) {
@@ -443,13 +461,11 @@ export function RichTextEditor({
     }
   }, [content, editor]);
 
-  // If not editable, just show the content without tabs
+  // If not editable, render via TipTap editor for proper sanitization
   if (!editable) {
     return (
       <div className={`rich-text-editor ${className}`}>
-        <div className="prose prose-sm max-w-none p-4 border border-input rounded-md bg-background">
-          <div dangerouslySetInnerHTML={{ __html: content || '' }} />
-        </div>
+        <EditorContent editor={editor} />
       </div>
     );
   }
