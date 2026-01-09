@@ -287,6 +287,31 @@ export default function QuizBuilder() {
     }
   };
 
+  // Handle rich text toggle with format warning
+  const handleRichTextToggle = (checked: boolean) => {
+    // If there's content and user is switching modes, warn about format changes
+    if (questionText.trim() && useRichText !== checked) {
+      const isHTML = questionText.includes('<') && questionText.includes('>');
+      if (checked && !isHTML) {
+        // Switching from plain to rich - no warning needed, plain text works fine in rich editor
+        setUseRichText(checked);
+      } else if (!checked && isHTML) {
+        // Switching from rich to plain - warn about HTML formatting loss
+        toast({
+          title: 'Format Warning',
+          description:
+            'Switching to plain text will show HTML tags. Your formatting will be preserved if you switch back to rich text.',
+          variant: 'default',
+        });
+        setUseRichText(checked);
+      } else {
+        setUseRichText(checked);
+      }
+    } else {
+      setUseRichText(checked);
+    }
+  };
+
   // Add/Update question
   const saveQuestion = () => {
     const trimmedText = questionText.trim();
@@ -415,6 +440,7 @@ export default function QuizBuilder() {
     setExplanation('');
     setQuestionDifficulty('1');
     setQuestionTags('');
+    setUseRichText(false);
   };
 
   const editQuestion = (question: CustomQuestion) => {
@@ -886,7 +912,7 @@ export default function QuizBuilder() {
                       <Checkbox
                         id="useRichText"
                         checked={useRichText}
-                        onCheckedChange={(checked) => setUseRichText(checked as boolean)}
+                        onCheckedChange={(checked) => handleRichTextToggle(checked as boolean)}
                       />
                       <Label htmlFor="useRichText" className="text-sm font-normal cursor-pointer">
                         Use rich text editor
