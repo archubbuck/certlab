@@ -16,6 +16,7 @@ import { calculateLevelFromPoints, calculatePointsForLevel } from '@/lib/level-u
 import { POINTS_CONFIG } from '@/lib/achievement-service';
 import { PlayCircle, Trophy, Target, History, FileText, ArrowRight, Flame } from 'lucide-react';
 import { MetadataDisplayCompact } from '@/components/MetadataDisplay';
+import type { UserStats, Quiz, Category } from '@shared/schema';
 
 export default function Dashboard() {
   const { user: currentUser, refreshUser } = useAuth();
