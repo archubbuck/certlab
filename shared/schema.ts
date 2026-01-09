@@ -342,8 +342,8 @@ export const lectures = pgTable('lectures', {
   title: text('title').notNull(),
   description: text('description'), // Lecture description for search and display
   content: text('content').notNull(), // Generated lecture content
-  topics: jsonb('topics').notNull(), // Array of missed topic tags (now aliased as tags for consistency)
-  tags: jsonb('tags').$type<string[]>(), // Multi-tag support for categorization and search (alias for topics for new lectures)
+  topics: jsonb('topics').notNull(), // Legacy field: Array of topic tags (kept for backward compatibility)
+  tags: jsonb('tags').$type<string[]>(), // Canonical field: Multi-tag support for categorization and search
   categoryId: integer('category_id').notNull(),
   subcategoryId: integer('subcategory_id'),
   difficultyLevel: integer('difficulty_level').default(1), // 1-5 scale (1=Easy, 5=Expert)

@@ -840,7 +840,7 @@ class FirestoreStorage implements IClientStorage {
         description: null,
         content,
         topics,
-        tags: topics, // Alias topics as tags for consistency
+        tags: null, // Tags should be set separately via updateLecture if needed
         categoryId,
         subcategoryId: null,
         difficultyLevel: 1,
