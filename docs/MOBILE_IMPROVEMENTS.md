@@ -306,7 +306,7 @@ Test on these viewport sizes:
 1. **Pull-to-Refresh**: Native-style refresh gesture
 2. **Long-Press Actions**: Context menus on long press
 3. **Gesture Conflicts**: Better handling of gesture conflicts
-4. **Offline Support**: Enhanced offline mode for mobile
+4. **Offline Support**: Enhanced offline mode via Firestore SDK's automatic caching
 5. **Haptic Feedback**: Real haptic feedback via Vibration API
 6. **Install Prompt**: Progressive Web App install prompt
 7. **Share API**: Native share functionality

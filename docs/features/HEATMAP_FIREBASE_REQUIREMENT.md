@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Activity Heatmap feature in CertLab displays a user's learning activity over time in a visual calendar-style heatmap, similar to GitHub's contribution graph. This feature **requires full Firebase/Firestore connectivity** and does not fall back to local browser storage.
+The Activity Heatmap feature in CertLab displays a user's learning activity over time in a visual calendar-style heatmap, similar to GitHub's contribution graph. This feature **requires Firebase/Firestore connectivity** as CertLab is a cloud-first application.
 
 ## Firebase Requirement
 
@@ -10,19 +10,19 @@ The Activity Heatmap feature in CertLab displays a user's learning activity over
 
 The Activity Heatmap requires Firebase/Firestore for several important reasons:
 
-1. **Cross-device Consistency**: User activity data must be synced across all devices to provide an accurate, unified view of learning progress.
+1. **Cross-device Consistency**: User activity data is synced across all devices to provide an accurate, unified view of learning progress.
 
 2. **Real-time Updates**: Firebase ensures that activity data is immediately available and consistent across sessions.
 
-3. **Data Integrity**: Using Firebase as the single source of truth prevents data divergence that could occur with local-only storage.
+3. **Data Integrity**: Firebase is the single source of truth for all user data in CertLab.
 
 4. **Analytics Foundation**: The heatmap serves as the foundation for performance analytics and insights, which require centralized data storage.
 
-### Local Storage Role
+### Offline Support
 
-- **Purpose**: IndexedDB is used **only for caching**, not as a primary data source for the heatmap.
-- **Cache-only**: IndexedDB is used automatically by Firestore's offline persistence layer for caching, not as a separate fallback mechanism.
-- **Not a Fallback**: The heatmap will NOT automatically display data from IndexedDB if Firebase is disconnected.
+- **Automatic Caching**: Firestore SDK automatically caches data in IndexedDB for offline viewing.
+- **Transparent**: The caching is handled entirely by the Firestore SDK - no application code needed.
+- **No Manual Fallback**: There is no separate IndexedDB fallback implementation.
 
 ## User Experience
 
@@ -119,9 +119,7 @@ export default function ContributionHeatmap() {
 
 Location: `client/src/lib/storage-factory.ts`
 
-**Production vs Development**:
-- **Production**: Firebase/Firestore is MANDATORY. Application throws errors if not configured.
-- **Development**: Can fall back to IndexedDB for local development, but heatmap still requires Firebase.
+Firebase/Firestore is **mandatory** for CertLab. The application will not function without proper Firebase configuration.
 
 **Connectivity Check**:
 ```typescript
@@ -187,12 +185,12 @@ To verify Firebase is properly configured:
 
 ## Development Workflow
 
-### Local Development Without Firebase
+### Local Development
 
-For local development without Firebase credentials:
-- The main app will fall back to IndexedDB (development mode only)
-- The heatmap will display the Firebase error message
-- To test the heatmap, you must configure Firebase credentials
+For local development, Firebase credentials are required:
+- The application requires Firebase to function
+- Set up Firebase credentials in `.env` file
+- Without Firebase, the application will show an error
 
 ### Testing Heatmap Functionality
 
@@ -201,7 +199,7 @@ For local development without Firebase credentials:
 3. **Sign in** with Google authentication
 4. **Complete quizzes** to generate activity data
 5. **Navigate to Profile** to view the heatmap
-6. **Verify connectivity requirement**: Confirm that if Firebase/Firestore becomes unavailable (including going offline), the heatmap shows the Firebase connectivity error instead of activity data. Offline viewing of the heatmap is **not** supported.
+6. **Verify offline viewing**: The heatmap will continue to display cached data when offline, courtesy of Firestore's automatic offline persistence.
 
 ## Related Components
 

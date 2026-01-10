@@ -597,7 +597,7 @@ export default function ProfilePage() {
                             account. Your data will be automatically synced to Firebase.
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Currently using: <strong>Local Storage</strong> (IndexedDB)
+                            Currently using: <strong>Cloud Storage</strong> (Firestore)
                           </p>
                         </div>
                       </AlertDescription>

@@ -2,9 +2,8 @@
  * TanStack Query Client Configuration
  *
  * This module configures the TanStack Query (React Query) client for
- * managing asynchronous data fetching and caching. In CertLab's client-only
- * architecture, queries are routed to IndexedDB via the clientStorage service
- * instead of making HTTP requests.
+ * managing asynchronous data fetching and caching. In CertLab's cloud-first
+ * architecture, queries are routed to Firestore via the storage service.
  *
  * ## Architecture
  *
@@ -15,17 +14,17 @@
  *       ↓
  * getQueryFn (this module)
  *       ↓
- * clientStorage (IndexedDB wrapper)
+ * storage (storage-factory)
  *       ↓
- * IndexedDB
+ * Firestore (Cloud Storage)
  * ```
  *
  * ## Query Path Routing
  *
  * The `getQueryFn` function interprets query keys as API-like paths
  * (e.g., `/api/user/123/stats`) and routes them to the appropriate
- * clientStorage methods. This maintains API-compatible query keys
- * while operating entirely client-side.
+ * storage methods. This maintains API-compatible query keys
+ * while operating through Firestore.
  *
  * ## Supported Query Paths
  *
@@ -72,11 +71,10 @@ import { clientAuth } from './client-auth';
  * These values determine how long cached data is considered "fresh"
  * before TanStack Query marks it as stale and eligible for refetching.
  *
- * In CertLab's client-only architecture with IndexedDB, these times are
- * primarily used to:
- * 1. Control when background refetches occur
- * 2. Determine if cached data should be used immediately vs. refetched
- * 3. Optimize performance by reducing unnecessary IndexedDB reads
+ * These times control:
+ * 1. When background refetches occur
+ * 2. Whether cached data should be used immediately vs. refetched
+ * 3. Performance optimization for Firestore reads
  */
 export const staleTime = {
   /**
