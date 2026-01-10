@@ -313,7 +313,7 @@ export const quizzes = pgTable('quizzes', {
   randomizeQuestions: boolean('randomize_questions').default(false), // Shuffle question order
   randomizeAnswers: boolean('randomize_answers').default(false), // Shuffle answer options
   timeLimitPerQuestion: integer('time_limit_per_question'), // Time limit per question in seconds, null for no limit
-  questionWeights: jsonb('question_weights').$type<Record<number, number>>(), // Per-question scoring weights (questionId -> weight)
+  questionWeights: jsonb('question_weights').$type<Record<number, number>>(), // Per-question scoring weights keyed by question index/order (index -> weight)
   feedbackMode: text('feedback_mode').default('instant'), // 'instant', 'delayed', 'final' - when to show explanations
   passingScore: integer('passing_score').default(70), // Passing percentage threshold
   maxAttempts: integer('max_attempts'), // Maximum attempts allowed, null for unlimited

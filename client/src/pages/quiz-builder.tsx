@@ -38,7 +38,7 @@ import {
   X,
   ChevronDown,
   Loader2,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Category, Subcategory, Question, QuestionOption } from '@shared/schema';
@@ -917,11 +917,19 @@ export default function QuizBuilder() {
                           Optional settings for randomization, timing, scoring, and feedback
                         </CardDescription>
                       </div>
-                      <ChevronDown
-                        className={`h-5 w-5 text-muted-foreground transition-transform ${
-                          showAdvancedConfig ? 'transform rotate-180' : ''
-                        }`}
-                      />
+                      <div className="flex items-center gap-2">
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${
+                            showAdvancedConfig ? 'transform rotate-180' : ''
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span className="sr-only">
+                          {showAdvancedConfig
+                            ? 'Collapse advanced configuration section'
+                            : 'Expand advanced configuration section'}
+                        </span>
+                      </div>
                     </div>
                   </CardHeader>
                 </CollapsibleTrigger>
@@ -1052,10 +1060,27 @@ export default function QuizBuilder() {
                                   type="number"
                                   min="1"
                                   max="10"
-                                  value={questionWeights[index] || 1}
+                                  value={questionWeights[index] ?? 1}
                                   onChange={(e) => {
-                                    const weight = parseInt(e.target.value) || 1;
-                                    setQuestionWeights({ ...questionWeights, [index]: weight });
+                                    const rawValue = e.target.value;
+
+                                    // Preserve the previous valid value if the input is empty or invalid
+                                    if (rawValue === '') {
+                                      return;
+                                    }
+
+                                    const parsed = Number.parseInt(rawValue, 10);
+
+                                    if (Number.isNaN(parsed)) {
+                                      return;
+                                    }
+
+                                    // Clamp value between 1 and 10
+                                    const clampedValue = Math.min(10, Math.max(1, parsed));
+                                    setQuestionWeights({
+                                      ...questionWeights,
+                                      [index]: clampedValue,
+                                    });
                                   }}
                                   className="w-16 ml-2 h-7"
                                   placeholder="1"

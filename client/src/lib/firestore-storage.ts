@@ -707,7 +707,8 @@ class FirestoreStorage implements IClientStorage {
       let totalWeight = 0;
       let earnedWeight = 0;
 
-      for (const answer of answers) {
+      for (let i = 0; i < answers.length; i++) {
+        const answer = answers[i];
         const question = questions.find((q) => q.id === answer.questionId);
         if (question) {
           const { isCorrect } = gradeQuestion(question, answer.answer);
@@ -715,15 +716,16 @@ class FirestoreStorage implements IClientStorage {
             correctCount++;
 
             // Add weighted score if weights are configured
+            // Weights are stored by question index/order, not by questionId
             if (hasWeights && quiz.questionWeights) {
-              const weight = quiz.questionWeights[answer.questionId] || 1;
+              const weight = quiz.questionWeights[i] || 1;
               earnedWeight += weight;
             }
           }
 
           // Track total weight for this question
           if (hasWeights && quiz.questionWeights) {
-            const weight = quiz.questionWeights[answer.questionId] || 1;
+            const weight = quiz.questionWeights[i] || 1;
             totalWeight += weight;
           }
         }

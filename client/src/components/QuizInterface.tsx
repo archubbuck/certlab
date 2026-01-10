@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,9 +40,19 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
     enabled: !!quiz,
   });
 
+  // Track if we've already randomized for this quiz session
+  const randomizationAppliedRef = useRef(false);
+  const randomizedQuestionsRef = useRef<Question[]>([]);
+
   // Apply randomization to questions and answers based on quiz configuration
+  // This runs only once per quiz session to prevent re-randomization on data refetch
   const processedQuestions = useMemo(() => {
     if (!quiz || questions.length === 0) return questions;
+
+    // If we've already randomized and have cached results, return them
+    if (randomizationAppliedRef.current && randomizedQuestionsRef.current.length > 0) {
+      return randomizedQuestionsRef.current;
+    }
 
     let processed = [...questions];
 
@@ -64,7 +74,10 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
           question.questionType === 'multiple_choice_multiple'
         ) {
           if (question.options && question.options.length > 0) {
-            // Create a mapping of old indices to new indices
+            // Build a map from option ID to its original index for efficient lookup
+            const idToOldIndex = new Map(question.options.map((opt, index) => [opt.id, index]));
+
+            // Create a shuffled copy of the options
             const shuffledOptions = [...question.options];
             for (let i = shuffledOptions.length - 1; i > 0; i--) {
               const j = Math.floor(Math.random() * (i + 1));
@@ -72,12 +85,13 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
             }
 
             // Update correct answer index(es) to match shuffled positions
-            const oldToNewIndexMap = new Map(
-              shuffledOptions.map((opt, newIndex) => {
-                const oldIndex = question.options!.findIndex((o) => o.id === opt.id);
-                return [oldIndex, newIndex];
-              })
-            );
+            const oldToNewIndexMap = new Map<number, number>();
+            shuffledOptions.forEach((opt, newIndex) => {
+              const oldIndex = idToOldIndex.get(opt.id);
+              if (oldIndex !== undefined) {
+                oldToNewIndexMap.set(oldIndex, newIndex);
+              }
+            });
 
             // Re-index shuffled options
             const reindexedOptions = shuffledOptions.map((opt, idx) => ({
@@ -112,6 +126,10 @@ export default function QuizInterface({ quizId }: QuizInterfaceProps) {
         return question;
       });
     }
+
+    // Mark that randomization has been applied and cache the result
+    randomizationAppliedRef.current = true;
+    randomizedQuestionsRef.current = processed;
 
     return processed;
   }, [quiz, questions]);

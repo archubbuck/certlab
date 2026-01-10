@@ -39,7 +39,7 @@ Added 8 new fields to the `quizzes` table:
 
 ### 4. Weighted Scoring (`client/src/lib/firestore-storage.ts`)
 
-Enhanced `submitQuiz()` with weighted calculation and passing threshold
+Enhanced `submitQuiz()` with index-based weighted calculation and passing threshold. Weights are stored and looked up by question order/index (0, 1, 2...) not questionId.
 
 ## Testing Results
 

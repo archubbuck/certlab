@@ -26,7 +26,7 @@ The `quizzes` table now includes the following advanced configuration fields:
   timeLimitPerQuestion: number | null; // Seconds per question (null = no limit)
   
   // Scoring
-  questionWeights: Record<number, number>; // questionId -> weight mapping
+  questionWeights: Record<number, number>; // question index -> weight mapping (0, 1, 2...)
   passingScore: number;                    // Passing percentage (default: 70)
   
   // Feedback
@@ -101,11 +101,15 @@ updatedCorrectAnswer = oldToNewIndexMap.get(question.correctAnswer);
 
 When question weights are configured:
 ```typescript
-// Calculate weighted score
-const earnedWeight = correctQuestions.reduce((sum, q) => 
-  sum + (questionWeights[q.id] || 1), 0);
-const totalWeight = allQuestions.reduce((sum, q) => 
-  sum + (questionWeights[q.id] || 1), 0);
+// Calculate weighted score using question indices
+// questionWeights is keyed by question order/index (0, 1, 2...)
+for (let i = 0; i < answers.length; i++) {
+  const weight = questionWeights[i] || 1;
+  if (isCorrect) {
+    earnedWeight += weight;
+  }
+  totalWeight += weight;
+}
 const score = (earnedWeight / totalWeight) * 100;
 ```
 
