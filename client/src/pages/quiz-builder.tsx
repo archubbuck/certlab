@@ -145,6 +145,14 @@ export default function QuizBuilder() {
     selectedCategories.includes(sub.categoryId)
   );
 
+  // Computed states for cleaner conditionals
+  const showCategoriesGrid = !categoriesLoading && !categoriesError && categories.length > 0;
+  const showCategoriesEmpty = !categoriesLoading && !categoriesError && categories.length === 0;
+  const showSubcategoriesGrid =
+    !subcategoriesLoading && !subcategoriesError && filteredSubcategories.length > 0;
+  const showNoSubcategories =
+    !subcategoriesLoading && !subcategoriesError && filteredSubcategories.length === 0;
+
   // Save template mutation
   const saveTemplateMutation = useMutation({
     mutationFn: async (isDraft: boolean) => {
@@ -691,28 +699,30 @@ export default function QuizBuilder() {
                     <Alert variant="destructive">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
-                        Failed to load categories: {categoriesErrorObj?.message || 'Unknown error'}
-                        <br />
-                        Please check your Firebase connection and ensure categories are seeded in
-                        Firestore.
+                        Unable to load categories. Please check your internet connection and ensure
+                        your database is properly configured. If the problem persists, contact your
+                        administrator.
                       </AlertDescription>
                     </Alert>
                   )}
 
                   {/* Empty State */}
-                  {!categoriesLoading && !categoriesError && categories.length === 0 && (
+                  {showCategoriesEmpty && (
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
-                        No categories available. Please ensure your Firestore database has
-                        categories seeded. You may need to run the data import/seeding scripts or
-                        add categories through the admin interface.
+                        No categories available. Categories need to be imported before you can
+                        create quizzes. Visit the{' '}
+                        <a href="/app/data-import" className="underline font-medium">
+                          Data Import page
+                        </a>{' '}
+                        to import CISSP or CISM question banks, which include categories.
                       </AlertDescription>
                     </Alert>
                   )}
 
                   {/* Categories Grid */}
-                  {!categoriesLoading && !categoriesError && categories.length > 0 && (
+                  {showCategoriesGrid && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {categories.map((category) => (
                         <label
@@ -763,35 +773,31 @@ export default function QuizBuilder() {
                     )}
 
                     {/* Subcategories Grid */}
-                    {!subcategoriesLoading &&
-                      !subcategoriesError &&
-                      filteredSubcategories.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                          {filteredSubcategories.map((subcategory) => (
-                            <label
-                              key={subcategory.id}
-                              className="flex items-center space-x-2 p-2 border rounded cursor-pointer hover:bg-accent text-sm"
-                            >
-                              <Checkbox
-                                checked={selectedSubcategories.includes(subcategory.id)}
-                                onCheckedChange={(checked) =>
-                                  handleSubcategoryToggle(subcategory.id, checked as boolean)
-                                }
-                              />
-                              <span>{subcategory.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
+                    {showSubcategoriesGrid && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {filteredSubcategories.map((subcategory) => (
+                          <label
+                            key={subcategory.id}
+                            className="flex items-center space-x-2 p-2 border rounded cursor-pointer hover:bg-accent text-sm"
+                          >
+                            <Checkbox
+                              checked={selectedSubcategories.includes(subcategory.id)}
+                              onCheckedChange={(checked) =>
+                                handleSubcategoryToggle(subcategory.id, checked as boolean)
+                              }
+                            />
+                            <span>{subcategory.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
 
                     {/* No Subcategories State */}
-                    {!subcategoriesLoading &&
-                      !subcategoriesError &&
-                      filteredSubcategories.length === 0 && (
-                        <p className="text-sm text-muted-foreground py-2">
-                          No subcategories available for the selected categories.
-                        </p>
-                      )}
+                    {showNoSubcategories && (
+                      <p className="text-sm text-muted-foreground py-2">
+                        No subcategories available for the selected categories.
+                      </p>
+                    )}
                   </div>
                 )}
               </CardContent>
