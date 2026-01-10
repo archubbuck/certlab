@@ -125,7 +125,6 @@ export default function QuizBuilder() {
     data: categories = [],
     isLoading: categoriesLoading,
     isError: categoriesError,
-    error: categoriesErrorObj,
   } = useQuery<Category[]>({
     queryKey: queryKeys.categories.all(),
   });
