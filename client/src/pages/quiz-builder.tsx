@@ -42,47 +42,14 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QuizVersionHistory } from '@/components/QuizVersionHistory';
-import type { Category, Subcategory, Question, QuestionOption } from '@shared/schema';
-
-interface CustomQuestion {
-  id: string;
-  text: string;
-  options: QuestionOption[];
-  correctAnswer: number;
-  explanation: string;
-  difficultyLevel: number;
-  type: 'multiple_choice' | 'true_false';
-  tags: string[];
-}
-
-interface QuizTemplate {
-  id?: number;
-  userId: string;
-  tenantId: number;
-  title: string;
-  description: string;
-  tags?: string[]; // Multi-tag support
-  instructions: string;
-  categoryIds: number[];
-  subcategoryIds: number[];
-  customQuestions: CustomQuestion[];
-  questionCount: number;
-  timeLimit: number | null;
-  passingScore: number;
-  maxAttempts: number | null;
-  difficultyLevel: number;
-  isPublished: boolean;
-  isDraft: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-  // Advanced Configuration
-  randomizeQuestions?: boolean;
-  randomizeAnswers?: boolean;
-  timeLimitPerQuestion?: number | null;
-  questionWeights?: Record<number, number>;
-  feedbackMode?: 'instant' | 'delayed' | 'final';
-  isAdvancedConfig?: boolean;
-}
+import type {
+  Category,
+  Subcategory,
+  Question,
+  QuestionOption,
+  QuizTemplate,
+  CustomQuestion,
+} from '@shared/schema';
 
 export default function QuizBuilder() {
   const navigate = useNavigate();

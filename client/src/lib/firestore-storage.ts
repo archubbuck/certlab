@@ -57,6 +57,7 @@ import type {
   Question,
   Quiz,
   QuizVersion,
+  QuizTemplate,
   UserProgress,
   MasteryScore,
   Badge,
@@ -993,9 +994,9 @@ class FirestoreStorage implements IClientStorage {
    * @param userId - User ID
    * @param tenantId - Optional tenant ID filter
    */
-  async getUserQuizTemplates(userId: string, tenantId?: number): Promise<any[]> {
+  async getUserQuizTemplates(userId: string, tenantId?: number): Promise<QuizTemplate[]> {
     try {
-      const templates = await getUserDocuments<any>(userId, 'quizTemplates');
+      const templates = await getUserDocuments<QuizTemplate>(userId, 'quizTemplates');
       const filtered = tenantId ? templates.filter((t) => t.tenantId === tenantId) : templates;
       return filtered.map((t) => convertTimestamps(t));
     } catch (error) {
@@ -1009,9 +1010,13 @@ class FirestoreStorage implements IClientStorage {
    * @param userId - User ID (owner of the template)
    * @param templateId - Template ID
    */
-  async getQuizTemplate(userId: string, templateId: number): Promise<any | undefined> {
+  async getQuizTemplate(userId: string, templateId: number): Promise<QuizTemplate | undefined> {
     try {
-      const template = await getUserDocument<any>(userId, 'quizTemplates', templateId.toString());
+      const template = await getUserDocument<QuizTemplate>(
+        userId,
+        'quizTemplates',
+        templateId.toString()
+      );
       return template ? convertTimestamps(template) : undefined;
     } catch (error) {
       logError('getQuizTemplate', error, { userId, templateId });
@@ -1029,7 +1034,7 @@ class FirestoreStorage implements IClientStorage {
    * @returns The newly created template
    * @throws Error if template not found or user is not the owner
    */
-  async duplicateQuizTemplate(templateId: number, userId: string): Promise<any> {
+  async duplicateQuizTemplate(templateId: number, userId: string): Promise<QuizTemplate> {
     try {
       if (!userId) throw new Error('User ID required');
 
@@ -1048,7 +1053,7 @@ class FirestoreStorage implements IClientStorage {
       const newId = Date.now();
 
       // 4. Create duplicate with modified fields
-      const duplicate = {
+      const duplicate: QuizTemplate = {
         ...original,
         id: newId,
         title: `Copy of ${original.title}`,

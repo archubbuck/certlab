@@ -24,27 +24,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Edit2, Copy, Trash2, Search, FileText, Clock, Target, BookOpen } from 'lucide-react';
-
-interface QuizTemplate {
-  id: number;
-  userId: string;
-  title: string;
-  description: string;
-  categoryIds: number[];
-  subcategoryIds: number[];
-  customQuestions: any[];
-  questionCount: number;
-  timeLimit: number | null;
-  passingScore: number;
-  maxAttempts: number | null;
-  difficultyLevel: number;
-  isPublished: boolean;
-  isDraft: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  tags?: string[];
-}
+import { Plus, Edit2, Copy, Search, FileText, Clock, BookOpen } from 'lucide-react';
+import type { QuizTemplate } from '@shared/schema';
 
 export default function MyQuizzes() {
   const { user } = useAuth();
