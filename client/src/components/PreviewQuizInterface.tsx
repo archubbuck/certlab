@@ -80,7 +80,10 @@ export default function PreviewQuizInterface({
           question.questionType === 'multiple_choice_multiple'
         ) {
           if (question.options && question.options.length > 0) {
-            const idToOldIndex = new Map(question.options.map((opt, index) => [opt.id, index]));
+            // Build a map from option ID to its original index for efficient lookup
+            const optionIdToOriginalIndex = new Map(
+              question.options.map((opt, index) => [opt.id, index])
+            );
             const shuffledOptions = [...question.options];
 
             for (let i = shuffledOptions.length - 1; i > 0; i--) {
@@ -90,7 +93,7 @@ export default function PreviewQuizInterface({
 
             const oldToNewIndexMap = new Map<number, number>();
             shuffledOptions.forEach((opt, newIndex) => {
-              const oldIndex = idToOldIndex.get(opt.id);
+              const oldIndex = optionIdToOriginalIndex.get(opt.id);
               if (oldIndex !== undefined) {
                 oldToNewIndexMap.set(oldIndex, newIndex);
               }
@@ -169,7 +172,10 @@ export default function PreviewQuizInterface({
     };
   }, [timeRemaining, previewResults]);
 
-  // Auto-submit when timer reaches zero - will be referenced after handleSubmitQuiz is defined
+  // Auto-submit when timer reaches zero
+  // Using a ref pattern to avoid stale closure issues in the timer useEffect.
+  // This ensures the latest version of handleSubmitQuiz is always called,
+  // even as dependencies change during the component lifecycle.
   const submitQuizRef = useRef<() => void>(() => {});
 
   // Submit quiz and calculate preview results
@@ -307,7 +313,7 @@ export default function PreviewQuizInterface({
   const handleSubmitWithoutReview = useCallback(() => {
     setShowFlaggedQuestionsDialog(false);
     handleSubmitQuiz();
-  }, []);
+  }, [handleSubmitQuiz]);
 
   // Navigate to specific question
   const navigateToQuestion = useCallback(
