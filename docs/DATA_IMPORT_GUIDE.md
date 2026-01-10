@@ -349,7 +349,7 @@ importQuestions('./cissp-questions.yaml');
 
 ## Related Documentation
 
-- [Firebase Setup Guide](../FIREBASE_SETUP.md)
+- [Firebase Setup Guide](./setup/firebase.md)
 - [Firestore Security Rules](../firestore.rules)
 - [Firebase Implementation Status](./architecture/firebase-status.md)
 - [Contributing Guide](../CONTRIBUTING.md)
