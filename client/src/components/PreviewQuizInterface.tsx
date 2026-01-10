@@ -147,6 +147,11 @@ export default function PreviewQuizInterface({
   // Calculate progress
   const progress = useMemo(() => {
     const answered = Object.keys(state.answers).length;
+
+    if (processedQuestions.length === 0) {
+      return 0;
+    }
+
     return (answered / processedQuestions.length) * 100;
   }, [state.answers, processedQuestions.length]);
 
@@ -197,7 +202,7 @@ export default function PreviewQuizInterface({
     });
 
     const totalQuestions = processedQuestions.length;
-    const score = Math.round((correctCount / totalQuestions) * 100);
+    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
     setPreviewResults({
       score,
@@ -270,7 +275,7 @@ export default function PreviewQuizInterface({
         dispatch({ type: 'CHANGE_QUESTION', payload: { index: nextIndex, savedAnswer } });
       }
     }
-  }, [state, processedQuestions, previewResults]);
+  }, [state, processedQuestions, previewResults, handleSubmitQuiz]);
 
   // Navigate to previous question
   const handlePreviousQuestion = useCallback(() => {
@@ -414,7 +419,7 @@ export default function PreviewQuizInterface({
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold">Preview Results</h1>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close results">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -476,7 +481,12 @@ export default function PreviewQuizInterface({
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setShowExitDialog(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Exit preview mode"
+            onClick={() => setShowExitDialog(true)}
+          >
             <X className="h-5 w-5" />
           </Button>
         </div>
