@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-provider';
@@ -117,6 +117,7 @@ export default function QuizBuilder() {
   const [timeLimitPerQuestion, setTimeLimitPerQuestion] = useState<string>('0');
   const [feedbackMode, setFeedbackMode] = useState<'instant' | 'delayed' | 'final'>('instant');
   const [questionWeights, setQuestionWeights] = useState<Record<number, number>>({});
+  const previousWeightsRef = useRef<Record<number, number>>({});
   const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
 
   // Question Editor State
@@ -1161,8 +1162,13 @@ export default function QuizBuilder() {
                     </div>
                     <DraggableList
                       items={customQuestions}
+                      onBeforeReorder={() => {
+                        // Save current question weights for potential undo
+                        previousWeightsRef.current = { ...questionWeights };
+                      }}
                       onReorder={(reorderedQuestions) => {
                         setCustomQuestions(reorderedQuestions);
+
                         // Update question weights to match new order
                         if (Object.keys(questionWeights).length > 0) {
                           const newWeights: Record<number, number> = {};
@@ -1176,6 +1182,10 @@ export default function QuizBuilder() {
                           });
                           setQuestionWeights(newWeights);
                         }
+                      }}
+                      onUndoReorder={() => {
+                        // Restore previous question weights when undo is clicked
+                        setQuestionWeights(previousWeightsRef.current);
                       }}
                       renderItem={(question, index) => (
                         <div className="border rounded-lg p-4 hover:border-primary transition-colors w-full">
