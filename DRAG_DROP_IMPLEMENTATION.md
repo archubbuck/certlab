@@ -160,7 +160,8 @@ useSensor(PointerSensor, {
 5. ✅ Includes ARIA labels for accessibility
 6. ✅ Passes correct index to renderItem
 
-**Test Results**: 422/422 tests passing (1 pre-existing failure unrelated)
+**Test Results**: 422/422 tests passing
+Note: There is one pre-existing unrelated test failure in a different test suite, tracked separately.
 
 ### Build & Type Check
 

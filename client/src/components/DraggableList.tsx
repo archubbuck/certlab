@@ -36,6 +36,8 @@ interface DraggableListProps<T extends DraggableItem> {
   className?: string;
   itemClassName?: string;
   allowUndo?: boolean;
+  onBeforeReorder?: () => void; // Called before reordering to save additional state
+  onUndoReorder?: () => void; // Called when undo is clicked to restore additional state
 }
 
 interface SortableItemProps {
@@ -88,6 +90,8 @@ export function DraggableList<T extends DraggableItem>({
   className = '',
   itemClassName = '',
   allowUndo = true,
+  onBeforeReorder,
+  onUndoReorder,
 }: DraggableListProps<T>) {
   const [activeId, setActiveId] = useState<string | number | null>(null);
   const [previousOrder, setPreviousOrder] = useState<T[]>([]);
@@ -122,16 +126,17 @@ export function DraggableList<T extends DraggableItem>({
       const newIndex = items.findIndex((item) => item.id === over.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
-        // Save previous order for undo
-        if (allowUndo) {
-          setPreviousOrder([...items]);
-        }
-
         const newItems = arrayMove(items, oldIndex, newIndex);
-        onReorder(newItems);
 
-        // Show undo toast if enabled
+        // Save previous order for undo (capture current items before updating)
         if (allowUndo) {
+          const savedOrder = [...items];
+          setPreviousOrder(savedOrder);
+
+          // Call onBeforeReorder to save additional state (like question weights)
+          onBeforeReorder?.();
+
+          // Show undo toast with captured order
           toast({
             title: 'Item reordered',
             description: 'The item has been moved to a new position.',
@@ -140,7 +145,9 @@ export function DraggableList<T extends DraggableItem>({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  onReorder(previousOrder);
+                  onReorder(savedOrder);
+                  // Call onUndoReorder to restore additional state
+                  onUndoReorder?.();
                   toast({
                     title: 'Undo successful',
                     description: 'Order has been restored.',
@@ -152,9 +159,11 @@ export function DraggableList<T extends DraggableItem>({
             ),
           });
         }
+
+        onReorder(newItems);
       }
     },
-    [items, onReorder, allowUndo, previousOrder, toast]
+    [items, onReorder, allowUndo, toast, onBeforeReorder, onUndoReorder]
   );
 
   const handleDragCancel = useCallback(() => {
@@ -196,7 +205,12 @@ export function DraggableList<T extends DraggableItem>({
       <DragOverlay>
         {activeItem && (
           <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-2 opacity-90">
-            {renderDragOverlay ? renderDragOverlay(activeItem) : renderItem(activeItem, -1)}
+            {renderDragOverlay
+              ? renderDragOverlay(activeItem)
+              : renderItem(
+                  activeItem,
+                  items.findIndex((item) => item.id === activeItem.id)
+                )}
           </div>
         )}
       </DragOverlay>
