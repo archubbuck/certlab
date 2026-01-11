@@ -48,6 +48,13 @@ import type {
   StudyTimerSession,
   StudyTimerSettings,
   StudyTimerStats,
+  Product,
+  InsertProduct,
+  Purchase,
+  InsertPurchase,
+  Group,
+  GroupMember,
+  AccessCheckResult,
 } from './schema';
 
 /**
@@ -1002,4 +1009,94 @@ export interface IClientStorage extends IStorageAdapter {
 
   /** Get study timer statistics for a user */
   getStudyTimerStats(userId: string): Promise<StudyTimerStats>;
+
+  // ==========================================
+  // Product Management
+  // ==========================================
+
+  /** Get all products, optionally filtered by tenant */
+  getProducts(tenantId?: number): Promise<Product[]>;
+
+  /** Get a product by ID */
+  getProduct(id: number): Promise<Product | null>;
+
+  /** Create a new product */
+  createProduct(product: InsertProduct): Promise<Product>;
+
+  /** Update an existing product */
+  updateProduct(id: number, updates: Partial<InsertProduct>): Promise<Product | null>;
+
+  /** Delete a product */
+  deleteProduct(id: number): Promise<void>;
+
+  // ==========================================
+  // Purchase Management
+  // ==========================================
+
+  /** Get all purchases for a user */
+  getUserPurchases(userId: string): Promise<Purchase[]>;
+
+  /** Get a specific purchase by ID */
+  getPurchase(id: number): Promise<Purchase | null>;
+
+  /** Get a user's purchase for a specific product */
+  getUserPurchase(userId: string, productId: number): Promise<Purchase | null>;
+
+  /** Create a new purchase */
+  createPurchase(purchase: InsertPurchase): Promise<Purchase>;
+
+  /** Update an existing purchase */
+  updatePurchase(id: number, updates: Partial<InsertPurchase>): Promise<Purchase | null>;
+
+  /** Get all purchases (admin) */
+  getAllPurchases(tenantId?: number): Promise<Purchase[]>;
+
+  /** Refund a purchase */
+  refundPurchase(id: number): Promise<Purchase | null>;
+
+  /** Check if a user has active access to a product */
+  checkProductAccess(userId: string, productId: number): Promise<boolean>;
+  // Access Control & Permissions
+  // ==========================================
+
+  /** Check if a user has access to a resource (quiz, lecture, template) */
+  checkAccess(
+    userId: string,
+    resourceType: 'quiz' | 'lecture' | 'template',
+    resourceId: number
+  ): Promise<{
+    allowed: boolean;
+    reason?: 'purchase_required' | 'private_content' | 'not_shared_with_you' | 'access_denied';
+    productId?: string;
+  }>;
+
+  /** Check if a user has purchased a product */
+  checkPurchase(userId: string, productId: string): Promise<boolean>;
+
+  /** Check if a user is in any of the specified groups */
+  isUserInGroups(userId: string, groupIds: number[]): Promise<boolean>;
+
+  /** Get all groups a user is a member of */
+  getUserGroups(userId: string): Promise<Group[]>;
+
+  /** Create a new group */
+  createGroup(group: Partial<Group>): Promise<Group>;
+
+  /** Update a group */
+  updateGroup(groupId: number, updates: Partial<Group>): Promise<Group>;
+
+  /** Delete a group */
+  deleteGroup(groupId: number): Promise<void>;
+
+  /** Add a user to a group */
+  addGroupMember(groupId: number, userId: string, addedBy: string): Promise<void>;
+
+  /** Remove a user from a group */
+  removeGroupMember(groupId: number, userId: string): Promise<void>;
+
+  /** Get all members of a group */
+  getGroupMembers(groupId: number): Promise<GroupMember[]>;
+
+  /** Get all groups (for admins or searching) */
+  getAllGroups(tenantId?: number): Promise<Group[]>;
 }

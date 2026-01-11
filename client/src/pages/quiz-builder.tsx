@@ -622,6 +622,12 @@ export default function QuizBuilder() {
       authorName: null,
       prerequisites: null,
       tags: null,
+      // Access control fields - default to private for preview
+      visibility: 'private',
+      sharedWithUsers: null,
+      sharedWithGroups: null,
+      requiresPurchase: false,
+      purchaseProductId: null,
     };
   };
 
