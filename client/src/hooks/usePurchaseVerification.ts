@@ -4,7 +4,7 @@
  * React hook for verifying user purchases and checking access to premium content.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../lib/auth-provider';
 import { verifyPurchaseWithAdminBypass } from '../lib/purchase-verification';
 import type { PurchaseVerificationResult } from '../lib/purchase-verification';
@@ -24,7 +24,7 @@ export function usePurchaseVerification(productId: number | null): {
   const [verification, setVerification] = useState<PurchaseVerificationResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchVerification = async () => {
+  const fetchVerification = useCallback(async () => {
     if (!user || !productId) {
       setVerification(null);
       setIsLoading(false);
@@ -41,11 +41,11 @@ export function usePurchaseVerification(productId: number | null): {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, productId]);
 
   useEffect(() => {
     fetchVerification();
-  }, [user?.id, productId, user?.role]);
+  }, [fetchVerification]);
 
   return {
     verification,

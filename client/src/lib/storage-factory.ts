@@ -50,6 +50,10 @@ import type {
   Quiz,
   QuizVersion,
   QuizTemplate,
+  Product,
+  Purchase,
+  InsertProduct,
+  InsertPurchase,
 } from '@shared/schema';
 
 /**
@@ -1068,19 +1072,19 @@ class StorageRouter implements IClientStorage {
   // Product Management
   // ==========================================
 
-  async getProducts(tenantId?: number): Promise<any[]> {
+  async getProducts(tenantId?: number): Promise<Product[]> {
     return this.executeStorageOperation((s) => s.getProducts(tenantId), 'getProducts');
   }
 
-  async getProduct(id: number): Promise<any> {
+  async getProduct(id: number): Promise<Product | null> {
     return this.executeStorageOperation((s) => s.getProduct(id), 'getProduct');
   }
 
-  async createProduct(product: any): Promise<any> {
+  async createProduct(product: InsertProduct): Promise<Product> {
     return this.executeStorageOperation((s) => s.createProduct(product), 'createProduct');
   }
 
-  async updateProduct(id: number, updates: any): Promise<any> {
+  async updateProduct(id: number, updates: Partial<InsertProduct>): Promise<Product | null> {
     return this.executeStorageOperation((s) => s.updateProduct(id, updates), 'updateProduct');
   }
 
@@ -1092,34 +1096,34 @@ class StorageRouter implements IClientStorage {
   // Purchase Management
   // ==========================================
 
-  async getUserPurchases(userId: string): Promise<any[]> {
+  async getUserPurchases(userId: string): Promise<Purchase[]> {
     return this.executeStorageOperation((s) => s.getUserPurchases(userId), 'getUserPurchases');
   }
 
-  async getPurchase(id: number): Promise<any> {
+  async getPurchase(id: number): Promise<Purchase | null> {
     return this.executeStorageOperation((s) => s.getPurchase(id), 'getPurchase');
   }
 
-  async getUserPurchase(userId: string, productId: number): Promise<any> {
+  async getUserPurchase(userId: string, productId: number): Promise<Purchase | null> {
     return this.executeStorageOperation(
       (s) => s.getUserPurchase(userId, productId),
       'getUserPurchase'
     );
   }
 
-  async createPurchase(purchase: any): Promise<any> {
+  async createPurchase(purchase: InsertPurchase): Promise<Purchase> {
     return this.executeStorageOperation((s) => s.createPurchase(purchase), 'createPurchase');
   }
 
-  async updatePurchase(id: number, updates: any): Promise<any> {
+  async updatePurchase(id: number, updates: Partial<InsertPurchase>): Promise<Purchase | null> {
     return this.executeStorageOperation((s) => s.updatePurchase(id, updates), 'updatePurchase');
   }
 
-  async getAllPurchases(tenantId?: number): Promise<any[]> {
+  async getAllPurchases(tenantId?: number): Promise<Purchase[]> {
     return this.executeStorageOperation((s) => s.getAllPurchases(tenantId), 'getAllPurchases');
   }
 
-  async refundPurchase(id: number): Promise<any> {
+  async refundPurchase(id: number): Promise<Purchase | null> {
     return this.executeStorageOperation((s) => s.refundPurchase(id), 'refundPurchase');
   }
 

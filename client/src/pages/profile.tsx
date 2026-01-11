@@ -204,7 +204,10 @@ export default function ProfilePage() {
       </div>
 
       <Tabs defaultValue="personal" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5" data-testid="profile-tabs">
+        <TabsList
+          className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+          data-testid="profile-tabs"
+        >
           <TabsTrigger value="personal" className="flex items-center gap-1">
             <User className="h-4 w-4" />
             Personal

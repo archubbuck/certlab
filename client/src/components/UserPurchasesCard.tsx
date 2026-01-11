@@ -4,7 +4,7 @@
  * Displays a user's purchase history and status on their profile page.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ export function UserPurchasesCard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadPurchases = async () => {
+  const loadPurchases = useCallback(async () => {
     if (!user?.id) return;
 
     setIsLoading(true);
@@ -37,14 +37,11 @@ export function UserPurchasesCard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
 
   useEffect(() => {
-    if (user?.id) {
-      loadPurchases();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+    loadPurchases();
+  }, [loadPurchases]);
 
   const getProductName = (productId: number): string => {
     const product = products.find((p) => p.id === productId);
@@ -52,26 +49,24 @@ export function UserPurchasesCard() {
   };
 
   const getStatusBadge = (status: string, expiryDate?: Date | null) => {
-    // Check if expired
-    if (expiryDate && new Date() > new Date(expiryDate)) {
-      return <Badge variant="secondary">Expired</Badge>;
-    }
+    const isExpired = expiryDate && new Date() > new Date(expiryDate as any);
 
+    const normalizedStatus = status.toLowerCase();
     const variants: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
       active: 'default',
       expired: 'secondary',
       refunded: 'destructive',
     };
 
-    return (
-      <Badge variant={variants[status] || 'outline'}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
+    const baseLabel = normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
+    const label =
+      isExpired && normalizedStatus === 'active' ? `${baseLabel} (expired)` : baseLabel;
+
+    return <Badge variant={variants[normalizedStatus] || 'outline'}>{label}</Badge>;
   };
 
   const activePurchases = purchases.filter(
-    (p) => p.status === 'active' && (!p.expiryDate || new Date() < new Date(p.expiryDate))
+    (p) => p.status === 'active' && (!p.expiryDate || new Date() < new Date(p.expiryDate as any))
   );
 
   if (isLoading) {

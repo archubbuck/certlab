@@ -5,7 +5,7 @@
  * and handle refunds.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,9 +45,11 @@ export function AdminPurchasesView() {
   const [grantUserId, setGrantUserId] = useState('');
   const [grantProductId, setGrantProductId] = useState('');
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Note: getAllPurchases is not implemented in per-user Firestore storage
+      // This will throw an error. Consider implementing user-specific purchase queries.
       const [purchasesData, productsData] = await Promise.all([
         storage.getAllPurchases(),
         storage.getProducts(),
@@ -58,18 +60,21 @@ export function AdminPurchasesView() {
       console.error('Failed to load purchases:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load purchases data',
+        description:
+          'Failed to load purchases data. Admin purchase viewing is not available with per-user storage.',
         variant: 'destructive',
       });
+      // Set empty arrays so UI doesn't break
+      setPurchases([]);
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadData]);
 
   // Check if user is admin
   if (!user || user.role !== 'admin') {
@@ -137,21 +142,15 @@ export function AdminPurchasesView() {
   };
 
   const handleRefund = async (purchaseId: number) => {
-    try {
-      await storage.refundPurchase(purchaseId);
-      toast({
-        title: 'Success',
-        description: 'Purchase refunded successfully',
-      });
-      loadData();
-    } catch (error) {
-      console.error('Failed to refund purchase:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to refund purchase',
-        variant: 'destructive',
-      });
-    }
+    // Refunds are not yet implemented in the Firestore storage layer.
+    // Avoid calling the unimplemented storage.refundPurchase to prevent
+    // misleading "success" messages in the UI.
+    console.warn('Refund requested for purchase', purchaseId, 'but refunds are not implemented.');
+    toast({
+      title: 'Refund not available',
+      description: 'Refund processing is not yet supported in this environment.',
+      variant: 'destructive',
+    });
   };
 
   const getProductName = (productId: number): string => {

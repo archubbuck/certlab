@@ -1335,7 +1335,7 @@ export const products = pgTable('products', {
   price: integer('price').notNull(), // Price in cents or tokens
   currency: text('currency').notNull().default('USD'),
   isPremium: boolean('is_premium').notNull().default(false),
-  subscriptionDuration: integer('subscription_duration'), // Duration in days for subscriptions
+  subscriptionDuration: integer('subscription_duration').default(null), // Duration in days for subscriptions
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
