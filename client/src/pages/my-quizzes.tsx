@@ -98,7 +98,7 @@ export default function MyQuizzes() {
   };
 
   const handleConfirmDuplicate = () => {
-    if (selectedTemplate) {
+    if (selectedTemplate && selectedTemplate.id) {
       duplicateMutation.mutate(selectedTemplate.id);
     }
   };
@@ -111,7 +111,8 @@ export default function MyQuizzes() {
     navigate('/app/quiz-builder');
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return 'N/A';
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -275,8 +276,9 @@ export default function MyQuizzes() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleEdit(template.id)}
+                              onClick={() => template.id && handleEdit(template.id)}
                               title="Edit quiz"
+                              disabled={!template.id}
                             >
                               <Edit2 className="h-4 w-4" />
                             </Button>
