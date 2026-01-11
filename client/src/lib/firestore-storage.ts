@@ -46,6 +46,7 @@ import {
   where,
   orderBy,
 } from './firestore-service';
+import { doc, deleteDoc } from 'firebase/firestore';
 import { logError } from './errors';
 import { sanitizeInput, sanitizeArray } from './sanitize';
 import { insertQuestionSchema, insertCategorySchema } from '@shared/schema';
@@ -82,9 +83,12 @@ import type {
   StudyTimerSession,
   StudyTimerSettings,
   StudyTimerStats,
+  Product,
+  InsertProduct,
+  Purchase,
+  InsertPurchase,
   Group,
   GroupMember,
-  Purchase,
 } from '@shared/schema';
 import type {
   IClientStorage,
@@ -3209,6 +3213,140 @@ class FirestoreStorage implements IClientStorage {
   }
 
   // ==========================================
+  // Product Management
+  // ==========================================
+
+  async getProducts(tenantId?: number): Promise<Product[]> {
+    try {
+      const products = await getSharedDocuments<Product>('products');
+      const filtered = tenantId ? products.filter((p) => p.tenantId === tenantId) : products;
+      return filtered.map((p) => convertTimestamps<Product>(p));
+    } catch (error) {
+      logError('getProducts', error, { tenantId });
+      return [];
+    }
+  }
+
+  async getProduct(id: number): Promise<Product | null> {
+    try {
+      const product = await getSharedDocument<Product>('products', id.toString());
+      return product ? convertTimestamps<Product>(product) : null;
+    } catch (error) {
+      logError('getProduct', error, { id });
+      return null;
+    }
+  }
+
+  /**
+   * Generate a high-entropy numeric ID to minimize collision risk
+   */
+  private generateNumericId(): number {
+    // Prefer cryptographically strong randomness when available
+    if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
+      const array = new Uint32Array(2);
+      crypto.getRandomValues(array);
+      // Construct a 53-bit safe integer (Number.MAX_SAFE_INTEGER is 2^53 - 1)
+      const high = array[0] & 0x1fffff; // 21 bits
+      const low = array[1]; // 32 bits
+      return high * 0x100000000 + low;
+    }
+    // Fallback: use Math.random within the safe integer range
+    return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+  }
+
+  async createProduct(product: InsertProduct): Promise<Product> {
+    try {
+      // Validate inputs
+      if (!product.title || product.title.trim().length === 0) {
+        throw new Error('Product title is required');
+      }
+      if (!product.description || product.description.trim().length === 0) {
+        throw new Error('Product description is required');
+      }
+      if (product.price < 0) {
+        throw new Error('Product price must be non-negative');
+      }
+      if (!Array.isArray(product.resourceIds)) {
+        throw new Error('Product resourceIds must be an array');
+      }
+      const validTypes = ['quiz', 'material', 'course', 'bundle'];
+      if (!validTypes.includes(product.type)) {
+        throw new Error(`Product type must be one of: ${validTypes.join(', ')}`);
+      }
+
+      const sanitized = {
+        ...product,
+        title: sanitizeInput(product.title),
+        description: sanitizeInput(product.description),
+      };
+
+      if (!sanitized.title || !sanitized.description) {
+        throw new Error('Product title and description are required');
+      }
+
+      const newProduct: Product = {
+        id: this.generateNumericId(),
+        tenantId: sanitized.tenantId || 1,
+        title: sanitized.title,
+        description: sanitized.description,
+        type: sanitized.type,
+        resourceIds: sanitized.resourceIds,
+        price: sanitized.price,
+        currency: sanitized.currency || 'USD',
+        isPremium: sanitized.isPremium ?? false,
+        subscriptionDuration: sanitized.subscriptionDuration || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await setSharedDocument('products', newProduct.id.toString(), newProduct);
+      return newProduct;
+    } catch (error) {
+      logError('createProduct', error, { product });
+      throw error;
+    }
+  }
+
+  async updateProduct(id: number, updates: Partial<InsertProduct>): Promise<Product | null> {
+    try {
+      const existing = await this.getProduct(id);
+      if (!existing) return null;
+
+      const sanitized: Partial<Product> = {
+        ...updates,
+        title: updates.title ? sanitizeInput(updates.title) : existing.title,
+        description: updates.description
+          ? sanitizeInput(updates.description)
+          : existing.description,
+      };
+
+      const updated: Product = {
+        ...existing,
+        ...sanitized,
+        updatedAt: new Date(),
+      };
+
+      await setSharedDocument('products', id.toString(), updated);
+      return updated;
+    } catch (error) {
+      logError('updateProduct', error, { id, updates });
+      return null;
+    }
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    try {
+      // Actually delete the product document from Firestore
+      const db = getFirestoreInstance();
+      const docRef = doc(db, 'products', id.toString());
+      await deleteDoc(docRef);
+    } catch (error) {
+      logError('deleteProduct', error, { id });
+      throw error;
+    }
+  }
+
+  // ==========================================
   // Access Control & Permissions
   // ==========================================
 
@@ -3453,6 +3591,140 @@ class FirestoreStorage implements IClientStorage {
     }
   }
 
+  // ==========================================
+  // Purchase Management
+  // ==========================================
+
+  async getUserPurchases(userId: string): Promise<Purchase[]> {
+    try {
+      const purchases = await getUserDocuments<Purchase>(userId, 'purchases');
+      return purchases.map((p) => convertTimestamps<Purchase>(p));
+    } catch (error) {
+      logError('getUserPurchases', error, { userId });
+      return [];
+    }
+  }
+
+  async getPurchase(id: number): Promise<Purchase | null> {
+    try {
+      // Since purchases are stored per-user, we need to search through users
+      // For now, this is a simplified implementation
+      // In production, you might want to have a global purchases collection
+      console.warn('[FirestoreStorage] getPurchase by ID without userId is not optimal');
+      return null;
+    } catch (error) {
+      logError('getPurchase', error, { id });
+      return null;
+    }
+  }
+
+  async getUserPurchase(userId: string, productId: number): Promise<Purchase | null> {
+    try {
+      const purchases = await this.getUserPurchases(userId);
+      return purchases.find((p) => p.productId === productId) || null;
+    } catch (error) {
+      logError('getUserPurchase', error, { userId, productId });
+      return null;
+    }
+  }
+
+  async createPurchase(purchase: InsertPurchase): Promise<Purchase> {
+    try {
+      // Validate inputs
+      if (!purchase.userId || purchase.userId.trim().length === 0) {
+        throw new Error('Purchase userId is required');
+      }
+      if (!purchase.productId || typeof purchase.productId !== 'number') {
+        throw new Error('Purchase productId must be a valid number');
+      }
+      if (purchase.amount < 0) {
+        throw new Error('Purchase amount must be non-negative');
+      }
+      const validStatuses = ['active', 'expired', 'refunded'];
+      if (purchase.status && !validStatuses.includes(purchase.status)) {
+        throw new Error(`Purchase status must be one of: ${validStatuses.join(', ')}`);
+      }
+      const validTypes = ['quiz', 'material', 'course', 'bundle'];
+      if (!validTypes.includes(purchase.productType)) {
+        throw new Error(`Purchase productType must be one of: ${validTypes.join(', ')}`);
+      }
+
+      const newPurchase: Purchase = {
+        id: this.generateNumericId(),
+        userId: purchase.userId,
+        tenantId: purchase.tenantId || 1,
+        productId: purchase.productId,
+        productType: purchase.productType,
+        purchaseDate: new Date(),
+        expiryDate: purchase.expiryDate || null,
+        status: purchase.status || 'active',
+        amount: purchase.amount,
+        currency: purchase.currency || 'USD',
+        paymentMethod: purchase.paymentMethod,
+        transactionId: purchase.transactionId || null,
+      };
+
+      await setUserDocument(purchase.userId, 'purchases', newPurchase.id.toString(), newPurchase);
+      return newPurchase;
+    } catch (error) {
+      logError('createPurchase', error, { purchase });
+      throw error;
+    }
+  }
+
+  async updatePurchase(id: number, updates: Partial<InsertPurchase>): Promise<Purchase | null> {
+    const message =
+      '[FirestoreStorage] updatePurchase is not implemented for per-user Firestore storage. ' +
+      'Use user-scoped purchase methods that include userId instead.';
+    console.warn(message, { id, updates });
+    throw new Error(message);
+  }
+
+  async getAllPurchases(tenantId?: number): Promise<Purchase[]> {
+    const message =
+      '[FirestoreStorage] getAllPurchases is not implemented because it would require ' +
+      'scanning all users in the per-user Firestore model.';
+    console.warn(message, { tenantId });
+    throw new Error(message);
+  }
+
+  async refundPurchase(id: number): Promise<Purchase | null> {
+    const message =
+      '[FirestoreStorage] refundPurchase is not implemented for per-user Firestore storage. ' +
+      'Use user-scoped purchase refund logic that includes userId instead.';
+    console.warn(message, { id });
+    throw new Error(message);
+  }
+
+  async checkProductAccess(userId: string, productId: number): Promise<boolean> {
+    try {
+      const purchase = await this.getUserPurchase(userId, productId);
+
+      if (!purchase) {
+        return false;
+      }
+
+      // Check if purchase is active
+      if (purchase.status !== 'active') {
+        return false;
+      }
+
+      // Check if subscription has expired
+      if (purchase.expiryDate && new Date() > new Date(purchase.expiryDate)) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      logError('checkProductAccess', error, { userId, productId });
+      return false;
+    }
+  }
+
+  // ==========================================
+  // Group Management
+  // ==========================================
+
   /**
    * Add a user to a group
    */
@@ -3520,48 +3792,9 @@ class FirestoreStorage implements IClientStorage {
     }
   }
 
-  /**
-   * Record a purchase
-   */
-  async recordPurchase(purchase: Partial<Purchase>): Promise<Purchase> {
-    try {
-      if (!purchase.userId || !purchase.productId) {
-        throw new Error('userId and productId are required');
-      }
-
-      const purchaseId = `${purchase.productId}-${Date.now()}`;
-      const newPurchase: Purchase = {
-        id: purchaseId,
-        userId: purchase.userId,
-        productId: purchase.productId,
-        productType: purchase.productType || 'material',
-        purchaseDate: new Date(),
-        price: purchase.price,
-        currency: purchase.currency,
-        transactionId: purchase.transactionId,
-      };
-
-      await setUserDocument(purchase.userId, 'purchases', purchaseId, newPurchase);
-
-      return newPurchase;
-    } catch (error) {
-      logError('recordPurchase', error, { purchase });
-      throw error;
-    }
-  }
-
-  /**
-   * Get all purchases for a user
-   */
-  async getUserPurchases(userId: string): Promise<Purchase[]> {
-    try {
-      const purchases = await getUserDocuments<Purchase>(userId, 'purchases');
-      return purchases.map((p) => convertTimestamps<Purchase>(p));
-    } catch (error) {
-      logError('getUserPurchases', error, { userId });
-      return [];
-    }
-  }
+  // ==========================================
+  // Group Management
+  // ==========================================
 }
 
 // Export singleton instance

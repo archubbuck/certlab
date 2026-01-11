@@ -50,9 +50,12 @@ import type {
   Quiz,
   QuizVersion,
   QuizTemplate,
+  Product,
+  Purchase,
+  InsertProduct,
+  InsertPurchase,
   Group,
   GroupMember,
-  Purchase,
 } from '@shared/schema';
 
 /**
@@ -1068,6 +1071,72 @@ class StorageRouter implements IClientStorage {
   }
 
   // ==========================================
+  // Product Management
+  // ==========================================
+
+  async getProducts(tenantId?: number): Promise<Product[]> {
+    return this.executeStorageOperation((s) => s.getProducts(tenantId), 'getProducts');
+  }
+
+  async getProduct(id: number): Promise<Product | null> {
+    return this.executeStorageOperation((s) => s.getProduct(id), 'getProduct');
+  }
+
+  async createProduct(product: InsertProduct): Promise<Product> {
+    return this.executeStorageOperation((s) => s.createProduct(product), 'createProduct');
+  }
+
+  async updateProduct(id: number, updates: Partial<InsertProduct>): Promise<Product | null> {
+    return this.executeStorageOperation((s) => s.updateProduct(id, updates), 'updateProduct');
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    return this.executeStorageOperation((s) => s.deleteProduct(id), 'deleteProduct');
+  }
+
+  // ==========================================
+  // Purchase Management
+  // ==========================================
+
+  async getUserPurchases(userId: string): Promise<Purchase[]> {
+    return this.executeStorageOperation((s) => s.getUserPurchases(userId), 'getUserPurchases');
+  }
+
+  async getPurchase(id: number): Promise<Purchase | null> {
+    return this.executeStorageOperation((s) => s.getPurchase(id), 'getPurchase');
+  }
+
+  async getUserPurchase(userId: string, productId: number): Promise<Purchase | null> {
+    return this.executeStorageOperation(
+      (s) => s.getUserPurchase(userId, productId),
+      'getUserPurchase'
+    );
+  }
+
+  async createPurchase(purchase: InsertPurchase): Promise<Purchase> {
+    return this.executeStorageOperation((s) => s.createPurchase(purchase), 'createPurchase');
+  }
+
+  async updatePurchase(id: number, updates: Partial<InsertPurchase>): Promise<Purchase | null> {
+    return this.executeStorageOperation((s) => s.updatePurchase(id, updates), 'updatePurchase');
+  }
+
+  async getAllPurchases(tenantId?: number): Promise<Purchase[]> {
+    return this.executeStorageOperation((s) => s.getAllPurchases(tenantId), 'getAllPurchases');
+  }
+
+  async refundPurchase(id: number): Promise<Purchase | null> {
+    return this.executeStorageOperation((s) => s.refundPurchase(id), 'refundPurchase');
+  }
+
+  async checkProductAccess(userId: string, productId: number): Promise<boolean> {
+    return this.executeStorageOperation(
+      (s) => s.checkProductAccess(userId, productId),
+      'checkProductAccess'
+    );
+  }
+
+  // ==========================================
   // Access Control & Permissions
   // ==========================================
 
@@ -1133,14 +1202,6 @@ class StorageRouter implements IClientStorage {
 
   async getAllGroups(tenantId?: number): Promise<Group[]> {
     return this.executeStorageOperation((s) => s.getAllGroups(tenantId), 'getAllGroups');
-  }
-
-  async recordPurchase(purchase: Partial<Purchase>): Promise<Purchase> {
-    return this.executeStorageOperation((s) => s.recordPurchase(purchase), 'recordPurchase');
-  }
-
-  async getUserPurchases(userId: string): Promise<Purchase[]> {
-    return this.executeStorageOperation((s) => s.getUserPurchases(userId), 'getUserPurchases');
   }
 }
 
