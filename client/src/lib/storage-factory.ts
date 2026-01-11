@@ -519,6 +519,13 @@ class StorageRouter implements IClientStorage {
     );
   }
 
+  async deleteQuizTemplate(templateId: number, userId: string): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => (s as any).deleteQuizTemplate(templateId, userId),
+      'deleteQuizTemplate'
+    );
+  }
+
   // ==========================================
   // User Progress
   // ==========================================
@@ -574,6 +581,13 @@ class StorageRouter implements IClientStorage {
 
   async getLecture(id: number): Promise<any> {
     return this.executeStorageOperation((s) => s.getLecture(id), 'getLecture');
+  }
+
+  async deleteLecture(id: number, userId: string): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => (s as any).deleteLecture(id, userId),
+      'deleteLecture'
+    );
   }
 
   // ==========================================
