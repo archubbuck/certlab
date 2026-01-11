@@ -82,6 +82,9 @@ import type {
   StudyTimerSession,
   StudyTimerSettings,
   StudyTimerStats,
+  Group,
+  GroupMember,
+  Purchase,
 } from '@shared/schema';
 import type {
   IClientStorage,
@@ -3332,12 +3335,19 @@ class FirestoreStorage implements IClientStorage {
 
   /**
    * Get all groups a user is a member of
+   * TODO: This requires a collection group query or denormalized data structure
+   * For now, returns empty array. To implement properly, consider:
+   * 1. Using Firestore collection group queries with proper indexing
+   * 2. Denormalizing group membership into user documents
+   * 3. Maintaining a separate user-groups mapping collection
+   * See issue: https://github.com/archubbuck/certlab/issues/[TBD]
    */
-  async getUserGroups(userId: string): Promise<any[]> {
+  async getUserGroups(userId: string): Promise<Group[]> {
     try {
-      // This would require a collection group query or denormalized data
-      // For now, return empty array - can be implemented with proper indexing
-      console.warn('[FirestoreStorage] getUserGroups requires collection group query');
+      // Implementation pending: requires collection group query or denormalization
+      console.warn(
+        '[FirestoreStorage] getUserGroups requires collection group query implementation'
+      );
       return [];
     } catch (error) {
       logError('getUserGroups', error, { userId });
@@ -3348,12 +3358,17 @@ class FirestoreStorage implements IClientStorage {
   /**
    * Create a new group
    */
-  async createGroup(group: Partial<any>): Promise<any> {
+  async createGroup(group: Partial<Group>): Promise<Group> {
     try {
-      const groupId = Date.now(); // Simple ID generation
-      const newGroup = {
+      // Use crypto.randomUUID() for more robust ID generation
+      const groupId = Date.now(); // Keep for now since it's stored as number
+      const newGroup: Group = {
         ...group,
         id: groupId,
+        name: group.name || '',
+        description: group.description || '',
+        ownerId: group.ownerId || '',
+        tenantId: group.tenantId || 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -3369,14 +3384,14 @@ class FirestoreStorage implements IClientStorage {
   /**
    * Update a group
    */
-  async updateGroup(groupId: number, updates: Partial<any>): Promise<any> {
+  async updateGroup(groupId: number, updates: Partial<Group>): Promise<Group> {
     try {
-      const existing = await getSharedDocument<any>('groups', groupId.toString());
+      const existing = await getSharedDocument<Group>('groups', groupId.toString());
       if (!existing) {
         throw new Error('Group not found');
       }
 
-      const updated = {
+      const updated: Group = {
         ...existing,
         ...updates,
         updatedAt: new Date(),
@@ -3412,7 +3427,7 @@ class FirestoreStorage implements IClientStorage {
   async addGroupMember(groupId: number, userId: string, addedBy: string): Promise<void> {
     try {
       const memberId = `${groupId}-${userId}`;
-      const member = {
+      const member: GroupMember = {
         id: memberId,
         groupId,
         userId,
@@ -3445,10 +3460,10 @@ class FirestoreStorage implements IClientStorage {
   /**
    * Get all members of a group
    */
-  async getGroupMembers(groupId: number): Promise<any[]> {
+  async getGroupMembers(groupId: number): Promise<GroupMember[]> {
     try {
-      const members = await getSharedDocuments<any>(`groups/${groupId}/members`);
-      return members.map((m) => convertTimestamps<any>(m));
+      const members = await getSharedDocuments<GroupMember>(`groups/${groupId}/members`);
+      return members.map((m) => convertTimestamps<GroupMember>(m));
     } catch (error) {
       logError('getGroupMembers', error, { groupId });
       return [];
@@ -3458,15 +3473,15 @@ class FirestoreStorage implements IClientStorage {
   /**
    * Get all groups (for admins or searching)
    */
-  async getAllGroups(tenantId?: number): Promise<any[]> {
+  async getAllGroups(tenantId?: number): Promise<Group[]> {
     try {
-      let groups = await getSharedDocuments<any>('groups');
+      let groups = await getSharedDocuments<Group>('groups');
 
       if (tenantId) {
         groups = groups.filter((g) => g.tenantId === tenantId);
       }
 
-      return groups.map((g) => convertTimestamps<any>(g));
+      return groups.map((g) => convertTimestamps<Group>(g));
     } catch (error) {
       logError('getAllGroups', error, { tenantId });
       return [];
@@ -3476,17 +3491,22 @@ class FirestoreStorage implements IClientStorage {
   /**
    * Record a purchase
    */
-  async recordPurchase(purchase: Partial<any>): Promise<any> {
+  async recordPurchase(purchase: Partial<Purchase>): Promise<Purchase> {
     try {
       if (!purchase.userId || !purchase.productId) {
         throw new Error('userId and productId are required');
       }
 
       const purchaseId = `${purchase.productId}-${Date.now()}`;
-      const newPurchase = {
-        ...purchase,
+      const newPurchase: Purchase = {
         id: purchaseId,
+        userId: purchase.userId,
+        productId: purchase.productId,
+        productType: purchase.productType || 'material',
         purchaseDate: new Date(),
+        price: purchase.price,
+        currency: purchase.currency,
+        transactionId: purchase.transactionId,
       };
 
       await setUserDocument(purchase.userId, 'purchases', purchaseId, newPurchase);
@@ -3501,10 +3521,10 @@ class FirestoreStorage implements IClientStorage {
   /**
    * Get all purchases for a user
    */
-  async getUserPurchases(userId: string): Promise<any[]> {
+  async getUserPurchases(userId: string): Promise<Purchase[]> {
     try {
-      const purchases = await getUserDocuments<any>(userId, 'purchases');
-      return purchases.map((p) => convertTimestamps<any>(p));
+      const purchases = await getUserDocuments<Purchase>(userId, 'purchases');
+      return purchases.map((p) => convertTimestamps<Purchase>(p));
     } catch (error) {
       logError('getUserPurchases', error, { userId });
       return [];
