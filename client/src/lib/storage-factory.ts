@@ -506,22 +506,29 @@ class StorageRouter implements IClientStorage {
 
   async getUserQuizTemplates(userId: string, tenantId?: number): Promise<QuizTemplate[]> {
     return this.executeStorageOperation(
-      (s) => (s as any).getUserQuizTemplates(userId, tenantId),
+      (s) => s.getUserQuizTemplates(userId, tenantId),
       'getUserQuizTemplates'
     );
   }
 
   async getQuizTemplate(userId: string, templateId: number): Promise<QuizTemplate | undefined> {
     return this.executeStorageOperation(
-      (s) => (s as any).getQuizTemplate(userId, templateId),
+      (s) => s.getQuizTemplate(userId, templateId),
       'getQuizTemplate'
     );
   }
 
   async duplicateQuizTemplate(templateId: number, userId: string): Promise<QuizTemplate> {
     return this.executeStorageOperation(
-      (s) => (s as any).duplicateQuizTemplate(templateId, userId),
+      (s) => s.duplicateQuizTemplate(templateId, userId),
       'duplicateQuizTemplate'
+    );
+  }
+
+  async deleteQuizTemplate(templateId: number, userId: string): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.deleteQuizTemplate(templateId, userId),
+      'deleteQuizTemplate'
     );
   }
 
@@ -580,6 +587,14 @@ class StorageRouter implements IClientStorage {
 
   async getLecture(id: number): Promise<any> {
     return this.executeStorageOperation((s) => s.getLecture(id), 'getLecture');
+  }
+
+  async updateLecture(id: number, updates: Partial<any>): Promise<any> {
+    return this.executeStorageOperation((s) => s.updateLecture(id, updates), 'updateLecture');
+  }
+
+  async deleteLecture(id: number, userId: string): Promise<void> {
+    return this.executeStorageOperation((s) => s.deleteLecture(id, userId), 'deleteLecture');
   }
 
   // ==========================================

@@ -32,6 +32,7 @@ import {
   getUserDocuments,
   setUserDocument,
   updateUserDocument,
+  deleteUserDocument,
   getUserSubcollectionDocument,
   getUserSubcollectionDocuments,
   setUserSubcollectionDocument,
@@ -46,8 +47,8 @@ import {
   where,
   orderBy,
 } from './firestore-service';
+import { logError, logInfo } from './errors';
 import { doc, deleteDoc } from 'firebase/firestore';
-import { logError } from './errors';
 import { sanitizeInput, sanitizeArray } from './sanitize';
 import { insertQuestionSchema, insertCategorySchema } from '@shared/schema';
 import type {
@@ -1088,6 +1089,38 @@ class FirestoreStorage implements IClientStorage {
     }
   }
 
+  /**
+   * Delete a quiz template
+   * Only the owner can delete their own templates
+   *
+   * Note: Templates are stored per-user in Firestore, so users can only
+   * access and delete their own templates. This provides implicit ownership validation.
+   *
+   * @param templateId - ID of the template to delete
+   * @param userId - ID of the user requesting deletion (must be the owner)
+   * @throws Error if template not found (which means user doesn't own it)
+   */
+  async deleteQuizTemplate(templateId: number, userId: string): Promise<void> {
+    try {
+      if (!userId) throw new Error('User ID required');
+
+      // 1. Fetch template to verify it exists in user's collection
+      // Note: getQuizTemplate only returns templates owned by userId
+      const template = await this.getQuizTemplate(userId, templateId);
+      if (!template) {
+        throw new Error('Quiz template not found or you do not have permission to delete it');
+      }
+
+      // 2. Delete the template (implicit ownership check via Firestore collection path)
+      await deleteUserDocument(userId, 'quizTemplates', templateId.toString());
+
+      logInfo('deleteQuizTemplate', { templateId, userId, timestamp: new Date().toISOString() });
+    } catch (error) {
+      logError('deleteQuizTemplate', error, { templateId, userId });
+      throw error;
+    }
+  }
+
   // ==========================================
   // User Progress
   // ==========================================
@@ -1288,6 +1321,38 @@ class FirestoreStorage implements IClientStorage {
       return lecture;
     } catch (error) {
       logError('updateLecture', error, { id, updates });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a lecture
+   * Only the owner can delete their own lectures
+   *
+   * Note: Lectures are stored per-user in Firestore, so users can only
+   * access and delete their own lectures. This provides implicit ownership validation.
+   *
+   * @param id - ID of the lecture to delete
+   * @param userId - ID of the user requesting deletion (must be the owner)
+   * @throws Error if lecture not found (which means user doesn't own it)
+   */
+  async deleteLecture(id: number, userId: string): Promise<void> {
+    try {
+      if (!userId) throw new Error('User ID required');
+
+      // 1. Fetch lecture to verify it exists in user's collection
+      // Note: getUserDocument only returns lectures owned by userId
+      const lecture = await getUserDocument<Lecture>(userId, 'lectures', id.toString());
+      if (!lecture) {
+        throw new Error('Lecture not found or you do not have permission to delete it');
+      }
+
+      // 2. Delete the lecture (implicit ownership check via Firestore collection path)
+      await deleteUserDocument(userId, 'lectures', id.toString());
+
+      logInfo('deleteLecture', { lectureId: id, userId, timestamp: new Date().toISOString() });
+    } catch (error) {
+      logError('deleteLecture', error, { id, userId });
       throw error;
     }
   }
