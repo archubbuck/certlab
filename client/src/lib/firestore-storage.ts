@@ -89,7 +89,6 @@ import type {
   InsertPurchase,
   Group,
   GroupMember,
-  Purchase,
 } from '@shared/schema';
 import type {
   IClientStorage,
@@ -3790,85 +3789,6 @@ class FirestoreStorage implements IClientStorage {
     } catch (error) {
       logError('getAllGroups', error, { tenantId });
       return [];
-    }
-  }
-
-  /**
-   * Record a purchase
-   */
-  async recordPurchase(purchase: Partial<Purchase>): Promise<Purchase> {
-    try {
-      if (!purchase.userId || !purchase.productId) {
-        throw new Error('userId and productId are required');
-      }
-
-      const purchaseId = `${purchase.productId}-${Date.now()}`;
-      const newPurchase: Purchase = {
-        id: purchaseId,
-        userId: purchase.userId,
-        productId: purchase.productId,
-        productType: purchase.productType || 'material',
-        purchaseDate: new Date(),
-        price: purchase.price,
-        currency: purchase.currency,
-        transactionId: purchase.transactionId,
-      };
-
-      await setUserDocument(purchase.userId, 'purchases', purchaseId, newPurchase);
-
-      return newPurchase;
-    } catch (error) {
-      logError('recordPurchase', error, { purchase });
-      throw error;
-    }
-  }
-
-  async updatePurchase(id: number, updates: Partial<InsertPurchase>): Promise<Purchase | null> {
-    const message =
-      '[FirestoreStorage] updatePurchase is not implemented for per-user Firestore storage. ' +
-      'Use user-scoped purchase methods that include userId instead.';
-    console.warn(message, { id, updates });
-    throw new Error(message);
-  }
-
-  async getAllPurchases(tenantId?: number): Promise<Purchase[]> {
-    const message =
-      '[FirestoreStorage] getAllPurchases is not implemented because it would require ' +
-      'scanning all users in the per-user Firestore model.';
-    console.warn(message, { tenantId });
-    throw new Error(message);
-  }
-
-  async refundPurchase(id: number): Promise<Purchase | null> {
-    const message =
-      '[FirestoreStorage] refundPurchase is not implemented for per-user Firestore storage. ' +
-      'Use user-scoped purchase refund logic that includes userId instead.';
-    console.warn(message, { id });
-    throw new Error(message);
-  }
-
-  async checkProductAccess(userId: string, productId: number): Promise<boolean> {
-    try {
-      const purchase = await this.getUserPurchase(userId, productId);
-
-      if (!purchase) {
-        return false;
-      }
-
-      // Check if purchase is active
-      if (purchase.status !== 'active') {
-        return false;
-      }
-
-      // Check if subscription has expired
-      if (purchase.expiryDate && new Date() > new Date(purchase.expiryDate)) {
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      logError('checkProductAccess', error, { userId, productId });
-      return false;
     }
   }
 

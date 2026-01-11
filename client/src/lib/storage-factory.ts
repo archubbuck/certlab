@@ -56,7 +56,6 @@ import type {
   InsertPurchase,
   Group,
   GroupMember,
-  Purchase,
 } from '@shared/schema';
 
 /**

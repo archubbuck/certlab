@@ -53,7 +53,6 @@ import type {
   InsertPurchase,
   Group,
   GroupMember,
-  Purchase,
   AccessCheckResult,
 } from './schema';
 
@@ -1077,10 +1076,4 @@ export interface IClientStorage extends IStorageAdapter {
 
   /** Get all groups (for admins or searching) */
   getAllGroups(tenantId?: number): Promise<Group[]>;
-
-  /** Record a purchase */
-  recordPurchase(purchase: Partial<Purchase>): Promise<Purchase>;
-
-  /** Get all purchases for a user */
-  getUserPurchases(userId: string): Promise<Purchase[]>;
 }

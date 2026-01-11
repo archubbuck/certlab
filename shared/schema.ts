@@ -1347,7 +1347,7 @@ export const products = pgTable('products', {
   price: integer('price').notNull(), // Price in cents or tokens
   currency: text('currency').notNull().default('USD'),
   isPremium: boolean('is_premium').notNull().default(false),
-  subscriptionDuration: integer('subscription_duration').default(null), // Duration in days for subscriptions
+  subscriptionDuration: integer('subscription_duration'), // Duration in days for subscriptions (nullable)
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -1770,39 +1770,6 @@ export const groupMemberSchema = z.object({
 export const insertGroupMemberSchema = groupMemberSchema.omit({ id: true, joinedAt: true });
 
 export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
-
-/**
- * Purchase record for marketplace content
- * Stored in Firestore at: /purchases/{userId}/items/{productId}
- */
-export interface Purchase {
-  id: string; // Firestore document ID
-  userId: string;
-  productId: string;
-  productType: 'quiz' | 'lecture' | 'course' | 'material';
-  purchaseDate: Date;
-  price?: number;
-  currency?: string;
-  transactionId?: string;
-}
-
-/**
- * Zod schema for purchase validation
- */
-export const purchaseSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  productId: z.string(),
-  productType: z.enum(['quiz', 'lecture', 'course', 'material']),
-  purchaseDate: z.date(),
-  price: z.number().optional(),
-  currency: z.string().optional(),
-  transactionId: z.string().optional(),
-});
-
-export const insertPurchaseSchema = purchaseSchema.omit({ id: true, purchaseDate: true });
-
-export type InsertPurchase = z.infer<typeof insertPurchaseSchema>;
 
 /**
  * Access check result
