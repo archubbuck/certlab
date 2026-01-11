@@ -5,7 +5,7 @@
  * Shows appropriate messaging based on the denial reason and provides actions.
  */
 
-import { useNavigate } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { Lock, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,17 +13,17 @@ import { Button } from '@/components/ui/button';
 interface AccessDeniedProps {
   reason?: 'purchase_required' | 'private_content' | 'not_shared_with_you' | 'access_denied';
   productId?: string;
-  resourceType?: 'quiz' | 'lecture' | 'material';
+  resourceType?: 'quiz' | 'lecture' | 'material' | 'template';
   resourceTitle?: string;
 }
 
 export function AccessDenied({
   reason = 'access_denied',
   productId,
-  resourceType = 'content',
+  resourceType = 'quiz',
   resourceTitle,
 }: AccessDeniedProps) {
-  const [, navigate] = useNavigate();
+  const navigate = useNavigate();
 
   const getMessage = () => {
     switch (reason) {

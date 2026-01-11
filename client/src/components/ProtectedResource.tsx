@@ -67,7 +67,7 @@ export function ProtectedResource({
       <AccessDenied
         reason={accessCheck.reason}
         productId={accessCheck.productId}
-        resourceType={resourceType}
+        resourceType={resourceType === 'template' ? 'material' : resourceType}
         resourceTitle={resourceTitle}
       />
     );

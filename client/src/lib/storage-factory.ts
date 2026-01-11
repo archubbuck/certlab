@@ -50,6 +50,7 @@ import type {
   Quiz,
   QuizVersion,
   QuizTemplate,
+  Group,
 } from '@shared/schema';
 
 /**
@@ -1094,15 +1095,15 @@ class StorageRouter implements IClientStorage {
     );
   }
 
-  async getUserGroups(userId: string): Promise<any[]> {
+  async getUserGroups(userId: string): Promise<Group[]> {
     return this.executeStorageOperation((s) => s.getUserGroups(userId), 'getUserGroups');
   }
 
-  async createGroup(group: Partial<any>): Promise<any> {
+  async createGroup(group: Partial<Group>): Promise<Group> {
     return this.executeStorageOperation((s) => s.createGroup(group), 'createGroup');
   }
 
-  async updateGroup(groupId: number, updates: Partial<any>): Promise<any> {
+  async updateGroup(groupId: number, updates: Partial<Group>): Promise<Group> {
     return this.executeStorageOperation((s) => s.updateGroup(groupId, updates), 'updateGroup');
   }
 
