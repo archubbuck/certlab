@@ -231,7 +231,7 @@ export default function PreviewQuizInterface({
       if (!currentQuestion || previewResults) return;
 
       const parsedAnswer = parseAnswer(answer, currentQuestion);
-      const isCorrect = gradeQuestion(currentQuestion, parsedAnswer);
+      const gradingResult = gradeQuestion(currentQuestion, parsedAnswer);
       const showFeedback = quiz.feedbackMode === 'instant';
 
       dispatch({
@@ -239,7 +239,7 @@ export default function PreviewQuizInterface({
         payload: {
           questionId: currentQuestion.id,
           answer: parsedAnswer,
-          isCorrect,
+          isCorrect: gradingResult.isCorrect,
           showFeedback,
         },
       });
