@@ -1224,6 +1224,12 @@ class FirestoreStorage implements IClientStorage {
         thumbnailUrl: null,
         fileSize: null,
         accessibilityFeatures: null,
+        // Access control fields - default to private
+        visibility: 'private',
+        sharedWithUsers: null,
+        sharedWithGroups: null,
+        requiresPurchase: false,
+        purchaseProductId: null,
       };
 
       await setUserDocument(userId, 'lectures', id.toString(), lecture);
