@@ -54,6 +54,8 @@ import type {
   Quiz,
   QuizTemplate,
   CustomQuestion,
+  DocumentLock,
+  EditorPresence,
 } from '@shared/schema';
 
 export default function QuizBuilder() {
@@ -69,7 +71,7 @@ export default function QuizBuilder() {
 
   // Memoized callbacks for collaborative editing
   const handleConflict = useCallback(
-    (lock) => {
+    (lock: DocumentLock) => {
       toast({
         title: 'Concurrent Edit Detected',
         description: `${lock.lastModifiedBy === user?.id ? 'You' : 'Another user'} modified this quiz. Your changes may conflict.`,
@@ -79,7 +81,7 @@ export default function QuizBuilder() {
     [user?.id, toast]
   );
 
-  const handleEditorsChange = useCallback((editors) => {
+  const handleEditorsChange = useCallback((editors: EditorPresence[]) => {
     // Could show a notification when new editors join
     if (editors.length > 0) {
       console.log(`${editors.length} other editor(s) active`);
