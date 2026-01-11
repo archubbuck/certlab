@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-provider';
@@ -84,6 +84,15 @@ interface QuizTemplate {
   feedbackMode?: 'instant' | 'delayed' | 'final';
   isAdvancedConfig?: boolean;
 }
+import type {
+  Category,
+  Subcategory,
+  Question,
+  QuestionOption,
+  QuizTemplate,
+  CustomQuestion,
+} from '@shared/schema';
+import { DraggableList } from '@/components/DraggableList';
 
 export default function QuizBuilder() {
   const navigate = useNavigate();
@@ -117,6 +126,7 @@ export default function QuizBuilder() {
   const [timeLimitPerQuestion, setTimeLimitPerQuestion] = useState<string>('0');
   const [feedbackMode, setFeedbackMode] = useState<'instant' | 'delayed' | 'final'>('instant');
   const [questionWeights, setQuestionWeights] = useState<Record<number, number>>({});
+  const previousWeightsRef = useRef<Record<number, number>>({});
   const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
 
   // Question Editor State
@@ -1241,67 +1251,99 @@ export default function QuizBuilder() {
                     <p className="text-sm">Click "Add Question" to get started</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {customQuestions.map((question, index) => (
-                      <div
-                        key={question.id}
-                        className="border rounded-lg p-4 hover:border-primary transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="outline">Q{index + 1}</Badge>
-                              <Badge variant="secondary">
-                                {question.type === 'multiple_choice'
-                                  ? 'Multiple Choice'
-                                  : 'True/False'}
-                              </Badge>
-                              <Badge variant="outline">
-                                Difficulty: {question.difficultyLevel}
-                              </Badge>
+                  <>
+                    <div className="mb-3 text-sm text-muted-foreground">
+                      <p>
+                        💡 Drag questions to reorder them. Question weights will adjust
+                        automatically to match the new order.
+                      </p>
+                    </div>
+                    <DraggableList
+                      items={customQuestions}
+                      onBeforeReorder={() => {
+                        // Save current question weights for potential undo
+                        previousWeightsRef.current = { ...questionWeights };
+                      }}
+                      onReorder={(reorderedQuestions) => {
+                        setCustomQuestions(reorderedQuestions);
+
+                        // Update question weights to match new order
+                        if (Object.keys(questionWeights).length > 0) {
+                          const newWeights: Record<number, number> = {};
+                          reorderedQuestions.forEach((_, newIndex) => {
+                            const oldIndex = customQuestions.findIndex(
+                              (q) => q.id === reorderedQuestions[newIndex].id
+                            );
+                            if (oldIndex !== -1 && questionWeights[oldIndex]) {
+                              newWeights[newIndex] = questionWeights[oldIndex];
+                            }
+                          });
+                          setQuestionWeights(newWeights);
+                        }
+                      }}
+                      onUndoReorder={() => {
+                        // Restore previous question weights when undo is clicked
+                        setQuestionWeights(previousWeightsRef.current);
+                      }}
+                      renderItem={(question, index) => (
+                        <div className="border rounded-lg p-4 hover:border-primary transition-colors w-full">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline">Q{index + 1}</Badge>
+                                <Badge variant="secondary">
+                                  {question.type === 'multiple_choice'
+                                    ? 'Multiple Choice'
+                                    : 'True/False'}
+                                </Badge>
+                                <Badge variant="outline">
+                                  Difficulty: {question.difficultyLevel}
+                                </Badge>
+                              </div>
+                              <p className="font-medium text-foreground mb-2">{question.text}</p>
+                              <div className="space-y-1">
+                                {question.options.map((option, optIndex) => (
+                                  <div
+                                    key={option.id}
+                                    className={`text-sm ${
+                                      option.id === question.correctAnswer
+                                        ? 'text-green-600 font-medium'
+                                        : 'text-muted-foreground'
+                                    }`}
+                                  >
+                                    {String.fromCharCode(65 + optIndex)}. {option.text}
+                                    {option.id === question.correctAnswer && ' ✓'}
+                                  </div>
+                                ))}
+                              </div>
+                              {question.explanation && (
+                                <p className="text-sm text-muted-foreground mt-2 italic">
+                                  Explanation: {question.explanation}
+                                </p>
+                              )}
                             </div>
-                            <p className="font-medium text-foreground mb-2">{question.text}</p>
-                            <div className="space-y-1">
-                              {question.options.map((option, optIndex) => (
-                                <div
-                                  key={option.id}
-                                  className={`text-sm ${
-                                    option.id === question.correctAnswer
-                                      ? 'text-green-600 font-medium'
-                                      : 'text-muted-foreground'
-                                  }`}
-                                >
-                                  {String.fromCharCode(65 + optIndex)}. {option.text}
-                                  {option.id === question.correctAnswer && ' ✓'}
-                                </div>
-                              ))}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => editQuestion(question)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => deleteQuestion(question.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
-                            {question.explanation && (
-                              <p className="text-sm text-muted-foreground mt-2 italic">
-                                Explanation: {question.explanation}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => editQuestion(question)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => deleteQuestion(question.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                      className="space-y-3"
+                    />
+                  </>
                 )}
               </CardContent>
             </Card>
