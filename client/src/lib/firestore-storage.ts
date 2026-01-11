@@ -87,6 +87,9 @@ import type {
   InsertProduct,
   Purchase,
   InsertPurchase,
+  Group,
+  GroupMember,
+  Purchase,
 } from '@shared/schema';
 import type {
   IClientStorage,
@@ -1229,6 +1232,12 @@ class FirestoreStorage implements IClientStorage {
         thumbnailUrl: null,
         fileSize: null,
         accessibilityFeatures: null,
+        // Access control fields - default to private
+        visibility: 'private',
+        sharedWithUsers: null,
+        sharedWithGroups: null,
+        requiresPurchase: false,
+        purchaseProductId: null,
       };
 
       await setUserDocument(userId, 'lectures', id.toString(), lecture);
@@ -3287,6 +3296,198 @@ class FirestoreStorage implements IClientStorage {
         currency: sanitized.currency || 'USD',
         isPremium: sanitized.isPremium ?? false,
         subscriptionDuration: sanitized.subscriptionDuration || null,
+  // Access Control & Permissions
+  // ==========================================
+
+  /**
+   * Check if a user has access to a resource
+   */
+  async checkAccess(
+    userId: string,
+    resourceType: 'quiz' | 'lecture' | 'template',
+    resourceId: number
+  ): Promise<{
+    allowed: boolean;
+    reason?: 'purchase_required' | 'private_content' | 'not_shared_with_you' | 'access_denied';
+    productId?: string;
+  }> {
+    try {
+      // Get the resource to check visibility settings
+      let resource: any;
+
+      if (resourceType === 'quiz') {
+        resource = await this.getQuiz(resourceId);
+      } else if (resourceType === 'lecture') {
+        resource = await this.getLecture(resourceId);
+      } else {
+        // Template access would need additional implementation
+        return { allowed: false, reason: 'access_denied' };
+      }
+
+      if (!resource) {
+        return { allowed: false, reason: 'access_denied' };
+      }
+
+      // Check if user is the creator
+      if (resource.userId === userId || resource.author === userId) {
+        return { allowed: true };
+      }
+
+      // Get visibility setting (default to 'private' if not set)
+      const visibility = resource.visibility || 'private';
+
+      // Check visibility level
+      if (visibility === 'public') {
+        // For public content, check if purchase is required
+        if (resource.requiresPurchase && resource.purchaseProductId) {
+          const hasPurchase = await this.checkPurchase(userId, resource.purchaseProductId);
+          return {
+            allowed: hasPurchase,
+            reason: hasPurchase ? undefined : 'purchase_required',
+            productId: resource.purchaseProductId,
+          };
+        }
+        return { allowed: true };
+      }
+
+      if (visibility === 'private') {
+        return { allowed: false, reason: 'private_content' };
+      }
+
+      if (visibility === 'shared') {
+        // Check if user is in the shared user list
+        if (resource.sharedWithUsers && resource.sharedWithUsers.includes(userId)) {
+          return { allowed: true };
+        }
+
+        // Check if user is in any of the shared groups
+        if (resource.sharedWithGroups && resource.sharedWithGroups.length > 0) {
+          const isInGroup = await this.isUserInGroups(userId, resource.sharedWithGroups);
+          return {
+            allowed: isInGroup,
+            reason: isInGroup ? undefined : 'not_shared_with_you',
+          };
+        }
+
+        return { allowed: false, reason: 'not_shared_with_you' };
+      }
+
+      return { allowed: false, reason: 'access_denied' };
+    } catch (error) {
+      logError('checkAccess', error, { userId, resourceType, resourceId });
+      return { allowed: false, reason: 'access_denied' };
+    }
+  }
+
+  /**
+   * Check if a user has purchased a product
+   */
+  async checkPurchase(userId: string, productId: string): Promise<boolean> {
+    try {
+      // Query purchases collection for this user and product
+      const purchases = await getUserDocuments<any>(userId, 'purchases', [
+        where('productId', '==', productId),
+      ]);
+      return purchases.length > 0;
+    } catch (error) {
+      logError('checkPurchase', error, { userId, productId });
+      return false;
+    }
+  }
+
+  /**
+   * Check if a user is in any of the specified groups
+   * Optimized to reduce N+1 queries by using a single collection group query
+   */
+  async isUserInGroups(userId: string, groupIds: number[]): Promise<boolean> {
+    if (!groupIds || groupIds.length === 0) {
+      return false;
+    }
+
+    try {
+      // Use collection group query to check membership across all groups in a single query
+      // This is more efficient than querying each group individually (N+1 problem)
+      const db = getFirestoreInstance();
+      const {
+        collectionGroup,
+        query,
+        where: whereClause,
+        getDocs,
+      } = await import('firebase/firestore');
+
+      // Query the members collection group for this user in any of the specified groups
+      const membersQuery = query(
+        collectionGroup(db, 'members'),
+        whereClause('userId', '==', userId),
+        whereClause('groupId', 'in', groupIds.slice(0, 10)) // Firestore 'in' limited to 10 items
+      );
+
+      const snapshot = await getDocs(membersQuery);
+      if (!snapshot.empty) {
+        return true;
+      }
+
+      // If there are more than 10 groups, we need to check the remaining groups
+      // This is still better than N queries but handles the Firestore 'in' limitation
+      if (groupIds.length > 10) {
+        for (let i = 10; i < groupIds.length; i += 10) {
+          const batch = groupIds.slice(i, i + 10);
+          const batchQuery = query(
+            collectionGroup(db, 'members'),
+            whereClause('userId', '==', userId),
+            whereClause('groupId', 'in', batch)
+          );
+          const batchSnapshot = await getDocs(batchQuery);
+          if (!batchSnapshot.empty) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    } catch (error) {
+      logError('isUserInGroups', error, { userId, groupIds });
+      return false;
+    }
+  }
+
+  /**
+   * Get all groups a user is a member of
+   * TODO: This requires a collection group query or denormalized data structure
+   * For now, returns empty array. To implement properly, consider:
+   * 1. Using Firestore collection group queries with proper indexing
+   * 2. Denormalizing group membership into user documents
+   * 3. Maintaining a separate user-groups mapping collection
+   * See issue: https://github.com/archubbuck/certlab/issues/[TBD]
+   */
+  async getUserGroups(userId: string): Promise<Group[]> {
+    try {
+      // Implementation pending: requires collection group query or denormalization
+      console.warn(
+        '[FirestoreStorage] getUserGroups requires collection group query implementation'
+      );
+      return [];
+    } catch (error) {
+      logError('getUserGroups', error, { userId });
+      return [];
+    }
+  }
+
+  /**
+   * Create a new group
+   */
+  async createGroup(group: Partial<Group>): Promise<Group> {
+    try {
+      // Using timestamp-based ID generation
+      // Note: This may cause collisions in high-concurrency scenarios
+      const groupId = Date.now();
+      const newGroup: Group = {
+        ...group,
+        id: groupId,
+        name: group.name || '',
+        description: group.description || '',
+        ownerId: group.ownerId || '',
+        tenantId: group.tenantId || 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -3295,6 +3496,10 @@ class FirestoreStorage implements IClientStorage {
       return newProduct;
     } catch (error) {
       logError('createProduct', error, { product });
+      await setSharedDocument('groups', groupId.toString(), newGroup);
+      return newGroup;
+    } catch (error) {
+      logError('createGroup', error, { group });
       throw error;
     }
   }
@@ -3334,6 +3539,42 @@ class FirestoreStorage implements IClientStorage {
       await deleteDoc(docRef);
     } catch (error) {
       logError('deleteProduct', error, { id });
+  /**
+   * Update a group
+   */
+  async updateGroup(groupId: number, updates: Partial<Group>): Promise<Group> {
+    try {
+      const existing = await getSharedDocument<Group>('groups', groupId.toString());
+      if (!existing) {
+        throw new Error('Group not found');
+      }
+
+      const updated: Group = {
+        ...existing,
+        ...updates,
+        updatedAt: new Date(),
+      };
+
+      await setSharedDocument('groups', groupId.toString(), updated);
+      return updated;
+    } catch (error) {
+      logError('updateGroup', error, { groupId, updates });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a group
+   */
+  async deleteGroup(groupId: number): Promise<void> {
+    try {
+      // Note: This should also delete all members, but for now just delete the group
+      // In production, this would need a transaction or cloud function
+      const db = getFirestoreInstance();
+      const { deleteDoc, doc } = await import('firebase/firestore');
+      await deleteDoc(doc(db, 'groups', groupId.toString()));
+    } catch (error) {
+      logError('deleteGroup', error, { groupId });
       throw error;
     }
   }
@@ -3415,6 +3656,99 @@ class FirestoreStorage implements IClientStorage {
       return newPurchase;
     } catch (error) {
       logError('createPurchase', error, { purchase });
+  /**
+   * Add a user to a group
+   */
+  async addGroupMember(groupId: number, userId: string, addedBy: string): Promise<void> {
+    try {
+      const memberId = `${groupId}-${userId}`;
+      const member: GroupMember = {
+        id: memberId,
+        groupId,
+        userId,
+        addedBy,
+        joinedAt: new Date(),
+      };
+
+      await setSharedDocument(`groups/${groupId}/members`, memberId, member);
+    } catch (error) {
+      logError('addGroupMember', error, { groupId, userId, addedBy });
+      throw error;
+    }
+  }
+
+  /**
+   * Remove a user from a group
+   */
+  async removeGroupMember(groupId: number, userId: string): Promise<void> {
+    try {
+      const memberId = `${groupId}-${userId}`;
+      const db = getFirestoreInstance();
+      const { deleteDoc, doc } = await import('firebase/firestore');
+      await deleteDoc(doc(db, 'groups', groupId.toString(), 'members', memberId));
+    } catch (error) {
+      logError('removeGroupMember', error, { groupId, userId });
+      throw error;
+    }
+  }
+
+  /**
+   * Get all members of a group
+   */
+  async getGroupMembers(groupId: number): Promise<GroupMember[]> {
+    try {
+      const members = await getSharedDocuments<GroupMember>(`groups/${groupId}/members`);
+      return members.map((m) => convertTimestamps<GroupMember>(m));
+    } catch (error) {
+      logError('getGroupMembers', error, { groupId });
+      return [];
+    }
+  }
+
+  /**
+   * Get all groups (for admins or searching)
+   */
+  async getAllGroups(tenantId?: number): Promise<Group[]> {
+    try {
+      let groups = await getSharedDocuments<Group>('groups');
+
+      if (tenantId) {
+        groups = groups.filter((g) => g.tenantId === tenantId);
+      }
+
+      return groups.map((g) => convertTimestamps<Group>(g));
+    } catch (error) {
+      logError('getAllGroups', error, { tenantId });
+      return [];
+    }
+  }
+
+  /**
+   * Record a purchase
+   */
+  async recordPurchase(purchase: Partial<Purchase>): Promise<Purchase> {
+    try {
+      if (!purchase.userId || !purchase.productId) {
+        throw new Error('userId and productId are required');
+      }
+
+      const purchaseId = `${purchase.productId}-${Date.now()}`;
+      const newPurchase: Purchase = {
+        id: purchaseId,
+        userId: purchase.userId,
+        productId: purchase.productId,
+        productType: purchase.productType || 'material',
+        purchaseDate: new Date(),
+        price: purchase.price,
+        currency: purchase.currency,
+        transactionId: purchase.transactionId,
+      };
+
+      await setUserDocument(purchase.userId, 'purchases', purchaseId, newPurchase);
+
+      return newPurchase;
+    } catch (error) {
+      logError('recordPurchase', error, { purchase });
       throw error;
     }
   }
@@ -3465,6 +3799,16 @@ class FirestoreStorage implements IClientStorage {
     } catch (error) {
       logError('checkProductAccess', error, { userId, productId });
       return false;
+  /**
+   * Get all purchases for a user
+   */
+  async getUserPurchases(userId: string): Promise<Purchase[]> {
+    try {
+      const purchases = await getUserDocuments<Purchase>(userId, 'purchases');
+      return purchases.map((p) => convertTimestamps<Purchase>(p));
+    } catch (error) {
+      logError('getUserPurchases', error, { userId });
+      return [];
     }
   }
 }
