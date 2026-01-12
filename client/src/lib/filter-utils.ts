@@ -4,7 +4,9 @@ import type { Quiz, Lecture, QuizTemplate } from '@shared/schema';
 /**
  * Unified item type for filtering quizzes, lectures, and templates
  */
-export type FilterableItem = Quiz | Lecture | QuizTemplate;
+export type FilterableItem = (Quiz | Lecture | QuizTemplate) & {
+  authorName?: string;
+};
 
 /**
  * Apply full-text search to an item
@@ -16,7 +18,7 @@ export function matchesSearchText(item: FilterableItem, searchText: string): boo
   const title = (item.title || '').toLowerCase();
   const description = (item.description || '').toLowerCase();
   const tags = (item.tags || []).map((t) => t.toLowerCase()).join(' ');
-  const authorName = ((item as any).authorName || '').toLowerCase();
+  const authorName = (item.authorName || '').toLowerCase();
 
   return (
     title.includes(search) ||
@@ -64,7 +66,7 @@ export function matchesDifficultyLevels(item: FilterableItem, levels: number[]):
 export function matchesAuthors(item: FilterableItem, authors: string[]): boolean {
   if (authors.length === 0) return true;
 
-  const itemAuthor = ((item as any).authorName || '').toLowerCase();
+  const itemAuthor = (item.authorName || '').toLowerCase();
   return authors.some((author) => itemAuthor.includes(author.toLowerCase()));
 }
 
@@ -193,15 +195,15 @@ export function sortItems<T extends FilterableItem>(items: T[], sortBy: SortOpti
 
     case 'author-asc':
       return sorted.sort((a, b) => {
-        const authorA = ((a as any).authorName || '').toLowerCase();
-        const authorB = ((b as any).authorName || '').toLowerCase();
+        const authorA = (a.authorName || '').toLowerCase();
+        const authorB = (b.authorName || '').toLowerCase();
         return authorA.localeCompare(authorB);
       });
 
     case 'author-desc':
       return sorted.sort((a, b) => {
-        const authorA = ((a as any).authorName || '').toLowerCase();
-        const authorB = ((b as any).authorName || '').toLowerCase();
+        const authorA = (a.authorName || '').toLowerCase();
+        const authorB = (b.authorName || '').toLowerCase();
         return authorB.localeCompare(authorA);
       });
 
@@ -248,7 +250,7 @@ export function extractUniqueAuthors(items: FilterableItem[]): string[] {
   const authorsSet = new Set<string>();
 
   items.forEach((item) => {
-    const authorName = (item as any).authorName;
+    const authorName = item.authorName;
     if (authorName) authorsSet.add(authorName);
   });
 

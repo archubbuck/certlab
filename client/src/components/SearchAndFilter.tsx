@@ -202,6 +202,7 @@ export function SearchAndFilter({
             <SelectItem value="title-desc">Title (Z-A)</SelectItem>
             <SelectItem value="difficulty-asc">Easiest First</SelectItem>
             <SelectItem value="difficulty-desc">Hardest First</SelectItem>
+            {/* Author sort options only shown when authors are available in the dataset */}
             {availableAuthors.length > 0 && (
               <>
                 <SelectItem value="author-asc">Author (A-Z)</SelectItem>

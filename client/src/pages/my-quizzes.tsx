@@ -26,6 +26,7 @@ import {
 import { Plus, Edit2, Copy, FileText, Clock, BookOpen, Lock, Trash2 } from 'lucide-react';
 import { SearchAndFilter, type SearchAndFilterState } from '@/components/SearchAndFilter';
 import { Pagination } from '@/components/Pagination';
+import { QUIZ_FILTER_CONFIG } from '@/lib/filter-config';
 import {
   filterAndSortItems,
   paginateItems,
@@ -284,10 +285,7 @@ export default function MyQuizzes() {
             onFilterChange={handleFilterChange}
             availableTags={availableTags}
             availableAuthors={availableAuthors}
-            showContentTypeFilter={false}
-            showCompletionFilter={false}
-            showVisibilityFilter={true}
-            placeholder="Search quizzes by title, description, or tags..."
+            {...QUIZ_FILTER_CONFIG}
           />
 
           {/* Results Summary */}

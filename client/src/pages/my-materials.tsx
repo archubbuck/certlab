@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { SearchAndFilter, type SearchAndFilterState } from '@/components/SearchAndFilter';
 import { Pagination } from '@/components/Pagination';
+import { MATERIAL_FILTER_CONFIG } from '@/lib/filter-config';
 import {
   filterAndSortItems,
   paginateItems,
@@ -251,10 +252,7 @@ export default function MyMaterials() {
             onFilterChange={handleFilterChange}
             availableTags={availableTags}
             availableAuthors={availableAuthors}
-            showContentTypeFilter={false}
-            showCompletionFilter={false}
-            showVisibilityFilter={true}
-            placeholder="Search materials by title, description, or tags..."
+            {...MATERIAL_FILTER_CONFIG}
           />
 
           {/* Results Summary */}
