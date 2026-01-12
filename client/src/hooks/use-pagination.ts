@@ -76,8 +76,21 @@ export function usePagination({
     const urlPage = searchParams.get(pageParam);
     const urlPageSize = searchParams.get(pageSizeParam);
 
-    const page = urlPage ? Math.max(1, parseInt(urlPage, 10)) : initialPage;
-    const size = urlPageSize ? Math.max(1, parseInt(urlPageSize, 10)) : getInitialPageSize();
+    let page: number;
+    if (urlPage !== null) {
+      const parsedPage = parseInt(urlPage, 10);
+      page = !isNaN(parsedPage) && parsedPage > 0 ? parsedPage : initialPage;
+    } else {
+      page = initialPage;
+    }
+
+    let size: number;
+    if (urlPageSize !== null) {
+      const parsedSize = parseInt(urlPageSize, 10);
+      size = !isNaN(parsedSize) && parsedSize > 0 ? parsedSize : getInitialPageSize();
+    } else {
+      size = getInitialPageSize();
+    }
 
     return { page, size };
   }, [syncWithUrl, location.search, pageParam, pageSizeParam, initialPage, getInitialPageSize]);
@@ -85,6 +98,38 @@ export function usePagination({
   const initialState = getInitialState();
   const [currentPage, setCurrentPageState] = useState(initialState.page);
   const [pageSize, setPageSizeState] = useState(initialState.size);
+
+  // Store the initial page size for this instance to compare against in URL sync
+  const effectiveDefaultPageSize = initialPageSize || DEFAULT_PAGE_SIZE;
+
+  // Listen for URL changes (browser back/forward navigation)
+  useEffect(() => {
+    if (!syncWithUrl) return;
+
+    const searchParams = new URLSearchParams(location.search);
+    const urlPage = searchParams.get(pageParam);
+    const urlPageSize = searchParams.get(pageSizeParam);
+
+    // Update page if URL parameter changed
+    if (urlPage !== null) {
+      const parsedPage = parseInt(urlPage, 10);
+      if (!isNaN(parsedPage) && parsedPage > 0 && parsedPage !== currentPage) {
+        setCurrentPageState(parsedPage);
+      }
+    } else if (currentPage !== 1) {
+      setCurrentPageState(1);
+    }
+
+    // Update page size if URL parameter changed
+    if (urlPageSize !== null) {
+      const parsedSize = parseInt(urlPageSize, 10);
+      if (!isNaN(parsedSize) && parsedSize > 0 && parsedSize !== pageSize) {
+        setPageSizeState(parsedSize);
+      }
+    }
+    // Note: We don't reset to default when URL param is absent to avoid infinite loops
+    // The user's last selected page size is maintained
+  }, [location.search, syncWithUrl, pageParam, pageSizeParam, currentPage, pageSize]);
 
   // Update URL when pagination changes
   useEffect(() => {
@@ -99,8 +144,8 @@ export function usePagination({
       searchParams.delete(pageParam);
     }
 
-    // Update or remove pageSize param (only if different from default)
-    if (pageSize !== DEFAULT_PAGE_SIZE) {
+    // Update or remove pageSize param (only if different from this instance's default)
+    if (pageSize !== effectiveDefaultPageSize) {
       searchParams.set(pageSizeParam, pageSize.toString());
     } else {
       searchParams.delete(pageSizeParam);

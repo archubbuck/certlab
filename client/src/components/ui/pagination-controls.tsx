@@ -128,7 +128,7 @@ export function PaginationControls({
               value={pageSize.toString()}
               onValueChange={(value) => onPageSizeChange(parseInt(value, 10))}
             >
-              <SelectTrigger className="w-[80px]">
+              <SelectTrigger className="w-[80px]" aria-label="Select items per page">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -144,7 +144,13 @@ export function PaginationControls({
 
         {totalItems !== undefined && (
           <div className="text-sm text-muted-foreground">
-            Showing {startItem}-{endItem} of {totalItems} items
+            {totalItems === 0 ? (
+              <>No items to display</>
+            ) : (
+              <>
+                Showing {startItem}-{endItem} of {totalItems} items
+              </>
+            )}
           </div>
         )}
       </div>
