@@ -4418,8 +4418,8 @@ class FirestoreStorage implements IClientStorage {
     try {
       const userId = certificate.userId;
 
-      // Generate auto-incrementing ID
-      const id = await this.generateId('certificates');
+      // Use timestamp-based ID for certificates
+      const id = Date.now();
 
       const newCertificate: Certificate = {
         ...certificate,
@@ -4453,10 +4453,11 @@ class FirestoreStorage implements IClientStorage {
       const doc = await getUserDocument(userId, 'certificates', certificateId.toString());
       if (!doc) return null;
 
+      const docData = doc as any;
       return {
-        ...doc,
-        completedAt: timestampToDate(doc.completedAt),
-        createdAt: timestampToDate(doc.createdAt),
+        ...docData,
+        completedAt: timestampToDate(docData.completedAt),
+        createdAt: timestampToDate(docData.createdAt),
       } as Certificate;
     } catch (error) {
       logError('getCertificate', error, { certificateId, userId });
@@ -4474,7 +4475,7 @@ class FirestoreStorage implements IClientStorage {
         orderBy('createdAt', 'desc'),
       ]);
 
-      return docs.map((doc) => ({
+      return docs.map((doc: any) => ({
         ...doc,
         completedAt: timestampToDate(doc.completedAt),
         createdAt: timestampToDate(doc.createdAt),
@@ -4494,20 +4495,22 @@ class FirestoreStorage implements IClientStorage {
       // Note: This is a simplified implementation. In production, you might want
       // to create a separate collection for certificates indexed by verification ID
       const db = getFirestoreInstance();
-      const usersRef = db.collection('users');
-      const usersSnapshot = await usersRef.get();
+      const { collection, getDocs, query, where: whereFn } = await import('firebase/firestore');
+
+      const usersRef = collection(db, 'users');
+      const usersSnapshot = await getDocs(usersRef);
 
       for (const userDoc of usersSnapshot.docs) {
-        const certificatesRef = userDoc.ref.collection('certificates');
-        const certQuery = certificatesRef.where('verificationId', '==', verificationId).limit(1);
-        const certSnapshot = await certQuery.get();
+        const certificatesRef = collection(db, 'users', userDoc.id, 'certificates');
+        const certQuery = query(certificatesRef, whereFn('verificationId', '==', verificationId));
+        const certSnapshot = await getDocs(certQuery);
 
         if (!certSnapshot.empty) {
-          const doc = certSnapshot.docs[0].data();
+          const docData = certSnapshot.docs[0].data();
           return {
-            ...doc,
-            completedAt: timestampToDate(doc.completedAt),
-            createdAt: timestampToDate(doc.createdAt),
+            ...docData,
+            completedAt: timestampToDate(docData.completedAt),
+            createdAt: timestampToDate(docData.createdAt),
           } as Certificate;
         }
       }
@@ -4543,7 +4546,7 @@ class FirestoreStorage implements IClientStorage {
         orderBy('createdAt', 'desc'),
       ]);
 
-      return docs.map((doc) => ({
+      return docs.map((doc: any) => ({
         ...doc,
         createdAt: timestampToDate(doc.createdAt),
         updatedAt: timestampToDate(doc.updatedAt),
@@ -4562,10 +4565,11 @@ class FirestoreStorage implements IClientStorage {
       const doc = await getSharedDocument('certificateTemplates', templateId.toString());
       if (!doc) return null;
 
+      const docData = doc as any;
       return {
-        ...doc,
-        createdAt: timestampToDate(doc.createdAt),
-        updatedAt: timestampToDate(doc.updatedAt),
+        ...docData,
+        createdAt: timestampToDate(docData.createdAt),
+        updatedAt: timestampToDate(docData.updatedAt),
       } as CertificateTemplate;
     } catch (error) {
       logError('getCertificateTemplate', error, { templateId });
@@ -4580,7 +4584,7 @@ class FirestoreStorage implements IClientStorage {
     template: Omit<CertificateTemplate, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<CertificateTemplate> {
     try {
-      const id = await this.generateId('certificateTemplates');
+      const id = Date.now();
 
       const newTemplate: CertificateTemplate = {
         ...template,
@@ -4623,9 +4627,13 @@ class FirestoreStorage implements IClientStorage {
         updatedAt: new Date(),
       };
 
+      // Ensure createdAt is a valid Date
+      const createdAtDate =
+        existing.createdAt instanceof Date ? existing.createdAt : new Date(existing.createdAt);
+
       await setSharedDocument('certificateTemplates', templateId.toString(), {
         ...updatedTemplate,
-        createdAt: Timestamp.fromDate(updatedTemplate.createdAt),
+        createdAt: Timestamp.fromDate(createdAtDate),
         updatedAt: Timestamp.fromDate(updatedTemplate.updatedAt),
       });
 
@@ -4643,8 +4651,8 @@ class FirestoreStorage implements IClientStorage {
   async deleteCertificateTemplate(templateId: number): Promise<void> {
     try {
       const db = getFirestoreInstance();
-      const docRef = db.collection('certificateTemplates').doc(templateId.toString());
-      await deleteDoc(docRef);
+      const { deleteDoc: deleteDocFn, doc: docFn } = await import('firebase/firestore');
+      await deleteDocFn(docFn(db, 'certificateTemplates', templateId.toString()));
       logInfo('Certificate template deleted', { templateId });
     } catch (error) {
       logError('deleteCertificateTemplate', error, { templateId });

@@ -1365,6 +1365,99 @@ class StorageRouter implements IClientStorage {
       'getRecentTemplates'
     );
   }
+
+  // ==========================================
+  // Certificates
+  // ==========================================
+
+  async createCertificate(
+    certificate: Omit<import('@shared/schema').Certificate, 'id' | 'createdAt'>
+  ): Promise<import('@shared/schema').Certificate> {
+    return this.executeStorageOperation(
+      (s) => s.createCertificate(certificate),
+      'createCertificate'
+    );
+  }
+
+  async getCertificate(
+    certificateId: number,
+    userId: string
+  ): Promise<import('@shared/schema').Certificate | null> {
+    return this.executeStorageOperation(
+      (s) => s.getCertificate(certificateId, userId),
+      'getCertificate'
+    );
+  }
+
+  async getUserCertificates(
+    userId: string,
+    tenantId: number
+  ): Promise<import('@shared/schema').Certificate[]> {
+    return this.executeStorageOperation(
+      (s) => s.getUserCertificates(userId, tenantId),
+      'getUserCertificates'
+    );
+  }
+
+  async getCertificateByVerificationId(
+    verificationId: string
+  ): Promise<import('@shared/schema').Certificate | null> {
+    return this.executeStorageOperation(
+      (s) => s.getCertificateByVerificationId(verificationId),
+      'getCertificateByVerificationId'
+    );
+  }
+
+  async deleteCertificate(certificateId: number, userId: string): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.deleteCertificate(certificateId, userId),
+      'deleteCertificate'
+    );
+  }
+
+  async getCertificateTemplates(
+    tenantId: number
+  ): Promise<import('@shared/schema').CertificateTemplate[]> {
+    return this.executeStorageOperation(
+      (s) => s.getCertificateTemplates(tenantId),
+      'getCertificateTemplates'
+    );
+  }
+
+  async getCertificateTemplate(
+    templateId: number
+  ): Promise<import('@shared/schema').CertificateTemplate | null> {
+    return this.executeStorageOperation(
+      (s) => s.getCertificateTemplate(templateId),
+      'getCertificateTemplate'
+    );
+  }
+
+  async createCertificateTemplate(
+    template: Omit<import('@shared/schema').CertificateTemplate, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<import('@shared/schema').CertificateTemplate> {
+    return this.executeStorageOperation(
+      (s) => s.createCertificateTemplate(template),
+      'createCertificateTemplate'
+    );
+  }
+
+  async updateCertificateTemplate(
+    templateId: number,
+    updates: Partial<import('@shared/schema').CertificateTemplate>
+  ): Promise<import('@shared/schema').CertificateTemplate> {
+    return this.executeStorageOperation(
+      (s) => s.updateCertificateTemplate(templateId, updates),
+      'updateCertificateTemplate'
+    );
+  }
+
+  async deleteCertificateTemplate(templateId: number): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.deleteCertificateTemplate(templateId),
+      'deleteCertificateTemplate'
+    );
+  }
 }
 
 // Export the storage router as the default storage interface
