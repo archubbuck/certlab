@@ -167,6 +167,63 @@ service cloud.firestore {
                                isAdmin());
     }
     
+    // Enrollments for self-enrollment distribution
+    match /enrollments/{enrollmentId} {
+      // Users can read their own enrollments
+      allow read: if isAuthenticated() && 
+                    resource.data.userId == request.auth.uid;
+      
+      // Instructors/admins can read enrollments for resources they manage
+      allow read: if isAuthenticated() && isAdmin();
+      
+      // Users can enroll themselves (create enrollment)
+      allow create: if isAuthenticated() && 
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.tenantId is number;
+      
+      // Users can withdraw their own enrollment
+      allow update: if isAuthenticated() && 
+                      resource.data.userId == request.auth.uid &&
+                      request.resource.data.status == 'withdrawn';
+      
+      // Instructors/admins can approve/reject enrollments
+      allow update: if isAuthenticated() && isAdmin();
+      
+      // Only admins can delete enrollments
+      allow delete: if isAdmin();
+    }
+    
+    // Assignments for instructor-assigned distribution
+    match /assignments/{assignmentId} {
+      // Users can read their own assignments
+      allow read: if isAuthenticated() && 
+                    resource.data.userId == request.auth.uid;
+      
+      // Instructors/admins can read assignments they created
+      allow read: if isAuthenticated() && 
+                    (resource.data.assignedBy == request.auth.uid || isAdmin());
+      
+      // Only instructors/admins can create assignments
+      allow create: if isAuthenticated() && 
+                      isAdmin() &&
+                      request.resource.data.assignedBy == request.auth.uid &&
+                      request.resource.data.tenantId is number;
+      
+      // Users can update progress on their assignments
+      allow update: if isAuthenticated() && 
+                      resource.data.userId == request.auth.uid &&
+                      // Users can only update specific fields
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['progress', 'status', 'startedAt', 'completedAt', 'lastAccessedAt', 'score']);
+      
+      // Instructors/admins can update any assignment
+      allow update: if isAuthenticated() && 
+                      (resource.data.assignedBy == request.auth.uid || isAdmin());
+      
+      // Only assignment creator or admin can delete
+      allow delete: if isAuthenticated() && 
+                      (resource.data.assignedBy == request.auth.uid || isAdmin());
+    }
+    
     // System settings (admin only)
     match /settings/{settingId} {
       allow read: if isAuthenticated();
