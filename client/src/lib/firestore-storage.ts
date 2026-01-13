@@ -47,8 +47,18 @@ import {
   where,
   orderBy,
 } from './firestore-service';
+import {
+  getFirestore,
+  collection,
+  doc as firestoreDoc,
+  setDoc,
+  getDoc,
+  getDocs,
+  query,
+  limit,
+} from 'firebase/firestore';
 import { logError, logInfo } from './errors';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { deleteDoc } from 'firebase/firestore';
 import { sanitizeInput, sanitizeArray } from './sanitize';
 import { insertQuestionSchema, insertCategorySchema } from '@shared/schema';
 import type {
@@ -3461,7 +3471,7 @@ class FirestoreStorage implements IClientStorage {
     try {
       // Actually delete the product document from Firestore
       const db = getFirestoreInstance();
-      const docRef = doc(db, 'products', id.toString());
+      const docRef = firestoreDoc(db, 'products', id.toString());
       await deleteDoc(docRef);
     } catch (error) {
       logError('deleteProduct', error, { id });
@@ -5162,6 +5172,253 @@ class FirestoreStorage implements IClientStorage {
     throw new Error(
       'checkAvailability: Availability checking not yet fully implemented in Firestore storage'
     );
+  }
+
+  // ============================================================================
+  // Leaderboard Methods
+  // ============================================================================
+
+  /**
+   * Update leaderboard entry for a user
+   * Creates or updates the user's entry in the global and category-specific leaderboards
+   */
+  async updateLeaderboardEntry(
+    userId: string,
+    data: Partial<import('@shared/schema').LeaderboardEntry>,
+    tenantId: number = 1
+  ): Promise<void> {
+    const db = getFirestore();
+
+    // Get user info
+    const userDoc = await getDoc(firestoreDoc(db, 'users', userId));
+    const userData = userDoc.data();
+
+    // Get user game stats for complete data
+    const gameStats = await this.getUserGameStats(userId);
+
+    // Get user's quiz history for averageScore calculation
+    const quizzes = await this.getUserQuizzes(userId, tenantId);
+    const completedQuizzes = quizzes.filter((q) => q.completedAt && q.score !== null);
+    const averageScore =
+      completedQuizzes.length > 0
+        ? Math.round(
+            completedQuizzes.reduce((sum, q) => sum + (q.score || 0), 0) / completedQuizzes.length
+          )
+        : 0;
+
+    const leaderboardData: import('@shared/schema').LeaderboardEntry = {
+      userId,
+      userName: userData
+        ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Anonymous'
+        : 'Anonymous',
+      userAvatar: userData?.profileImageUrl,
+      score: data.score ?? gameStats?.totalPoints ?? 0,
+      rank: 0, // Will be calculated after all entries are updated
+      quizzesCompleted: data.quizzesCompleted ?? completedQuizzes.length,
+      perfectScores: data.perfectScores ?? completedQuizzes.filter((q) => q.score === 100).length,
+      averageScore: data.averageScore ?? averageScore,
+      currentStreak: data.currentStreak ?? gameStats?.currentStreak ?? 0,
+      totalBadges: data.totalBadges ?? gameStats?.totalBadgesEarned ?? 0,
+      level: data.level ?? gameStats?.level ?? 1,
+      lastUpdated: new Date(),
+      tenantId,
+    };
+
+    // Update global leaderboard
+    await setDoc(firestoreDoc(db, 'leaderboards', 'global', 'entries', userId), leaderboardData);
+
+    // Update category-specific leaderboards if categoryId provided
+    if (data.categoryId) {
+      const categoryData = { ...leaderboardData, categoryId: data.categoryId };
+      await setDoc(
+        firestoreDoc(db, 'leaderboards', `category-${data.categoryId}`, 'entries', userId),
+        categoryData
+      );
+    }
+
+    // Update time-based leaderboards
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay()); // Start of current week
+    weekStart.setHours(0, 0, 0, 0);
+
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1); // Start of current month
+
+    // Weekly leaderboard
+    const weeklyData = { ...leaderboardData, period: 'weekly' as const };
+    await setDoc(
+      firestoreDoc(db, 'leaderboards', `weekly-${weekStart.getTime()}`, 'entries', userId),
+      weeklyData
+    );
+
+    // Monthly leaderboard
+    const monthlyData = { ...leaderboardData, period: 'monthly' as const };
+    await setDoc(
+      firestoreDoc(db, 'leaderboards', `monthly-${monthStart.getTime()}`, 'entries', userId),
+      monthlyData
+    );
+  }
+
+  /**
+   * Get global leaderboard
+   * Returns top users sorted by score
+   */
+  async getGlobalLeaderboard(
+    limitCount: number = 100,
+    tenantId: number = 1
+  ): Promise<import('@shared/schema').LeaderboardEntry[]> {
+    const db = getFirestore();
+    const leaderboardRef = collection(db, 'leaderboards', 'global', 'entries');
+    const q = query(
+      leaderboardRef,
+      where('tenantId', '==', tenantId),
+      orderBy('score', 'desc'),
+      limit(limitCount)
+    );
+
+    const snapshot = await getDocs(q);
+    const entries = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      lastUpdated: doc.data().lastUpdated?.toDate?.() || new Date(),
+    })) as import('@shared/schema').LeaderboardEntry[];
+
+    // Assign ranks
+    return entries.map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+    }));
+  }
+
+  /**
+   * Get category-specific leaderboard
+   */
+  async getCategoryLeaderboard(
+    categoryId: number,
+    limitCount: number = 100,
+    tenantId: number = 1
+  ): Promise<import('@shared/schema').LeaderboardEntry[]> {
+    const db = getFirestore();
+    const leaderboardRef = collection(db, 'leaderboards', `category-${categoryId}`, 'entries');
+    const q = query(
+      leaderboardRef,
+      where('tenantId', '==', tenantId),
+      orderBy('score', 'desc'),
+      limit(limitCount)
+    );
+
+    const snapshot = await getDocs(q);
+    const entries = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      lastUpdated: doc.data().lastUpdated?.toDate?.() || new Date(),
+    })) as import('@shared/schema').LeaderboardEntry[];
+
+    // Assign ranks
+    return entries.map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+    }));
+  }
+
+  /**
+   * Get weekly leaderboard
+   */
+  async getWeeklyLeaderboard(
+    limitCount: number = 100,
+    tenantId: number = 1
+  ): Promise<import('@shared/schema').LeaderboardEntry[]> {
+    const db = getFirestore();
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay()); // Start of current week
+    weekStart.setHours(0, 0, 0, 0);
+
+    const leaderboardRef = collection(
+      db,
+      'leaderboards',
+      `weekly-${weekStart.getTime()}`,
+      'entries'
+    );
+    const q = query(
+      leaderboardRef,
+      where('tenantId', '==', tenantId),
+      orderBy('score', 'desc'),
+      limit(limitCount)
+    );
+
+    const snapshot = await getDocs(q);
+    const entries = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      lastUpdated: doc.data().lastUpdated?.toDate?.() || new Date(),
+    })) as import('@shared/schema').LeaderboardEntry[];
+
+    // Assign ranks
+    return entries.map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+    }));
+  }
+
+  /**
+   * Get monthly leaderboard
+   */
+  async getMonthlyLeaderboard(
+    limitCount: number = 100,
+    tenantId: number = 1
+  ): Promise<import('@shared/schema').LeaderboardEntry[]> {
+    const db = getFirestore();
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1); // Start of current month
+
+    const leaderboardRef = collection(
+      db,
+      'leaderboards',
+      `monthly-${monthStart.getTime()}`,
+      'entries'
+    );
+    const q = query(
+      leaderboardRef,
+      where('tenantId', '==', tenantId),
+      orderBy('score', 'desc'),
+      limit(limitCount)
+    );
+
+    const snapshot = await getDocs(q);
+    const entries = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      lastUpdated: doc.data().lastUpdated?.toDate?.() || new Date(),
+    })) as import('@shared/schema').LeaderboardEntry[];
+
+    // Assign ranks
+    return entries.map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+    }));
+  }
+
+  /**
+   * Get user's rank in global leaderboard
+   */
+  async getUserRank(userId: string, tenantId: number = 1): Promise<number> {
+    const db = getFirestore();
+    const userDoc = await getDoc(firestoreDoc(db, 'leaderboards', 'global', 'entries', userId));
+
+    if (!userDoc.exists()) {
+      return 0;
+    }
+
+    const userData = userDoc.data();
+    const userScore = userData.score || 0;
+
+    // Count how many users have a higher score
+    const leaderboardRef = collection(db, 'leaderboards', 'global', 'entries');
+    const q = query(
+      leaderboardRef,
+      where('tenantId', '==', tenantId),
+      where('score', '>', userScore)
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.size + 1; // User's rank is one more than the count of higher scores
   }
 }
 
