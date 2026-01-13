@@ -4418,8 +4418,12 @@ class FirestoreStorage implements IClientStorage {
     try {
       const userId = certificate.userId;
 
-      // Use timestamp-based ID for certificates
-      const id = Date.now();
+      // Use Firestore auto-generated ID to prevent collisions
+      const db = getFirestoreInstance();
+      const { collection, doc: docFn, setDoc } = await import('firebase/firestore');
+      const certificatesRef = collection(db, 'users', userId, 'certificates');
+      const newDocRef = docFn(certificatesRef);
+      const id = parseInt(newDocRef.id.substring(0, 8), 36); // Convert part of ID to number
 
       const newCertificate: Certificate = {
         ...certificate,
@@ -4427,7 +4431,7 @@ class FirestoreStorage implements IClientStorage {
         createdAt: new Date(),
       };
 
-      await setUserDocument(userId, 'certificates', id.toString(), {
+      await setDoc(newDocRef, {
         ...newCertificate,
         completedAt: Timestamp.fromDate(
           newCertificate.completedAt instanceof Date
@@ -4489,17 +4493,25 @@ class FirestoreStorage implements IClientStorage {
   /**
    * Get a certificate by verification ID
    *
-   * NOTE: This implementation performs a full scan across all user collections.
-   * For production use with many users, consider creating a dedicated collection
-   * indexed by verification ID for O(1) lookup performance:
-   * - Create `/certificates/{verificationId}` collection with user reference
-   * - Update createCertificate to write to both locations
-   * - Update this method to query the dedicated collection
+   * PERFORMANCE WARNING: This implementation performs a full scan across all user collections,
+   * which results in O(n*m) time complexity where n = number of users and m = avg certificates per user.
+   *
+   * For production deployment with >100 users, you MUST implement a dedicated indexed collection:
+   * - Create `/certificates/{verificationId}` collection with userId reference
+   * - Update createCertificate to write to both locations (user collection + indexed collection)
+   * - Update this method to query the indexed collection for O(1) lookup
+   *
+   * Current implementation will cause:
+   * - Significant latency with moderate user base (>1000 users)
+   * - High Firestore read costs (1 read per user + 1 read per matching certificate)
+   * - Potential timeout issues on slower connections
+   *
+   * @see https://firebase.google.com/docs/firestore/query-data/queries for indexing strategies
    */
   async getCertificateByVerificationId(verificationId: string): Promise<Certificate | null> {
     try {
-      // TODO: Optimize for production - use dedicated indexed collection
-      // Current implementation scans all users (acceptable for small user base)
+      // TODO: CRITICAL - Replace with indexed collection before production deployment
+      // Current implementation scans all users (acceptable for small user base only)
       const db = getFirestoreInstance();
       const {
         collection,
@@ -4512,6 +4524,7 @@ class FirestoreStorage implements IClientStorage {
       const usersRef = collection(db, 'users');
       const usersSnapshot = await getDocs(usersRef);
 
+      // WARNING: This loop iterates through ALL users - O(n) operation
       for (const userDoc of usersSnapshot.docs) {
         const certificatesRef = collection(db, 'users', userDoc.id, 'certificates');
         const certQuery = query(
@@ -4540,6 +4553,15 @@ class FirestoreStorage implements IClientStorage {
 
   /**
    * Delete a certificate
+   *
+   * NOTE: This performs a hard delete, removing the certificate from the database.
+   * Once deleted, the verificationId becomes unverifiable.
+   *
+   * For production use, consider implementing soft delete/revocation:
+   * - Add 'isRevoked' and 'revokedAt' fields to Certificate schema
+   * - Modify this method to update those fields instead of deleting
+   * - Update verification endpoint to indicate "revoked" vs "not found"
+   * - This provides better transparency and audit trail
    */
   async deleteCertificate(certificateId: number, userId: string): Promise<void> {
     try {

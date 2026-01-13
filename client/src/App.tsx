@@ -148,7 +148,27 @@ function Router() {
     );
   }
 
-  // For all other paths (except root which is handled above), show 404
+  // For all other paths (except root which is handled above), handle public routes
+  // Public certificate verification - accessible without authentication
+  if (location.pathname.startsWith('/verify-certificate')) {
+    return (
+      <div className="min-h-screen bg-background">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route
+                path="/verify-certificate/:verificationId?"
+                element={<VerifyCertificatePage />}
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
+  // For all other paths, show 404
   return (
     <div className="min-h-screen bg-background">
       <ErrorBoundary>

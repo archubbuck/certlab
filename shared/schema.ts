@@ -2210,8 +2210,16 @@ export interface AccessCheckResult {
 // ============================================================================
 
 /**
- * Certificate table for completion certificates
- * Stored in Firestore at: /users/{userId}/certificates/{certificateId}
+ * Logical certificate model for completion certificates.
+ *
+ * Storage Architecture:
+ * - Firestore: Documents stored at /users/{userId}/certificates/{certificateId}
+ * - This pgTable definition provides TypeScript types and schema documentation
+ * - The table structure is NOT used to generate Firestore collections
+ * - Drizzle/PostgreSQL syntax is used for type-safety and developer familiarity
+ *
+ * Note: The .unique() constraint on verificationId is a logical constraint only.
+ * Firestore does not enforce uniqueness - application code must ensure UUID uniqueness.
  */
 export const certificates = pgTable('certificates', {
   id: serial('id').primaryKey(),

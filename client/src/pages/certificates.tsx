@@ -286,9 +286,11 @@ export default function CertificatesPage() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {Math.round(
-                      certificates.reduce((sum, c) => sum + c.score, 0) / certificates.length
-                    )}
+                    {certificates.length > 0
+                      ? Math.round(
+                          certificates.reduce((sum, c) => sum + c.score, 0) / certificates.length
+                        )
+                      : 0}
                     %
                   </div>
                   <div className="text-xs text-muted-foreground">Average Score</div>

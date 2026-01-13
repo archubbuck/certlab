@@ -26,11 +26,7 @@ export default function VerifyCertificatePage() {
   const [verificationId, setVerificationId] = useState(params.verificationId || '');
   const [searchTrigger, setSearchTrigger] = useState(0);
 
-  const {
-    data: certificate,
-    isLoading,
-    error,
-  } = useQuery<Certificate | null>({
+  const { data: certificate, isLoading } = useQuery<Certificate | null>({
     queryKey: ['certificate', 'verify', verificationId, searchTrigger],
     queryFn: async () => {
       if (!verificationId.trim()) return null;
@@ -203,7 +199,7 @@ export default function VerifyCertificatePage() {
                 {/* Verification ID */}
                 <div className="pt-4 border-t">
                   <p className="text-xs text-muted-foreground mb-1">Verification ID</p>
-                  <p className="font-mono text-sm bg-muted px-3 py-2 rounded break-all">
+                  <p className="font-mono text-sm bg-muted px-3 py-2 rounded break-words overflow-wrap-anywhere">
                     {certificate.verificationId}
                   </p>
                 </div>

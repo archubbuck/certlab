@@ -53,6 +53,12 @@ export default function Results() {
       const userName =
         `${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}`.trim() || currentUser.email;
 
+      // Validate score requirement
+      const quizScore = quiz.score || 0;
+      if (quizScore < 70) {
+        throw new Error('Certificate requires a score of 70% or higher');
+      }
+
       const certificate: Omit<Certificate, 'id' | 'createdAt'> = {
         userId: currentUser.id,
         tenantId: tenantId || 1,
@@ -60,21 +66,21 @@ export default function Results() {
         resourceType: 'quiz',
         resourceId: quiz.id!,
         resourceTitle: quiz.title,
-        score: quiz.score || 0,
+        score: quizScore,
         completedAt: quiz.completedAt!,
         verificationId,
         issuedBy: 'CertLab',
-        organizationName: null,
-        logoUrl: null,
-        signatureUrl: null,
-        templateId: null,
+        organizationName: undefined,
+        logoUrl: undefined,
+        signatureUrl: undefined,
+        templateId: undefined,
       };
 
       return await storage.createCertificate(certificate);
     },
     onSuccess: (certificate) => {
       queryClient.invalidateQueries({ queryKey: ['certificate', 'quiz', quizId] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.certificates.all(currentUser?.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.certificates.all(currentUser.id) });
       toast({
         title: 'Certificate Generated',
         description: 'Your certificate of completion has been created successfully!',
@@ -82,6 +88,12 @@ export default function Results() {
       // Auto-download the certificate
       printCertificate({ certificate }).catch((error) => {
         console.error('Failed to print certificate:', error);
+        toast({
+          title: 'Download Failed',
+          description:
+            'Your certificate was created, but the automatic download failed. You can manually download it from your certificates page.',
+          variant: 'destructive',
+        });
       });
     },
     onError: (error) => {
@@ -372,6 +384,11 @@ export default function Results() {
                   disabled={generateCertificateMutation.isPending}
                   className="flex-1 bg-amber-600 text-white hover:bg-amber-700"
                   size="sm"
+                  aria-label={
+                    existingCertificate
+                      ? 'Download your completion certificate'
+                      : 'Generate and download your completion certificate'
+                  }
                 >
                   <Award className="h-4 w-4 mr-2" />
                   {existingCertificate ? 'Download Certificate' : 'Generate Certificate'}

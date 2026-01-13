@@ -10,6 +10,46 @@ import { escapeHtml } from './sanitize';
 import type { Certificate, CertificateTemplate } from '@shared/schema';
 
 /**
+ * Validates if a color value is safe for CSS insertion
+ * Accepts hex colors (#rgb, #rrggbb), rgb/rgba, hsl/hsla, and known color names
+ */
+function isValidCssColor(color: string): boolean {
+  // Hex colors
+  if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(color)) return true;
+  // RGB/RGBA
+  if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/.test(color)) return true;
+  // HSL/HSLA
+  if (/^hsla?\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*(,\s*[\d.]+\s*)?\)$/.test(color)) return true;
+  // Known color names (basic set)
+  const knownColors = [
+    'black',
+    'white',
+    'red',
+    'blue',
+    'green',
+    'yellow',
+    'gray',
+    'grey',
+    'transparent',
+  ];
+  if (knownColors.includes(color.toLowerCase())) return true;
+  return false;
+}
+
+/**
+ * Validates if a URL is safe (http/https only)
+ */
+function isValidImageUrl(url: string | null | undefined): boolean {
+  if (!url) return true; // null/undefined is fine (optional field)
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Options for generating a certificate PDF
  */
 export interface CertificateOptions {
@@ -65,10 +105,28 @@ export function generateCertificateHtml(options: CertificateOptions): string {
   const { certificate, template = {}, qrCodeDataUrl } = options;
   const finalTemplate = { ...defaultTemplate, ...template };
 
-  const backgroundColor = finalTemplate.backgroundColor || '#ffffff';
-  const textColor = finalTemplate.textColor || '#333333';
-  const accentColor = finalTemplate.accentColor || '#0066cc';
+  // Validate and sanitize color values
+  const backgroundColor = isValidCssColor(finalTemplate.backgroundColor || '#ffffff')
+    ? finalTemplate.backgroundColor || '#ffffff'
+    : '#ffffff';
+  const textColor = isValidCssColor(finalTemplate.textColor || '#333333')
+    ? finalTemplate.textColor || '#333333'
+    : '#333333';
+  const accentColor = isValidCssColor(finalTemplate.accentColor || '#0066cc')
+    ? finalTemplate.accentColor || '#0066cc'
+    : '#0066cc';
   const fontFamily = finalTemplate.fontFamily || 'Georgia';
+
+  // Validate URLs to prevent javascript: or data: URL exploits
+  if (!isValidImageUrl(certificate.logoUrl)) {
+    console.warn('Invalid logo URL detected, skipping logo');
+    certificate.logoUrl = undefined;
+  }
+  if (!isValidImageUrl(certificate.signatureUrl)) {
+    console.warn('Invalid signature URL detected, skipping signature');
+    certificate.signatureUrl = undefined;
+  }
+
   const borderStyle = getBorderStyle(finalTemplate);
 
   const formattedDate = format(
@@ -340,7 +398,9 @@ export function generateCertificateHtml(options: CertificateOptions): string {
                   <div><strong>Verification ID:</strong></div>
                   <div class="verification-id">${escapeHtml(certificate.verificationId)}</div>
                   <div style="margin-top: 5px; font-size: 10px;">
-                    Verify at: ${window.location.origin}/verify-certificate
+                    Verify at: ${
+                      typeof window !== 'undefined' && window.location ? window.location.origin : ''
+                    }/verify-certificate
                   </div>
                 </div>
               </div>
@@ -377,6 +437,14 @@ export async function printCertificate(options: CertificateOptions): Promise<voi
 
   printWindow.document.write(html);
   printWindow.document.close();
+
+  // Automatically close the print window after printing completes
+  const handleAfterPrint = () => {
+    printWindow.close();
+  };
+
+  // Listen for afterprint event to clean up the window
+  printWindow.addEventListener('afterprint', handleAfterPrint);
 }
 
 /**
@@ -386,12 +454,10 @@ export async function printCertificate(options: CertificateOptions): Promise<voi
  * @returns Promise resolving to a data URL for the QR code image
  */
 export async function generateVerificationQRCode(verificationId: string): Promise<string> {
-  // For now, return a placeholder. In production, you would use a QR code library
-  // like qrcode or similar. This can be implemented when needed.
-  const verificationUrl = `${window.location.origin}/verify-certificate/${verificationId}`;
-
   // Placeholder implementation - in real app, use a QR code library
-  // Example: import QRCode from 'qrcode';
+  // Example:
+  // import QRCode from 'qrcode';
+  // const verificationUrl = `${window.location.origin}/verify-certificate/${verificationId}`;
   // return await QRCode.toDataURL(verificationUrl);
 
   // For now, return empty string - the certificate will still work without QR code
@@ -405,7 +471,9 @@ export async function generateVerificationQRCode(verificationId: string): Promis
  * @returns true if the format is valid (UUID v4)
  */
 export function isValidVerificationId(verificationId: string): boolean {
-  const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  // UUID v4 pattern: 8-4-4-4-12 hex digits, with version 4 and variant bits
+  // Using case-insensitive flag for flexibility with uppercase/lowercase
+  const uuidV4Regex = /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i;
   return uuidV4Regex.test(verificationId);
 }
 
