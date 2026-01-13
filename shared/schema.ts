@@ -2678,3 +2678,58 @@ export const insertNotificationPreferencesSchema = notificationPreferencesSchema
 });
 
 export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+
+// ============================================================================
+// Leaderboard System
+// ============================================================================
+
+/**
+ * Leaderboard entry for ranking users by various metrics
+ * Stored in Firestore at: /leaderboards/{leaderboardType}/{userId}
+ *
+ * Leaderboard types:
+ * - global: Overall ranking across all activities
+ * - category-{categoryId}: Ranking within a specific category
+ * - weekly: Weekly ranking (resets each week)
+ * - monthly: Monthly ranking (resets each month)
+ */
+export interface LeaderboardEntry {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  score: number; // Total points
+  rank: number; // Current rank in the leaderboard
+  quizzesCompleted: number;
+  perfectScores: number;
+  averageScore: number; // Average quiz score percentage
+  currentStreak: number;
+  totalBadges: number;
+  level: number;
+  categoryId?: number; // For category-specific leaderboards
+  period?: 'weekly' | 'monthly' | 'all-time'; // Time period for this entry
+  lastUpdated: Date;
+  tenantId: number;
+}
+
+/**
+ * Zod schema for leaderboard entry validation
+ */
+export const leaderboardEntrySchema = z.object({
+  userId: z.string(),
+  userName: z.string(),
+  userAvatar: z.string().optional(),
+  score: z.number().default(0),
+  rank: z.number().default(0),
+  quizzesCompleted: z.number().default(0),
+  perfectScores: z.number().default(0),
+  averageScore: z.number().default(0),
+  currentStreak: z.number().default(0),
+  totalBadges: z.number().default(0),
+  level: z.number().default(1),
+  categoryId: z.number().optional(),
+  period: z.enum(['weekly', 'monthly', 'all-time']).optional(),
+  lastUpdated: z.date(),
+  tenantId: z.number(),
+});
+
+export type InsertLeaderboardEntry = z.infer<typeof leaderboardEntrySchema>;

@@ -1768,6 +1768,63 @@ class StorageRouter implements IClientStorage {
       'checkAvailability'
     );
   }
+
+  // Leaderboard methods
+  async updateLeaderboardEntry(
+    userId: string,
+    data: Partial<import('@shared/schema').LeaderboardEntry>,
+    tenantId: number = 1
+  ): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.updateLeaderboardEntry(userId, data, tenantId),
+      'updateLeaderboardEntry'
+    );
+  }
+
+  async getGlobalLeaderboard(
+    limit: number = 100,
+    tenantId: number = 1
+  ): Promise<import('@shared/schema').LeaderboardEntry[]> {
+    return this.executeStorageOperation(
+      (s) => s.getGlobalLeaderboard(limit, tenantId),
+      'getGlobalLeaderboard'
+    );
+  }
+
+  async getCategoryLeaderboard(
+    categoryId: number,
+    limit: number = 100,
+    tenantId: number = 1
+  ): Promise<import('@shared/schema').LeaderboardEntry[]> {
+    return this.executeStorageOperation(
+      (s) => s.getCategoryLeaderboard(categoryId, limit, tenantId),
+      'getCategoryLeaderboard'
+    );
+  }
+
+  async getWeeklyLeaderboard(
+    limit: number = 100,
+    tenantId: number = 1
+  ): Promise<import('@shared/schema').LeaderboardEntry[]> {
+    return this.executeStorageOperation(
+      (s) => s.getWeeklyLeaderboard(limit, tenantId),
+      'getWeeklyLeaderboard'
+    );
+  }
+
+  async getMonthlyLeaderboard(
+    limit: number = 100,
+    tenantId: number = 1
+  ): Promise<import('@shared/schema').LeaderboardEntry[]> {
+    return this.executeStorageOperation(
+      (s) => s.getMonthlyLeaderboard(limit, tenantId),
+      'getMonthlyLeaderboard'
+    );
+  }
+
+  async getUserRank(userId: string, tenantId: number = 1): Promise<number> {
+    return this.executeStorageOperation((s) => s.getUserRank(userId, tenantId), 'getUserRank');
+  }
 }
 
 // Export the storage router as the default storage interface

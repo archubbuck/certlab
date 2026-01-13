@@ -1486,4 +1486,43 @@ export interface IClientStorage extends IStorageAdapter {
     userId: string,
     preferences: Partial<import('./schema').NotificationPreferences>
   ): Promise<import('./schema').NotificationPreferences>;
+
+  // ==========================================
+  // Leaderboards
+  // ==========================================
+
+  /** Update a user's leaderboard entry */
+  updateLeaderboardEntry(
+    userId: string,
+    data: Partial<import('./schema').LeaderboardEntry>,
+    tenantId?: number
+  ): Promise<void>;
+
+  /** Get global leaderboard */
+  getGlobalLeaderboard(
+    limit?: number,
+    tenantId?: number
+  ): Promise<import('./schema').LeaderboardEntry[]>;
+
+  /** Get category-specific leaderboard */
+  getCategoryLeaderboard(
+    categoryId: number,
+    limit?: number,
+    tenantId?: number
+  ): Promise<import('./schema').LeaderboardEntry[]>;
+
+  /** Get weekly leaderboard */
+  getWeeklyLeaderboard(
+    limit?: number,
+    tenantId?: number
+  ): Promise<import('./schema').LeaderboardEntry[]>;
+
+  /** Get monthly leaderboard */
+  getMonthlyLeaderboard(
+    limit?: number,
+    tenantId?: number
+  ): Promise<import('./schema').LeaderboardEntry[]>;
+
+  /** Get user's rank in global leaderboard */
+  getUserRank(userId: string, tenantId?: number): Promise<number>;
 }

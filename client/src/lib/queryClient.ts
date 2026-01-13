@@ -248,6 +248,16 @@ export const queryKeys = {
     balance: () => ['/api', 'credits', 'balance'] as const,
   },
 
+  // Leaderboard queries
+  leaderboard: {
+    global: (limit?: number) => ['/api', 'leaderboard', 'global', limit] as const,
+    category: (categoryId: number | undefined, limit?: number) =>
+      ['/api', 'leaderboard', 'category', categoryId, limit] as const,
+    weekly: (limit?: number) => ['/api', 'leaderboard', 'weekly', limit] as const,
+    monthly: (limit?: number) => ['/api', 'leaderboard', 'monthly', limit] as const,
+    userRank: (userId: string | undefined) => ['/api', 'leaderboard', 'rank', userId] as const,
+  },
+
   // Subscription queries
   subscription: {
     status: () => ['/api', 'subscription', 'status'] as const,
@@ -759,6 +769,42 @@ export function getQueryFn<T>(options: { on401: UnauthorizedBehavior }): QueryFu
         // Handle stats
         if (path.includes('/stats')) {
           return (await storage.getStudyTimerStats(userId)) as T;
+        }
+      }
+
+      // Handle Leaderboard queries
+      if (path.startsWith('/api/leaderboard')) {
+        // Get tenant ID for leaderboard filtering
+        const currentUser = await clientAuth.getCurrentUser();
+        const tenantId = currentUser?.tenantId || 1;
+
+        // Extract limit from query key (last element if it's a number)
+        const limitValue = key[key.length - 1];
+        const limit = typeof limitValue === 'number' ? limitValue : 100;
+
+        if (path.includes('/global')) {
+          return (await storage.getGlobalLeaderboard(limit, tenantId)) as T;
+        }
+
+        if (path.includes('/weekly')) {
+          return (await storage.getWeeklyLeaderboard(limit, tenantId)) as T;
+        }
+
+        if (path.includes('/monthly')) {
+          return (await storage.getMonthlyLeaderboard(limit, tenantId)) as T;
+        }
+
+        if (path.includes('/category/')) {
+          const categoryIdMatch = path.match(/\/category\/(\d+)/);
+          if (categoryIdMatch) {
+            const categoryId = parseInt(categoryIdMatch[1]);
+            return (await storage.getCategoryLeaderboard(categoryId, limit, tenantId)) as T;
+          }
+        }
+
+        if (path.includes('/rank/')) {
+          const userId = key[key.length - 1] as string;
+          return (await storage.getUserRank(userId, tenantId)) as T;
         }
       }
 

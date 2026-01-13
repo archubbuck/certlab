@@ -126,6 +126,25 @@ class AchievementService {
       });
     }
 
+    // Update leaderboards with latest data
+    try {
+      const categoryIds = Array.isArray(quiz.categoryIds) ? quiz.categoryIds : [];
+      await storage.updateLeaderboardEntry(
+        userId,
+        {
+          score: newTotalPoints,
+          level: newLevel,
+          currentStreak: streakInfo.currentStreak,
+          totalBadges: (gameStats.totalBadgesEarned || 0) + newBadges.length,
+          categoryId: categoryIds[0], // Update first category leaderboard
+        },
+        tenantId
+      );
+    } catch (error) {
+      console.error('Failed to update leaderboard:', error);
+      // Don't fail the quiz completion if leaderboard update fails
+    }
+
     return {
       pointsEarned,
       newBadges,

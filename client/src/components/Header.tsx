@@ -253,6 +253,22 @@ export default function Header() {
                     </Button>
                   </NavigationMenuItem>
 
+                  {/* Leaderboard */}
+                  <NavigationMenuItem>
+                    <Button
+                      variant="ghost"
+                      onClick={() => navigate('/app/leaderboard')}
+                      className={`h-10 px-4 py-2 ${
+                        isActivePath('/app/leaderboard')
+                          ? 'text-primary font-semibold border-b-2 border-primary rounded-b-none'
+                          : 'text-muted-foreground hover:text-primary'
+                      }`}
+                    >
+                      <Award className="w-4 h-4 mr-2" />
+                      Leaderboard
+                    </Button>
+                  </NavigationMenuItem>
+
                   {/* Daily Challenges - NEW */}
                   <NavigationMenuItem>
                     <Button
