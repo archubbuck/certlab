@@ -56,10 +56,6 @@ import type {
   InsertPurchase,
   Group,
   GroupMember,
-  Enrollment,
-  Assignment,
-  AssignmentStatus,
-  PrerequisiteCheckResult,
 } from '@shared/schema';
 
 /**
@@ -1165,21 +1161,8 @@ class StorageRouter implements IClientStorage {
     resourceId: number
   ): Promise<{
     allowed: boolean;
-    reason?:
-      | 'purchase_required'
-      | 'private_content'
-      | 'not_shared_with_you'
-      | 'access_denied'
-      | 'not_available_yet'
-      | 'availability_expired'
-      | 'prerequisites_not_met'
-      | 'not_enrolled'
-      | 'enrollment_closed'
-      | 'not_assigned';
+    reason?: 'purchase_required' | 'private_content' | 'not_shared_with_you' | 'access_denied';
     productId?: string;
-    missingPrerequisites?: { quizIds?: number[]; lectureIds?: number[] };
-    availableFrom?: Date;
-    availableUntil?: Date;
   }> {
     return this.executeStorageOperation(
       (s) => s.checkAccess(userId, resourceType, resourceId),
@@ -1462,6 +1445,10 @@ class StorageRouter implements IClientStorage {
     return this.executeStorageOperation(
       (s) => s.updateNotificationPreferences(userId, preferences),
       'updateNotificationPreferences'
+    );
+  }
+
+  // ==========================================
   // Enrollment Management
   // ==========================================
 
@@ -1470,7 +1457,7 @@ class StorageRouter implements IClientStorage {
     resourceType: 'quiz' | 'lecture' | 'template',
     resourceId: number,
     tenantId: number,
-    requiresApproval?: boolean
+    requiresApproval = false
   ): Promise<import('@shared/schema').Enrollment> {
     return this.executeStorageOperation(
       (s) => s.enrollUser(userId, resourceType, resourceId, tenantId, requiresApproval),
@@ -1478,17 +1465,12 @@ class StorageRouter implements IClientStorage {
     );
   }
 
-  async unenrollUser(enrollmentId: string): Promise<void> {
-    return this.executeStorageOperation((s) => s.unenrollUser(enrollmentId), 'unenrollUser');
-  }
-
   async getUserEnrollments(
     userId: string,
-    tenantId: number,
     resourceType?: 'quiz' | 'lecture' | 'template'
   ): Promise<import('@shared/schema').Enrollment[]> {
     return this.executeStorageOperation(
-      (s) => s.getUserEnrollments(userId, tenantId, resourceType),
+      (s) => s.getUserEnrollments(userId, resourceType),
       'getUserEnrollments'
     );
   }
@@ -1513,17 +1495,10 @@ class StorageRouter implements IClientStorage {
     );
   }
 
-  async rejectEnrollment(enrollmentId: string): Promise<void> {
-    return this.executeStorageOperation(
-      (s) => s.rejectEnrollment(enrollmentId),
-      'rejectEnrollment'
-    );
-  }
-
   async updateEnrollmentProgress(
     enrollmentId: string,
     progress: number,
-    completed?: boolean
+    completed = false
   ): Promise<import('@shared/schema').Enrollment> {
     return this.executeStorageOperation(
       (s) => s.updateEnrollmentProgress(enrollmentId, progress, completed),
@@ -1542,115 +1517,57 @@ class StorageRouter implements IClientStorage {
     );
   }
 
+  async withdrawEnrollment(enrollmentId: string): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.withdrawEnrollment(enrollmentId),
+      'withdrawEnrollment'
+    );
+  }
+
   // ==========================================
   // Assignment Management
   // ==========================================
 
-  async assignToUser(
-    userId: string,
-    resourceType: 'quiz' | 'lecture' | 'template',
-    resourceId: number,
-    assignedBy: string,
-    tenantId: number,
-    dueDate?: Date,
-    notes?: string
+  async createAssignment(
+    assignment: import('@shared/schema').InsertAssignment
   ): Promise<import('@shared/schema').Assignment> {
-    return this.executeStorageOperation(
-      (s) => s.assignToUser(userId, resourceType, resourceId, assignedBy, tenantId, dueDate, notes),
-      'assignToUser'
-    );
+    return this.executeStorageOperation((s) => s.createAssignment(assignment), 'createAssignment');
   }
 
-  async assignToUsers(
-    userIds: string[],
-    resourceType: 'quiz' | 'lecture' | 'template',
-    resourceId: number,
-    assignedBy: string,
-    tenantId: number,
-    dueDate?: Date,
-    notes?: string
+  async getInstructorAssignments(
+    instructorId: string,
+    tenantId: number
   ): Promise<import('@shared/schema').Assignment[]> {
     return this.executeStorageOperation(
-      (s) =>
-        s.assignToUsers(userIds, resourceType, resourceId, assignedBy, tenantId, dueDate, notes),
-      'assignToUsers'
+      (s) => s.getInstructorAssignments(instructorId, tenantId),
+      'getInstructorAssignments'
     );
-  }
-
-  async unassignUser(assignmentId: string): Promise<void> {
-    return this.executeStorageOperation((s) => s.unassignUser(assignmentId), 'unassignUser');
   }
 
   async getUserAssignments(
     userId: string,
-    tenantId: number,
-    resourceType?: 'quiz' | 'lecture' | 'template',
-    status?: import('@shared/schema').AssignmentStatus
+    tenantId: number
   ): Promise<import('@shared/schema').Assignment[]> {
     return this.executeStorageOperation(
-      (s) => s.getUserAssignments(userId, tenantId, resourceType, status),
+      (s) => s.getUserAssignments(userId, tenantId),
       'getUserAssignments'
     );
   }
 
-  async getResourceAssignments(
-    resourceType: 'quiz' | 'lecture' | 'template',
-    resourceId: number
-  ): Promise<import('@shared/schema').Assignment[]> {
-    return this.executeStorageOperation(
-      (s) => s.getResourceAssignments(resourceType, resourceId),
-      'getResourceAssignments'
-    );
-  }
-
-  async updateAssignmentStatus(
+  async updateAssignment(
     assignmentId: string,
-    status: import('@shared/schema').AssignmentStatus,
-    score?: number,
-    progress?: number
+    updates: Partial<import('@shared/schema').Assignment>
   ): Promise<import('@shared/schema').Assignment> {
     return this.executeStorageOperation(
-      (s) => s.updateAssignmentStatus(assignmentId, status, score, progress),
-      'updateAssignmentStatus'
+      (s) => s.updateAssignment(assignmentId, updates),
+      'updateAssignment'
     );
   }
 
-  async updateAssignmentProgress(
-    assignmentId: string,
-    progress: number,
-    started?: boolean
-  ): Promise<import('@shared/schema').Assignment> {
+  async deleteAssignment(assignmentId: string): Promise<void> {
     return this.executeStorageOperation(
-      (s) => s.updateAssignmentProgress(assignmentId, progress, started),
-      'updateAssignmentProgress'
-    );
-  }
-
-  async completeAssignment(
-    assignmentId: string,
-    score?: number
-  ): Promise<import('@shared/schema').Assignment> {
-    return this.executeStorageOperation(
-      (s) => s.completeAssignment(assignmentId, score),
-      'completeAssignment'
-    );
-  }
-
-  async hasAssignment(
-    userId: string,
-    resourceType: 'quiz' | 'lecture' | 'template',
-    resourceId: number
-  ): Promise<boolean> {
-    return this.executeStorageOperation(
-      (s) => s.hasAssignment(userId, resourceType, resourceId),
-      'hasAssignment'
-    );
-  }
-
-  async sendAssignmentNotification(assignmentId: string): Promise<void> {
-    return this.executeStorageOperation(
-      (s) => s.sendAssignmentNotification(assignmentId),
-      'sendAssignmentNotification'
+      (s) => s.deleteAssignment(assignmentId),
+      'deleteAssignment'
     );
   }
 
@@ -1661,38 +1578,14 @@ class StorageRouter implements IClientStorage {
     );
   }
 
-  // ==========================================
-  // Prerequisite and Availability Checking
-  // ==========================================
-
-  async checkPrerequisites(
-    userId: string,
-    prerequisites: {
-      quizIds?: number[];
-      lectureIds?: number[];
-      minimumScores?: Record<number, number>;
-    }
-  ): Promise<import('@shared/schema').PrerequisiteCheckResult> {
-    return this.executeStorageOperation(
-      (s) => s.checkPrerequisites(userId, prerequisites),
-      'checkPrerequisites'
-    );
-  }
-
-  async checkAvailability(
+  async checkResourceAvailability(
     availableFrom?: Date,
     availableUntil?: Date,
     enrollmentDeadline?: Date
-  ): Promise<{
-    available: boolean;
-    canEnroll: boolean;
-    reason?: 'not_started' | 'expired' | 'enrollment_closed';
-    availableFrom?: Date;
-    availableUntil?: Date;
-  }> {
+  ): Promise<{ available: boolean; canEnroll: boolean }> {
     return this.executeStorageOperation(
-      (s) => s.checkAvailability(availableFrom, availableUntil, enrollmentDeadline),
-      'checkAvailability'
+      (s) => s.checkResourceAvailability(availableFrom, availableUntil, enrollmentDeadline),
+      'checkResourceAvailability'
     );
   }
 }
