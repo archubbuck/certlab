@@ -819,6 +819,8 @@ export function getQueryFn<T>(options: { on401: UnauthorizedBehavior }): QueryFu
           const userId = key[key.length - 1] as string;
           return (await storage.getUserRank(userId, tenantId)) as T;
         }
+      }
+
       // Handle reporting queries (admin only)
       if (path === '/api/quizzes/all') {
         // This would need admin permissions check in production
