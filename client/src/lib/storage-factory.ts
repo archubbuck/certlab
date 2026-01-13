@@ -56,10 +56,6 @@ import type {
   InsertPurchase,
   Group,
   GroupMember,
-  Enrollment,
-  Assignment,
-  AssignmentStatus,
-  PrerequisiteCheckResult,
 } from '@shared/schema';
 
 /**
@@ -1163,24 +1159,7 @@ class StorageRouter implements IClientStorage {
     userId: string,
     resourceType: 'quiz' | 'lecture' | 'template',
     resourceId: number
-  ): Promise<{
-    allowed: boolean;
-    reason?:
-      | 'purchase_required'
-      | 'private_content'
-      | 'not_shared_with_you'
-      | 'access_denied'
-      | 'not_available_yet'
-      | 'availability_expired'
-      | 'prerequisites_not_met'
-      | 'not_enrolled'
-      | 'enrollment_closed'
-      | 'not_assigned';
-    productId?: string;
-    missingPrerequisites?: { quizIds?: number[]; lectureIds?: number[] };
-    availableFrom?: Date;
-    availableUntil?: Date;
-  }> {
+  ): Promise<import('@shared/schema').AccessCheckResult> {
     return this.executeStorageOperation(
       (s) => s.checkAccess(userId, resourceType, resourceId),
       'checkAccess'
@@ -1384,6 +1363,88 @@ class StorageRouter implements IClientStorage {
   }
 
   // ==========================================
+  // Notification Management
+  // ==========================================
+
+  async getUserNotifications(
+    userId: string,
+    options?: {
+      includeRead?: boolean;
+      includeDismissed?: boolean;
+      types?: import('@shared/schema').NotificationType[];
+      limit?: number;
+    }
+  ): Promise<import('@shared/schema').Notification[]> {
+    return this.executeStorageOperation(
+      (s) => s.getUserNotifications(userId, options),
+      'getUserNotifications'
+    );
+  }
+
+  async getUnreadNotificationCount(userId: string): Promise<number> {
+    return this.executeStorageOperation(
+      (s) => s.getUnreadNotificationCount(userId),
+      'getUnreadNotificationCount'
+    );
+  }
+
+  async createNotification(
+    notification: import('@shared/schema').InsertNotification
+  ): Promise<import('@shared/schema').Notification> {
+    return this.executeStorageOperation(
+      (s) => s.createNotification(notification),
+      'createNotification'
+    );
+  }
+
+  async markNotificationAsRead(notificationId: string, userId: string): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.markNotificationAsRead(notificationId, userId),
+      'markNotificationAsRead'
+    );
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.markAllNotificationsAsRead(userId),
+      'markAllNotificationsAsRead'
+    );
+  }
+
+  async dismissNotification(notificationId: string, userId: string): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.dismissNotification(notificationId, userId),
+      'dismissNotification'
+    );
+  }
+
+  async deleteExpiredNotifications(userId: string): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.deleteExpiredNotifications(userId),
+      'deleteExpiredNotifications'
+    );
+  }
+
+  async getNotificationPreferences(
+    userId: string
+  ): Promise<import('@shared/schema').NotificationPreferences | null> {
+    return this.executeStorageOperation(
+      (s) => s.getNotificationPreferences(userId),
+      'getNotificationPreferences'
+    );
+  }
+
+  async updateNotificationPreferences(
+    userId: string,
+    preferences: Partial<import('@shared/schema').NotificationPreferences>
+  ): Promise<import('@shared/schema').NotificationPreferences> {
+    return this.executeStorageOperation(
+      (s) => s.updateNotificationPreferences(userId, preferences),
+      'updateNotificationPreferences'
+    );
+  }
+
+  // ==========================================
   // Enrollment Management
   // ==========================================
 
@@ -1392,7 +1453,7 @@ class StorageRouter implements IClientStorage {
     resourceType: 'quiz' | 'lecture' | 'template',
     resourceId: number,
     tenantId: number,
-    requiresApproval?: boolean
+    requiresApproval = false
   ): Promise<import('@shared/schema').Enrollment> {
     return this.executeStorageOperation(
       (s) => s.enrollUser(userId, resourceType, resourceId, tenantId, requiresApproval),
@@ -1445,7 +1506,7 @@ class StorageRouter implements IClientStorage {
   async updateEnrollmentProgress(
     enrollmentId: string,
     progress: number,
-    completed?: boolean
+    completed = false
   ): Promise<import('@shared/schema').Enrollment> {
     return this.executeStorageOperation(
       (s) => s.updateEnrollmentProgress(enrollmentId, progress, completed),
@@ -1540,7 +1601,7 @@ class StorageRouter implements IClientStorage {
   async updateAssignmentProgress(
     assignmentId: string,
     progress: number,
-    started?: boolean
+    started = false
   ): Promise<import('@shared/schema').Assignment> {
     return this.executeStorageOperation(
       (s) => s.updateAssignmentProgress(assignmentId, progress, started),
@@ -1583,10 +1644,6 @@ class StorageRouter implements IClientStorage {
     );
   }
 
-  // ==========================================
-  // Prerequisite and Availability Checking
-  // ==========================================
-
   async checkPrerequisites(
     userId: string,
     prerequisites: {
@@ -1605,13 +1662,7 @@ class StorageRouter implements IClientStorage {
     availableFrom?: Date,
     availableUntil?: Date,
     enrollmentDeadline?: Date
-  ): Promise<{
-    available: boolean;
-    canEnroll: boolean;
-    reason?: 'not_started' | 'expired' | 'enrollment_closed';
-    availableFrom?: Date;
-    availableUntil?: Date;
-  }> {
+  ): Promise<{ available: boolean; canEnroll: boolean }> {
     return this.executeStorageOperation(
       (s) => s.checkAvailability(availableFrom, availableUntil, enrollmentDeadline),
       'checkAvailability'
