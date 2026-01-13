@@ -1271,6 +1271,16 @@ class FirestoreStorage implements IClientStorage {
         sharedWithGroups: null,
         requiresPurchase: false,
         purchaseProductId: null,
+        // Distribution settings
+        distributionMethod: 'open',
+        availableFrom: null,
+        availableUntil: null,
+        enrollmentDeadline: null,
+        maxEnrollments: null,
+        requireApproval: false,
+        assignmentDueDate: null,
+        sendNotifications: true,
+        reminderDays: null,
       };
 
       await setUserDocument(userId, 'lectures', id.toString(), lecture);
@@ -3423,11 +3433,7 @@ class FirestoreStorage implements IClientStorage {
     userId: string,
     resourceType: 'quiz' | 'lecture' | 'template',
     resourceId: number
-  ): Promise<{
-    allowed: boolean;
-    reason?: 'purchase_required' | 'private_content' | 'not_shared_with_you' | 'access_denied';
-    productId?: string;
-  }> {
+  ): Promise<import('@shared/schema').AccessCheckResult> {
     try {
       // Get the resource to check visibility settings
       let resource: any;

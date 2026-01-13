@@ -1159,11 +1159,7 @@ class StorageRouter implements IClientStorage {
     userId: string,
     resourceType: 'quiz' | 'lecture' | 'template',
     resourceId: number
-  ): Promise<{
-    allowed: boolean;
-    reason?: 'purchase_required' | 'private_content' | 'not_shared_with_you' | 'access_denied';
-    productId?: string;
-  }> {
+  ): Promise<import('@shared/schema').AccessCheckResult> {
     return this.executeStorageOperation(
       (s) => s.checkAccess(userId, resourceType, resourceId),
       'checkAccess'
