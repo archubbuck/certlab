@@ -1833,6 +1833,56 @@ class StorageRouter implements IClientStorage {
   async getUserRank(userId: string, tenantId: number = 1): Promise<number> {
     return this.executeStorageOperation((s) => s.getUserRank(userId, tenantId), 'getUserRank');
   }
+
+  // ==========================================
+  // Organization Branding & Theme Preferences
+  // ==========================================
+
+  async getOrganizationBranding(
+    tenantId: number
+  ): Promise<import('@shared/schema').OrganizationBranding | null> {
+    return this.executeStorageOperation(
+      (s) => (s as any).getOrganizationBranding(tenantId),
+      'getOrganizationBranding'
+    );
+  }
+
+  async setOrganizationBranding(
+    branding: import('@shared/schema').InsertOrganizationBranding
+  ): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => (s as any).setOrganizationBranding(branding),
+      'setOrganizationBranding'
+    );
+  }
+
+  async getUserThemePreferences(
+    userId: string
+  ): Promise<import('@shared/schema').UserThemePreferences | null> {
+    return this.executeStorageOperation(
+      (s) => (s as any).getUserThemePreferences(userId),
+      'getUserThemePreferences'
+    );
+  }
+
+  async setUserThemePreferences(
+    preferences: import('@shared/schema').InsertUserThemePreferences
+  ): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => (s as any).setUserThemePreferences(preferences),
+      'setUserThemePreferences'
+    );
+  }
+
+  async updateUserThemePreferences(
+    userId: string,
+    updates: Partial<import('@shared/schema').UserThemePreferences>
+  ): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => (s as any).updateUserThemePreferences(userId, updates),
+      'updateUserThemePreferences'
+    );
+  }
 }
 
 // Export the storage router as the default storage interface
