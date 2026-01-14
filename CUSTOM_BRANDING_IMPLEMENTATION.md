@@ -129,7 +129,7 @@ These are also aliased to:
 ```
 
 ## Available Themes
-All 7 existing themes work with custom branding:
+All 8 existing themes work with custom branding:
 1. **Light** - Clean and bright
 2. **Dark** - Easy on the eyes
 3. **High Contrast** - WCAG AAA compliant

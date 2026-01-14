@@ -479,6 +479,10 @@ export function OrganizationBrandingSettings() {
                 <p className="text-xs text-muted-foreground">
                   Advanced: Add custom CSS to further customize the application appearance.
                 </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  ⚠️ Warning: Custom CSS can affect application security and functionality. Only add
+                  styles that have been carefully reviewed and come from trusted sources.
+                </p>
               </div>
             </CardContent>
           </Card>
