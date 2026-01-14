@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CloudSyncIndicator } from '@/components/CloudSyncIndicator';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -595,6 +596,9 @@ export default function Header() {
 
           {/* User Profile & Theme Toggle */}
           <div className="flex items-center space-x-2 flex-shrink-0">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             {/* Cloud Sync Indicator */}
             {currentUser && (
               <div className="hidden md:block">

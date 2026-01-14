@@ -108,6 +108,53 @@ export const orderingItemSchema = z.object({
 
 export type OrderingItem = z.infer<typeof orderingItemSchema>;
 
+// ============================================================================
+// Translation Support
+// ============================================================================
+
+/**
+ * Supported language codes
+ */
+export const supportedLanguageSchema = z.enum(['en', 'es']);
+export type SupportedLanguage = z.infer<typeof supportedLanguageSchema>;
+
+/**
+ * Translation schema for localizable content
+ * Stored as Firestore subcollections: parentDoc/translations/{languageCode}
+ */
+export const translationSchema = z.object({
+  languageCode: supportedLanguageSchema,
+  title: z.string().optional(),
+  description: z.string().optional(),
+  content: z.string().optional(),
+  text: z.string().optional(), // For question text
+  options: z.array(questionOptionSchema).optional(), // For translated question options
+  explanation: z.string().optional(), // For question explanations
+  explanationSteps: z.array(z.string()).optional(), // For step-by-step explanations
+  updatedAt: z.date(),
+  updatedBy: z.string(), // User ID who last updated this translation
+});
+
+export type Translation = z.infer<typeof translationSchema>;
+
+/**
+ * Translatable content interface
+ * For entities that support translations (Quiz, Question, Lecture, Category, etc.)
+ */
+export interface TranslatableContent {
+  /**
+   * Whether translations exist for this content.
+   * Checked via Firestore subcollection existence.
+   */
+  hasTranslations?: boolean;
+
+  /**
+   * Available language codes (besides the default 'en')
+   * Populated from Firestore subcollection documents
+   */
+  availableLanguages?: SupportedLanguage[];
+}
+
 /**
  * Validates that a question's correctAnswer matches one of the option IDs.
  * @param options Array of question options
