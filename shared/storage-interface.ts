@@ -62,6 +62,8 @@ import type {
   TemplateSearchFilters,
   Certificate,
   CertificateTemplate,
+  Attachment,
+  InsertAttachment,
 } from './schema';
 
 /**
@@ -1448,6 +1450,46 @@ export interface IClientStorage extends IStorageAdapter {
 
   /** Delete a certificate template */
   deleteCertificateTemplate(templateId: number): Promise<void>;
+
+  // ==========================================
+  // Attachment Management
+  // ==========================================
+
+  /** Get all attachments for a resource (lecture, quiz, or material) */
+  getResourceAttachments(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number
+  ): Promise<Attachment[]>;
+
+  /** Add an attachment to a resource */
+  addAttachment(userId: string, attachment: InsertAttachment): Promise<Attachment>;
+
+  /** Update an existing attachment */
+  updateAttachment(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number,
+    attachmentId: string,
+    updates: Partial<Attachment>
+  ): Promise<void>;
+
+  /** Delete a single attachment */
+  deleteAttachment(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number,
+    attachmentId: string
+  ): Promise<void>;
+
+  /** Delete all attachments for a resource */
+  deleteResourceAttachments(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number
+  ): Promise<void>;
+
+  // ==========================================
   // Notification Management
   // ==========================================
 
