@@ -8,6 +8,7 @@ import { CloudSyncIndicator } from '@/components/CloudSyncIndicator';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatNotificationCount } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -68,6 +69,7 @@ export default function Header() {
   const { user: currentUser, logout } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const { t } = useTranslation();
   const isAdminArea = location.pathname.startsWith('/admin');
   const isAdmin = currentUser?.role === 'admin';
 
@@ -234,7 +236,7 @@ export default function Header() {
                       }`}
                     >
                       <Home className="w-4 h-4 mr-2" />
-                      Dashboard
+                      {t('nav.dashboard')}
                     </Button>
                   </NavigationMenuItem>
 
@@ -250,7 +252,7 @@ export default function Header() {
                       }`}
                     >
                       <Trophy className="w-4 h-4 mr-2" />
-                      Achievements
+                      {t('nav.achievements')}
                     </Button>
                   </NavigationMenuItem>
 
@@ -266,7 +268,7 @@ export default function Header() {
                       }`}
                     >
                       <Award className="w-4 h-4 mr-2" />
-                      Leaderboard
+                      {t('nav.leaderboard')}
                     </Button>
                   </NavigationMenuItem>
 
