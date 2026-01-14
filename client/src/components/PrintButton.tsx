@@ -73,17 +73,17 @@ export default function PrintButton({
       onBeforePrint();
     }
 
+    // Set up after-print callback using the browser's afterprint event
+    if (onAfterPrint && typeof window !== 'undefined') {
+      const handleAfterPrint = () => {
+        window.removeEventListener('afterprint', handleAfterPrint);
+        onAfterPrint();
+      };
+      window.addEventListener('afterprint', handleAfterPrint);
+    }
+
     // Trigger browser print dialog
     window.print();
-
-    // Call after print callback if provided
-    // Note: This fires immediately after print() is called, not when printing is complete
-    if (onAfterPrint) {
-      // Use a small delay to ensure print dialog has opened
-      setTimeout(() => {
-        onAfterPrint();
-      }, 100);
-    }
   };
 
   return (

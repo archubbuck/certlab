@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,7 @@ export default function StudyNotesPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedNote, setSelectedNote] = useState<StudyNote | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
+  const [shouldPrintAfterOpen, setShouldPrintAfterOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -93,6 +94,17 @@ export default function StudyNotesPage() {
       });
     },
   });
+
+  // Effect to handle printing after dialog opens
+  useEffect(() => {
+    if (showViewDialog && shouldPrintAfterOpen) {
+      // Use requestAnimationFrame to ensure the dialog content is rendered
+      requestAnimationFrame(() => {
+        window.print();
+        setShouldPrintAfterOpen(false);
+      });
+    }
+  }, [showViewDialog, shouldPrintAfterOpen]);
 
   const getCategoryNames = (categoryIds: number[] | null): string => {
     if (!categoryIds || categoryIds.length === 0) return 'General';
@@ -301,9 +313,9 @@ export default function StudyNotesPage() {
                       size="sm"
                       onClick={() => {
                         handleViewNote(note);
-                        // Small delay to ensure dialog is open before printing
-                        setTimeout(() => window.print(), 100);
+                        setShouldPrintAfterOpen(true);
                       }}
+                      title="View and print note"
                     >
                       <Printer className="h-4 w-4" />
                     </Button>
