@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CloudSyncIndicator } from '@/components/CloudSyncIndicator';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatNotificationCount } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -69,6 +71,7 @@ export default function Header() {
   const { branding } = useBranding();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const { t } = useTranslation();
   const isAdminArea = location.pathname.startsWith('/admin');
   const isAdmin = currentUser?.role === 'admin';
 
@@ -250,7 +253,7 @@ export default function Header() {
                       }`}
                     >
                       <Home className="w-4 h-4 mr-2" />
-                      Dashboard
+                      {t('nav.dashboard')}
                     </Button>
                   </NavigationMenuItem>
 
@@ -266,7 +269,7 @@ export default function Header() {
                       }`}
                     >
                       <Trophy className="w-4 h-4 mr-2" />
-                      Achievements
+                      {t('nav.achievements')}
                     </Button>
                   </NavigationMenuItem>
 
@@ -282,7 +285,7 @@ export default function Header() {
                       }`}
                     >
                       <Award className="w-4 h-4 mr-2" />
-                      Leaderboard
+                      {t('nav.leaderboard')}
                     </Button>
                   </NavigationMenuItem>
 
@@ -612,6 +615,9 @@ export default function Header() {
 
           {/* User Profile & Theme Toggle */}
           <div className="flex items-center space-x-2 flex-shrink-0">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             {/* Cloud Sync Indicator */}
             {currentUser && (
               <div className="hidden md:block">

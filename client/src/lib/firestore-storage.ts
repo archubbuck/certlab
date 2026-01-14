@@ -113,8 +113,22 @@ import type {
 /**
  * Generates a unique identifier
  */
-function generateId(): string {
+export function generateId(): string {
   return crypto.randomUUID();
+}
+
+/**
+ * Convert resource type to plural collection name
+ */
+function getCollectionName(resourceType: 'lecture' | 'quiz' | 'material'): string {
+  switch (resourceType) {
+    case 'lecture':
+      return 'lectures';
+    case 'quiz':
+      return 'quizzes';
+    case 'material':
+      return 'materials';
+  }
 }
 
 /**
@@ -5469,6 +5483,59 @@ class FirestoreStorage implements IClientStorage {
       logInfo('Organization branding updated', { tenantId: branding.tenantId });
     } catch (error) {
       logError('setOrganizationBranding', error, { tenantId: branding.tenantId });
+  // Material Attachments
+  // ==========================================
+
+  /**
+   * Get attachments for a resource (lecture, quiz, material)
+   */
+  async getResourceAttachments(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number
+  ): Promise<import('@shared/schema').Attachment[]> {
+    try {
+      const attachments = await getUserSubcollectionDocuments<import('@shared/schema').Attachment>(
+        userId,
+        getCollectionName(resourceType),
+        resourceId.toString(),
+        'attachments'
+      );
+      return attachments.map((a) => convertTimestamps<import('@shared/schema').Attachment>(a));
+    } catch (error) {
+      logError('getResourceAttachments', error);
+      return [];
+    }
+  }
+
+  /**
+   * Add an attachment to a resource
+   */
+  async addAttachment(
+    userId: string,
+    attachment: import('@shared/schema').InsertAttachment
+  ): Promise<import('@shared/schema').Attachment> {
+    try {
+      const attachmentId = generateId();
+      const newAttachment: import('@shared/schema').Attachment = {
+        ...attachment,
+        id: attachmentId,
+        uploadedAt: new Date(),
+      };
+
+      await setUserSubcollectionDocument(
+        userId,
+        getCollectionName(attachment.resourceType),
+        attachment.resourceId.toString(),
+        'attachments',
+        attachmentId,
+        newAttachment
+      );
+
+      logInfo('addAttachment', { resourceType: attachment.resourceType, attachmentId });
+      return newAttachment;
+    } catch (error) {
+      logError('addAttachment', error);
       throw error;
     }
   }
@@ -5509,6 +5576,58 @@ class FirestoreStorage implements IClientStorage {
       logInfo('User theme preferences updated', { userId: preferences.userId });
     } catch (error) {
       logError('setUserThemePreferences', error, { userId: preferences.userId });
+   * Update an attachment
+   */
+  async updateAttachment(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number,
+    attachmentId: string,
+    updates: Partial<import('@shared/schema').Attachment>
+  ): Promise<void> {
+    try {
+      const db = getFirestoreInstance();
+      const docRef = firestoreDoc(
+        db,
+        'users',
+        userId,
+        getCollectionName(resourceType),
+        resourceId.toString(),
+        'attachments',
+        attachmentId
+      );
+      await setDoc(docRef, updates, { merge: true });
+      logInfo('updateAttachment', { attachmentId });
+    } catch (error) {
+      logError('updateAttachment', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an attachment
+   */
+  async deleteAttachment(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number,
+    attachmentId: string
+  ): Promise<void> {
+    try {
+      const db = getFirestoreInstance();
+      const docRef = firestoreDoc(
+        db,
+        'users',
+        userId,
+        getCollectionName(resourceType),
+        resourceId.toString(),
+        'attachments',
+        attachmentId
+      );
+      await deleteDoc(docRef);
+      logInfo('deleteAttachment', { attachmentId });
+    } catch (error) {
+      logError('deleteAttachment', error);
       throw error;
     }
   }
@@ -5530,6 +5649,22 @@ class FirestoreStorage implements IClientStorage {
       logInfo('User theme preferences updated', { userId });
     } catch (error) {
       logError('updateUserThemePreferences', error, { userId });
+   * Delete all attachments for a resource
+   */
+  async deleteResourceAttachments(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number
+  ): Promise<void> {
+    try {
+      const attachments = await this.getResourceAttachments(userId, resourceType, resourceId);
+      const deletePromises = attachments.map((attachment) =>
+        this.deleteAttachment(userId, resourceType, resourceId, attachment.id)
+      );
+      await Promise.all(deletePromises);
+      logInfo('deleteResourceAttachments', { count: attachments.length });
+    } catch (error) {
+      logError('deleteResourceAttachments', error);
       throw error;
     }
   }

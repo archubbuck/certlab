@@ -108,6 +108,53 @@ export const orderingItemSchema = z.object({
 
 export type OrderingItem = z.infer<typeof orderingItemSchema>;
 
+// ============================================================================
+// Translation Support
+// ============================================================================
+
+/**
+ * Supported language codes
+ */
+export const supportedLanguageSchema = z.enum(['en', 'es']);
+export type SupportedLanguage = z.infer<typeof supportedLanguageSchema>;
+
+/**
+ * Translation schema for localizable content
+ * Stored as Firestore subcollections: parentDoc/translations/{languageCode}
+ */
+export const translationSchema = z.object({
+  languageCode: supportedLanguageSchema,
+  title: z.string().optional(),
+  description: z.string().optional(),
+  content: z.string().optional(),
+  text: z.string().optional(), // For question text
+  options: z.array(questionOptionSchema).optional(), // For translated question options
+  explanation: z.string().optional(), // For question explanations
+  explanationSteps: z.array(z.string()).optional(), // For step-by-step explanations
+  updatedAt: z.date(),
+  updatedBy: z.string(), // User ID who last updated this translation
+});
+
+export type Translation = z.infer<typeof translationSchema>;
+
+/**
+ * Translatable content interface
+ * For entities that support translations (Quiz, Question, Lecture, Category, etc.)
+ */
+export interface TranslatableContent {
+  /**
+   * Whether translations exist for this content.
+   * Checked via Firestore subcollection existence.
+   */
+  hasTranslations?: boolean;
+
+  /**
+   * Available language codes (besides the default 'en')
+   * Populated from Firestore subcollection documents
+   */
+  availableLanguages?: SupportedLanguage[];
+}
+
 /**
  * Validates that a question's correctAnswer matches one of the option IDs.
  * @param options Array of question options
@@ -2910,3 +2957,153 @@ export const leaderboardEntrySchema = z.object({
 });
 
 export type InsertLeaderboardEntry = z.infer<typeof leaderboardEntrySchema>;
+
+// ============================================================================
+// Material Attachments System
+// ============================================================================
+
+/**
+ * Attachment types supported by the platform
+ */
+export const attachmentTypeSchema = z.enum([
+  'pdf',
+  'docx',
+  'pptx',
+  'xlsx',
+  'zip',
+  'image',
+  'audio',
+  'video',
+  'link',
+  'other',
+]);
+
+export type AttachmentType = z.infer<typeof attachmentTypeSchema>;
+
+/**
+ * File attachment metadata
+ * Stored in Firestore alongside lecture/material data
+ * Actual files stored in Firebase Storage at: /attachments/{userId}/{resourceType}/{resourceId}/{attachmentId}
+ */
+export interface Attachment {
+  id: string; // Unique attachment ID
+  resourceType: 'lecture' | 'quiz' | 'material'; // Type of resource this attachment belongs to
+  resourceId: number; // ID of the parent resource
+  type: AttachmentType; // Type of attachment
+  name: string; // Original filename or link title
+  description?: string; // Optional description
+  url: string; // Firebase Storage download URL or external URL
+  storagePath?: string; // Firebase Storage path (for file attachments only, not links)
+  fileSize?: number; // File size in bytes (for file attachments)
+  mimeType?: string; // MIME type (for file attachments)
+  thumbnailUrl?: string; // Optional thumbnail/preview URL
+  uploadedBy: string; // User ID who uploaded
+  uploadedAt: Date; // Upload timestamp
+  isExternal: boolean; // True if this is an external link, false if uploaded file
+  metadata?: {
+    width?: number; // For images
+    height?: number; // For images
+    duration?: number; // For audio/video in seconds
+    pageCount?: number; // For PDFs
+    [key: string]: any;
+  };
+}
+
+/**
+ * Zod schema for attachment validation
+ */
+export const attachmentSchema = z.object({
+  id: z.string(),
+  resourceType: z.enum(['lecture', 'quiz', 'material']),
+  resourceId: z.number(),
+  type: attachmentTypeSchema,
+  name: z.string().min(1).max(255),
+  description: z.string().max(1000).optional(),
+  url: z.string().url().max(2000),
+  storagePath: z.string().max(500).optional(),
+  fileSize: z
+    .number()
+    .int()
+    .min(0)
+    .max(100 * 1024 * 1024)
+    .optional(), // Max 100MB
+  mimeType: z.string().max(100).optional(),
+  thumbnailUrl: z.string().url().max(2000).optional(),
+  uploadedBy: z.string(),
+  uploadedAt: z.date(),
+  isExternal: z.boolean(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const insertAttachmentSchema = attachmentSchema.omit({
+  id: true,
+  uploadedAt: true,
+});
+
+export type InsertAttachment = z.infer<typeof insertAttachmentSchema>;
+
+/**
+ * Attachment upload configuration
+ */
+export const ATTACHMENT_CONFIG = {
+  maxFileSize: 100 * 1024 * 1024, // 100MB
+  maxAttachmentsPerResource: 20,
+  allowedMimeTypes: {
+    pdf: ['application/pdf'],
+    docx: [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+    ],
+    pptx: [
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-powerpoint',
+    ],
+    xlsx: [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+    ],
+    zip: ['application/zip', 'application/x-zip-compressed'],
+    image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
+    audio: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4'],
+    video: ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'],
+  },
+  storageBasePath: 'attachments', // Base path in Firebase Storage
+} as const;
+
+/**
+ * Pre-computed flattened array of all allowed MIME types for performance
+ */
+const ALL_ALLOWED_MIME_TYPES: string[] = Object.values(ATTACHMENT_CONFIG.allowedMimeTypes).flat();
+
+/**
+ * Helper function to get attachment type from MIME type
+ */
+export function getAttachmentTypeFromMimeType(mimeType: string): AttachmentType {
+  const lowerMime = mimeType.toLowerCase();
+
+  if (ATTACHMENT_CONFIG.allowedMimeTypes.pdf.some((type) => type === lowerMime)) return 'pdf';
+  if (ATTACHMENT_CONFIG.allowedMimeTypes.docx.some((type) => type === lowerMime)) return 'docx';
+  if (ATTACHMENT_CONFIG.allowedMimeTypes.pptx.some((type) => type === lowerMime)) return 'pptx';
+  if (ATTACHMENT_CONFIG.allowedMimeTypes.xlsx.some((type) => type === lowerMime)) return 'xlsx';
+  if (ATTACHMENT_CONFIG.allowedMimeTypes.zip.some((type) => type === lowerMime)) return 'zip';
+
+  if (lowerMime.startsWith('image/')) return 'image';
+  if (lowerMime.startsWith('audio/')) return 'audio';
+  if (lowerMime.startsWith('video/')) return 'video';
+
+  return 'other';
+}
+
+/**
+ * Helper function to validate file type
+ */
+export function isValidAttachmentType(mimeType: string): boolean {
+  const lowerMime = mimeType.toLowerCase();
+
+  return (
+    ALL_ALLOWED_MIME_TYPES.includes(lowerMime) ||
+    lowerMime.startsWith('image/') ||
+    lowerMime.startsWith('audio/') ||
+    lowerMime.startsWith('video/')
+  );
+}

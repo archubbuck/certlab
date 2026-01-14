@@ -1881,6 +1881,63 @@ class StorageRouter implements IClientStorage {
     return this.executeStorageOperation(
       (s) => (s as any).updateUserThemePreferences(userId, updates),
       'updateUserThemePreferences'
+  // Material Attachments
+  // ==========================================
+
+  async getResourceAttachments(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number
+  ): Promise<import('@shared/schema').Attachment[]> {
+    return this.executeStorageOperation(
+      (s) => s.getResourceAttachments(userId, resourceType, resourceId),
+      'getResourceAttachments'
+    );
+  }
+
+  async addAttachment(
+    userId: string,
+    attachment: import('@shared/schema').InsertAttachment
+  ): Promise<import('@shared/schema').Attachment> {
+    return this.executeStorageOperation(
+      (s) => s.addAttachment(userId, attachment),
+      'addAttachment'
+    );
+  }
+
+  async updateAttachment(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number,
+    attachmentId: string,
+    updates: Partial<import('@shared/schema').Attachment>
+  ): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.updateAttachment(userId, resourceType, resourceId, attachmentId, updates),
+      'updateAttachment'
+    );
+  }
+
+  async deleteAttachment(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number,
+    attachmentId: string
+  ): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.deleteAttachment(userId, resourceType, resourceId, attachmentId),
+      'deleteAttachment'
+    );
+  }
+
+  async deleteResourceAttachments(
+    userId: string,
+    resourceType: 'lecture' | 'quiz' | 'material',
+    resourceId: number
+  ): Promise<void> {
+    return this.executeStorageOperation(
+      (s) => s.deleteResourceAttachments(userId, resourceType, resourceId),
+      'deleteResourceAttachments'
     );
   }
 }

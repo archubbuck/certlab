@@ -72,6 +72,15 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
     
+    // Attachments for user resources (lectures, quizzes, materials)
+    // Example path: /users/{userId}/lectures/{lectureId}/attachments/{attachmentId}
+    match /users/{userId}/{resourceType}/{resourceId}/attachments/{attachmentId} {
+      // Attachments must not be readable more broadly than their parent resource.
+      // For now, we align with the parent per-user isolation model:
+      // only the owning user can read and write their attachments.
+      allow read, write: if isOwner(userId);
+    }
+    
     // Shared read-only content (categories, questions, badges, lectures)
     match /categories/{categoryId} {
       allow read: if isAuthenticated();
