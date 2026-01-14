@@ -1491,16 +1491,16 @@
     text-decoration: none;
   }
   
-  a[href]:after {
+  a[href]::after {
     content: " (" attr(href) ")";
     font-size: 0.8em;
     color: #666;
   }
   
   /* Don't show URLs for internal links or buttons */
-  a[href^="#"]:after,
-  a[href^="/"]:after,
-  .print-no-url:after {
+  a[href^="#"]::after,
+  a[href^="/"]::after,
+  .print-no-url::after {
     content: "";
   }
   
