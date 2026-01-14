@@ -252,6 +252,182 @@ export const tenants = pgTable('tenants', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+// ============================================================================
+// Organization Branding & Custom Theming
+// ============================================================================
+
+/**
+ * Organization branding configuration for custom look and feel
+ * Stored in Firestore at: /organizations/{orgId}/branding (single document)
+ * Can also be stored at tenant level: /tenants/{tenantId} with branding field
+ */
+export interface OrganizationBranding {
+  tenantId: number;
+  // Logo and visual identity
+  logoUrl?: string; // URL to organization logo
+  logoWidth?: number; // Logo width in pixels (default: 40)
+  logoHeight?: number; // Logo height in pixels (default: 40)
+  faviconUrl?: string; // URL to custom favicon
+  splashScreenUrl?: string; // URL to splash screen image
+  splashScreenDuration?: number; // Duration in ms (default: 2000)
+
+  // Color customization
+  primaryColor?: string; // Primary brand color (hex)
+  secondaryColor?: string; // Secondary brand color (hex)
+  accentColor?: string; // Accent color for highlights (hex)
+  backgroundColor?: string; // Background color (hex)
+  surfaceColor?: string; // Card/surface color (hex)
+
+  // Typography
+  fontFamily?: string; // Custom font family
+  headingFontFamily?: string; // Font for headings
+
+  // Organization info
+  organizationName?: string; // Display name
+  organizationTagline?: string; // Optional tagline
+
+  // Theme settings
+  defaultTheme?:
+    | 'light'
+    | 'dark'
+    | 'nord'
+    | 'catppuccin'
+    | 'tokyo-night'
+    | 'dracula'
+    | 'rose-pine'
+    | 'high-contrast';
+  allowUserThemeSelection?: boolean; // Whether users can change themes (default: true)
+  enabledThemes?: string[]; // List of themes users can select from (empty = all)
+
+  // Advanced customization
+  customCss?: string; // Custom CSS to inject
+
+  // Metadata
+  isActive: boolean;
+  updatedAt: Date;
+  updatedBy: string; // User ID who last updated
+}
+
+/**
+ * Zod schema for organization branding validation
+ */
+export const organizationBrandingSchema = z.object({
+  tenantId: z.number(),
+  logoUrl: z.string().url().max(1000).optional(),
+  logoWidth: z.number().int().min(20).max(200).optional(),
+  logoHeight: z.number().int().min(20).max(200).optional(),
+  faviconUrl: z.string().url().max(1000).optional(),
+  splashScreenUrl: z.string().url().max(1000).optional(),
+  splashScreenDuration: z.number().int().min(500).max(10000).optional(),
+  primaryColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color')
+    .optional(),
+  secondaryColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color')
+    .optional(),
+  accentColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color')
+    .optional(),
+  backgroundColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color')
+    .optional(),
+  surfaceColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color')
+    .optional(),
+  fontFamily: z.string().max(100).optional(),
+  headingFontFamily: z.string().max(100).optional(),
+  organizationName: z.string().min(1).max(200).optional(),
+  organizationTagline: z.string().max(500).optional(),
+  defaultTheme: z
+    .enum([
+      'light',
+      'dark',
+      'nord',
+      'catppuccin',
+      'tokyo-night',
+      'dracula',
+      'rose-pine',
+      'high-contrast',
+    ])
+    .optional(),
+  allowUserThemeSelection: z.boolean().default(true),
+  enabledThemes: z.array(z.string()).optional(),
+  customCss: z.string().max(10000).optional(),
+  isActive: z.boolean(),
+  updatedAt: z.date(),
+  updatedBy: z.string(),
+});
+
+export type InsertOrganizationBranding = Omit<OrganizationBranding, 'updatedAt'> & {
+  updatedAt?: Date;
+};
+
+/**
+ * User theme preferences for personal customization
+ * Stored in Firestore at: /users/{userId}/preferences/theme
+ */
+export interface UserThemePreferences {
+  userId: string;
+  tenantId: number;
+  selectedTheme:
+    | 'light'
+    | 'dark'
+    | 'nord'
+    | 'catppuccin'
+    | 'tokyo-night'
+    | 'dracula'
+    | 'rose-pine'
+    | 'high-contrast';
+  useSystemTheme?: boolean; // Whether to follow system dark/light mode
+  customOverrides?: {
+    // User-specific overrides (if allowed by org)
+    primaryColor?: string;
+    accentColor?: string;
+  };
+  updatedAt: Date;
+}
+
+/**
+ * Zod schema for user theme preferences validation
+ */
+export const userThemePreferencesSchema = z.object({
+  userId: z.string(),
+  tenantId: z.number(),
+  selectedTheme: z.enum([
+    'light',
+    'dark',
+    'nord',
+    'catppuccin',
+    'tokyo-night',
+    'dracula',
+    'rose-pine',
+    'high-contrast',
+  ]),
+  useSystemTheme: z.boolean().optional(),
+  customOverrides: z
+    .object({
+      primaryColor: z
+        .string()
+        .regex(/^#[0-9A-Fa-f]{6}$/)
+        .optional(),
+      accentColor: z
+        .string()
+        .regex(/^#[0-9A-Fa-f]{6}$/)
+        .optional(),
+    })
+    .optional(),
+  updatedAt: z.date(),
+});
+
+export type InsertUserThemePreferences = Omit<UserThemePreferences, 'updatedAt'> & {
+  updatedAt?: Date;
+};
+
 // User storage table
 export const users = pgTable('users', {
   id: varchar('id').primaryKey().notNull(),

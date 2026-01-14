@@ -5437,6 +5437,119 @@ class FirestoreStorage implements IClientStorage {
   }
 
   // ==========================================
+  // Organization Branding & Theme Preferences
+  // ==========================================
+
+  /**
+   * Get organization branding configuration for a tenant
+   * Stored in /tenants/{tenantId}/branding (single document)
+   */
+  async getOrganizationBranding(
+    tenantId: number
+  ): Promise<import('@shared/schema').OrganizationBranding | null> {
+    try {
+      const db = getFirestoreInstance();
+      const brandingDoc = await getDoc(firestoreDoc(db, `tenants/${tenantId}/branding`, 'config'));
+
+      if (!brandingDoc.exists()) {
+        return null;
+      }
+
+      return convertTimestamps(brandingDoc.data());
+    } catch (error) {
+      logError('getOrganizationBranding', error, { tenantId });
+      return null;
+    }
+  }
+
+  /**
+   * Set organization branding configuration
+   * Only accessible by admins
+   */
+  async setOrganizationBranding(
+    branding: import('@shared/schema').InsertOrganizationBranding
+  ): Promise<void> {
+    try {
+      const db = getFirestoreInstance();
+      const brandingData = {
+        ...branding,
+        updatedAt: new Date(),
+      };
+
+      await setDoc(
+        firestoreDoc(db, `tenants/${branding.tenantId}/branding`, 'config'),
+        brandingData
+      );
+
+      logInfo('Organization branding updated', { tenantId: branding.tenantId });
+    } catch (error) {
+      logError('setOrganizationBranding', error, { tenantId: branding.tenantId });
+      throw error;
+    }
+  }
+
+  /**
+   * Get user theme preferences
+   * Stored in /users/{userId}/preferences/theme
+   */
+  async getUserThemePreferences(
+    userId: string
+  ): Promise<import('@shared/schema').UserThemePreferences | null> {
+    try {
+      const prefs = await getUserDocument<import('@shared/schema').UserThemePreferences>(
+        userId,
+        'preferences',
+        'theme'
+      );
+      return prefs ? convertTimestamps(prefs) : null;
+    } catch (error) {
+      logError('getUserThemePreferences', error, { userId });
+      return null;
+    }
+  }
+
+  /**
+   * Set user theme preferences
+   */
+  async setUserThemePreferences(
+    preferences: import('@shared/schema').InsertUserThemePreferences
+  ): Promise<void> {
+    try {
+      const prefsData = {
+        ...preferences,
+        updatedAt: new Date(),
+      };
+
+      await setUserDocument(preferences.userId, 'preferences', 'theme', prefsData);
+      logInfo('User theme preferences updated', { userId: preferences.userId });
+    } catch (error) {
+      logError('setUserThemePreferences', error, { userId: preferences.userId });
+      throw error;
+    }
+  }
+
+  /**
+   * Update user theme preferences (partial update)
+   */
+  async updateUserThemePreferences(
+    userId: string,
+    updates: Partial<import('@shared/schema').UserThemePreferences>
+  ): Promise<void> {
+    try {
+      const updateData = {
+        ...updates,
+        updatedAt: new Date(),
+      };
+
+      await updateUserDocument(userId, 'preferences', 'theme', updateData);
+      logInfo('User theme preferences updated', { userId });
+    } catch (error) {
+      logError('updateUserThemePreferences', error, { userId });
+      throw error;
+    }
+  }
+
+  // ==========================================
   // Material Attachments
   // ==========================================
 
