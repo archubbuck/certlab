@@ -54,7 +54,7 @@ Open http://localhost:5000 and sign in with Google to get started!
 ### Prerequisites
 
 - **Node.js**: v20.x or higher
-- **npm**: v10.x or higher  
+- **npm**: v10.x or higher
 - **Firebase Project**: Required for authentication and storage
 - **Dynatrace Account**: Recommended for monitoring (optional)
 
@@ -70,7 +70,7 @@ Open http://localhost:5000 and sign in with Google to get started!
 
 📖 **Detailed Information**:
 - **Firebase Setup**: [docs/setup/firebase.md](docs/setup/firebase.md)
-- **Dynatrace Setup**: [docs/setup/dynatrace.md](docs/setup/dynatrace.md)  
+- **Dynatrace Setup**: [docs/setup/dynatrace.md](docs/setup/dynatrace.md)
 - **Deployment Guide**: [docs/setup/deployment.md](docs/setup/deployment.md)
 - **Project Structure**: [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)
 
@@ -121,7 +121,7 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for:
 
 - Development environment setup
-- Code style guidelines  
+- Code style guidelines
 - How to submit pull requests
 - Reporting issues
 
