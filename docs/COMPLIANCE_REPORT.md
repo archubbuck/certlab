@@ -147,7 +147,7 @@ This compliance report provides a comprehensive assessment of CertLab's readines
 
 **Status**: ✅ **Partially Compliant (90% conformance)**
 
-Full details available in: [ACCESSIBILITY_COMPLIANCE_REPORT.md](docs/ACCESSIBILITY_COMPLIANCE_REPORT.md)
+Full details available in: [ACCESSIBILITY_COMPLIANCE_REPORT.md](ACCESSIBILITY_COMPLIANCE_REPORT.md)
 
 #### Summary by Principle
 
@@ -434,16 +434,16 @@ See: [QA_CHECKLIST.md](QA_CHECKLIST.md) for detailed testing procedures.
 |----------|--------|----------|--------------|
 | README.md | ✅ Complete | Root | 100% |
 | SECURITY.md | ✅ Complete | Root | 100% |
-| PRIVACY_POLICY.md | ✅ Complete | Root | 100% |
+| PRIVACY_POLICY.md | ✅ Complete | docs/ | 100% |
 | FEATURES.md | ✅ Complete | Root | 100% |
 | ACCESSIBILITY.md | ✅ Complete | Root | 100% |
 | CONTRIBUTING.md | ✅ Complete | Root | 100% |
 | LICENSE | ✅ Complete | Root | 100% |
 | CHANGELOG.md | ✅ Complete | Root | 100% |
 | User Manual | ✅ Complete | docs/user-manual.md | 100% |
-| Admin Guide | ✅ Complete | ADMIN_GUIDE.md | 100% |
+| Admin Guide | ✅ Complete | docs/ADMIN_GUIDE.md | 100% |
 | Compliance Report | ✅ Complete | This document | 100% |
-| Release Checklist | ✅ Complete | RELEASE_CHECKLIST.md | 100% |
+| Release Checklist | ✅ Complete | docs/RELEASE_CHECKLIST.md | 100% |
 
 ### 6.2 Technical Documentation
 
