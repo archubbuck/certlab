@@ -14,7 +14,7 @@ This document summarizes the implementation of comprehensive release checklist a
 
 ## Deliverables
 
-### 1. Privacy Policy (PRIVACY_POLICY.md)
+### 1. Privacy Policy (docs/PRIVACY_POLICY.md)
 
 **Status**: ✅ Complete
 
@@ -47,7 +47,7 @@ A comprehensive 13,000+ word privacy policy covering:
 
 ---
 
-### 2. Compliance Report (COMPLIANCE_REPORT.md)
+### 2. Compliance Report (docs/COMPLIANCE_REPORT.md)
 
 **Status**: ✅ Complete
 
@@ -95,7 +95,7 @@ A comprehensive 23,000+ word audit readiness report covering:
 
 ---
 
-### 3. Administrator Guide (ADMIN_GUIDE.md)
+### 3. Administrator Guide (docs/ADMIN_GUIDE.md)
 
 **Status**: ✅ Complete
 
@@ -124,7 +124,7 @@ A comprehensive 26,000+ word guide for system administrators covering:
 
 ---
 
-### 4. QA Checklist (QA_CHECKLIST.md)
+### 4. QA Checklist (docs/QA_CHECKLIST.md)
 
 **Status**: ✅ Complete
 
@@ -192,7 +192,7 @@ A detailed 16,000+ word quality assurance testing guide covering:
 
 ---
 
-### 5. Release Checklist (RELEASE_CHECKLIST.md)
+### 5. Release Checklist (docs/RELEASE_CHECKLIST.md)
 
 **Status**: ✅ Complete
 
@@ -355,7 +355,7 @@ A comprehensive 20,000+ word master release checklist covering:
 - ✅ SECURITY.md verified comprehensive
 - ✅ FEATURES.md verified current
 - ✅ End-user guide exists (docs/user-manual.md)
-- ✅ Admin guide created (ADMIN_GUIDE.md)
+- ✅ Admin guide created (docs/ADMIN_GUIDE.md)
 - ✅ All cross-references established
 
 ---
@@ -365,14 +365,14 @@ A comprehensive 20,000+ word master release checklist covering:
 ### From Original Issue
 
 ✅ **Privacy**: Ensure data retention, user deletion, and user data access workflows are validated
-- Data retention policies documented in PRIVACY_POLICY.md and COMPLIANCE_REPORT.md
+- Data retention policies documented in docs/PRIVACY_POLICY.md and docs/COMPLIANCE_REPORT.md
 - User deletion workflow documented and verified (account deletion feature)
 - User data access workflow documented and verified (data export feature)
 
 ✅ **Compliance**: Verify accessibility (WCAG 2.2), FERPA/educational data checks, usage tracking opt-in, copyright
 - WCAG 2.2 Level AA: 90% conformance (documented in ACCESSIBILITY.md and COMPLIANCE_REPORT.md)
-- FERPA architecture ready (documented in COMPLIANCE_REPORT.md and ADMIN_GUIDE.md)
-- Usage tracking opt-in: Dynatrace is optional, admin-configured (documented in PRIVACY_POLICY.md)
+- FERPA architecture ready (documented in docs/COMPLIANCE_REPORT.md and docs/ADMIN_GUIDE.md)
+- Usage tracking opt-in: Dynatrace is optional, admin-configured (documented in docs/PRIVACY_POLICY.md)
 - Copyright: MIT license, all dependencies licensed (documented in COMPLIANCE_REPORT.md)
 
 ✅ **QA**: Automated and manual testing for critical flows; cross-device support; regression testing pass

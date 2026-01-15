@@ -105,23 +105,23 @@ certlab/
 
 | Requirement | Status | Evidence |
 |------------|--------|----------|
-| **Privacy: Data retention validated** | ✅ Complete | PRIVACY_POLICY.md, COMPLIANCE_REPORT.md |
-| **Privacy: User deletion workflow** | ✅ Complete | PRIVACY_POLICY.md (sections 3.2, 4.2) |
-| **Privacy: User data access workflow** | ✅ Complete | PRIVACY_POLICY.md (sections 4.1, 4.4) |
-| **Compliance: WCAG 2.2 verified** | ✅ Complete | COMPLIANCE_REPORT.md (90% conformance) |
-| **Compliance: FERPA checks** | ✅ Complete | COMPLIANCE_REPORT.md (section 1.4) |
-| **Compliance: Usage tracking opt-in** | ✅ Complete | PRIVACY_POLICY.md (section 8) |
-| **Compliance: Copyright** | ✅ Complete | COMPLIANCE_REPORT.md (section 4) |
-| **QA: Automated testing** | ✅ Complete | QA_CHECKLIST.md (147 tests, 100% pass) |
-| **QA: Manual testing** | ✅ Complete | QA_CHECKLIST.md (critical flows) |
-| **QA: Cross-device support** | ✅ Complete | QA_CHECKLIST.md (desktop/tablet/mobile) |
-| **QA: Regression testing** | ✅ Complete | QA_CHECKLIST.md (section 5) |
+| **Privacy: Data retention validated** | ✅ Complete | docs/PRIVACY_POLICY.md, docs/COMPLIANCE_REPORT.md |
+| **Privacy: User deletion workflow** | ✅ Complete | docs/PRIVACY_POLICY.md (sections 3.2, 4.2) |
+| **Privacy: User data access workflow** | ✅ Complete | docs/PRIVACY_POLICY.md (sections 4.1, 4.4) |
+| **Compliance: WCAG 2.2 verified** | ✅ Complete | docs/COMPLIANCE_REPORT.md (90% conformance) |
+| **Compliance: FERPA checks** | ✅ Complete | docs/COMPLIANCE_REPORT.md (section 1.4) |
+| **Compliance: Usage tracking opt-in** | ✅ Complete | docs/PRIVACY_POLICY.md (section 8) |
+| **Compliance: Copyright** | ✅ Complete | docs/COMPLIANCE_REPORT.md (section 4) |
+| **QA: Automated testing** | ✅ Complete | docs/QA_CHECKLIST.md (147 tests, 100% pass) |
+| **QA: Manual testing** | ✅ Complete | docs/QA_CHECKLIST.md (critical flows) |
+| **QA: Cross-device support** | ✅ Complete | docs/QA_CHECKLIST.md (desktop/tablet/mobile) |
+| **QA: Regression testing** | ✅ Complete | docs/QA_CHECKLIST.md (section 5) |
 | **Documentation: README** | ✅ Complete | Updated with new sections |
 | **Documentation: SECURITY.md** | ✅ Verified | Existing, comprehensive |
 | **Documentation: FEATURES.md** | ✅ Verified | Existing, up-to-date |
 | **Documentation: User guide** | ✅ Verified | docs/user-manual.md |
-| **Documentation: Admin guide** | ✅ Complete | ADMIN_GUIDE.md (26KB) |
-| **Draft audit report** | ✅ Complete | COMPLIANCE_REPORT.md (24KB) |
+| **Documentation: Admin guide** | ✅ Complete | docs/ADMIN_GUIDE.md (26KB) |
+| **Draft audit report** | ✅ Complete | docs/COMPLIANCE_REPORT.md (24KB) |
 | **Sign-off templates** | ✅ Complete | In COMPLIANCE_REPORT.md, RELEASE_CHECKLIST.md |
 | **All checklists in repo** | ✅ Complete | 6 new documents committed |
 | **Regulatory checks pass** | ✅ Complete | GDPR, CCPA, FERPA, WCAG verified |
@@ -310,7 +310,7 @@ Documentation:
 
 ## 🎯 Key Deliverables
 
-### 1. Privacy Policy (PRIVACY_POLICY.md)
+### 1. Privacy Policy (docs/PRIVACY_POLICY.md)
 **Size**: 13KB | **Lines**: 409 | **Status**: ✅ Complete
 
 **Covers**:
@@ -329,7 +329,7 @@ Documentation:
 
 ---
 
-### 2. Compliance Report (COMPLIANCE_REPORT.md)
+### 2. Compliance Report (docs/COMPLIANCE_REPORT.md)
 **Size**: 24KB | **Lines**: 684 | **Status**: ✅ Complete
 
 **Covers**:
@@ -349,7 +349,7 @@ Documentation:
 
 ---
 
-### 3. Admin Guide (ADMIN_GUIDE.md)
+### 3. Admin Guide (docs/ADMIN_GUIDE.md)
 **Size**: 26KB | **Lines**: 1,118 | **Status**: ✅ Complete
 
 **Covers**:
@@ -370,7 +370,7 @@ Documentation:
 
 ---
 
-### 4. QA Checklist (QA_CHECKLIST.md)
+### 4. QA Checklist (docs/QA_CHECKLIST.md)
 **Size**: 16KB | **Lines**: 628 | **Status**: ✅ Complete
 
 **Covers**:
@@ -391,7 +391,7 @@ Documentation:
 
 ---
 
-### 5. Release Checklist (RELEASE_CHECKLIST.md)
+### 5. Release Checklist (docs/RELEASE_CHECKLIST.md)
 **Size**: 21KB | **Lines**: 702 | **Status**: ✅ Complete
 
 **Covers**:
@@ -412,7 +412,7 @@ Documentation:
 
 ---
 
-### 6. Implementation Summary (RELEASE_AUDIT_READINESS_SUMMARY.md)
+### 6. Implementation Summary (docs/RELEASE_AUDIT_READINESS_SUMMARY.md)
 **Size**: 16KB | **Lines**: 531 | **Status**: ✅ Complete
 
 **Covers**:

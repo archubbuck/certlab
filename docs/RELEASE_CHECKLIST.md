@@ -33,7 +33,7 @@ This checklist ensures that CertLab releases meet all privacy, compliance, quali
 
 ### 1.1 Privacy Documentation
 
-- [ ] **Privacy Policy** reviewed and up-to-date (`PRIVACY_POLICY.md`)
+- [ ] **Privacy Policy** reviewed and up-to-date (`docs/PRIVACY_POLICY.md`)
 - [ ] Privacy Policy includes all data collection practices
 - [ ] Privacy Policy includes data retention periods
 - [ ] Privacy Policy includes user rights (access, deletion, portability)
@@ -125,7 +125,7 @@ This checklist ensures that CertLab releases meet all privacy, compliance, quali
   - [ ] Role-based access control implemented
   - [ ] No sharing of educational records without consent
 - [ ] Parent/guardian access rights documented
-- [ ] Educational institutions guide provided (`ADMIN_GUIDE.md`)
+- [ ] Educational institutions guide provided (`docs/ADMIN_GUIDE.md`)
 - [ ] FERPA compliance section in Privacy Policy
 - [ ] Data disclosure policies documented
 - [ ] Security safeguards meet FERPA requirements
@@ -277,7 +277,7 @@ This checklist ensures that CertLab releases meet all privacy, compliance, quali
 
 ### 6.2 Manual Testing
 
-- [ ] **Critical user flows tested** (see `QA_CHECKLIST.md`)
+- [ ] **Critical user flows tested** (see `docs/QA_CHECKLIST.md`)
   - [ ] User authentication (login/logout)
   - [ ] Quiz creation
   - [ ] Quiz taking (all modes)
@@ -374,7 +374,7 @@ This checklist ensures that CertLab releases meet all privacy, compliance, quali
 
 ### 7.3 Administrator Documentation
 
-- [ ] **Admin Guide** - Administrator manual (`ADMIN_GUIDE.md`)
+- [ ] **Admin Guide** - Administrator manual (`docs/ADMIN_GUIDE.md`)
   - [ ] Initial setup instructions
   - [ ] User management
   - [ ] Content management
@@ -400,7 +400,7 @@ This checklist ensures that CertLab releases meet all privacy, compliance, quali
 
 ### 7.5 Compliance Documentation
 
-- [ ] **Compliance Report** - Audit readiness (`COMPLIANCE_REPORT.md`)
+- [ ] **Compliance Report** - Audit readiness (`docs/COMPLIANCE_REPORT.md`)
   - [ ] Privacy compliance summary
   - [ ] Accessibility compliance summary
   - [ ] Educational compliance summary
@@ -410,7 +410,7 @@ This checklist ensures that CertLab releases meet all privacy, compliance, quali
   - [ ] Risk assessment
   - [ ] Recommendations
   - [ ] Sign-off template
-- [ ] **QA Checklist** - Testing procedures (`QA_CHECKLIST.md`)
+- [ ] **QA Checklist** - Testing procedures (`docs/QA_CHECKLIST.md`)
 - [ ] **Release Checklist** - This document
 
 ### 7.6 Documentation Quality
@@ -699,4 +699,4 @@ For critical security fixes or hotfixes:
 **Last Updated**: January 15, 2026  
 **Next Review**: After each major release or quarterly
 
-**For the latest version**, see: https://github.com/archubbuck/certlab/blob/main/RELEASE_CHECKLIST.md
+**For the latest version**, see: https://github.com/archubbuck/certlab/blob/main/docs/RELEASE_CHECKLIST.md
