@@ -316,14 +316,20 @@ function applyFilters(
   // Filter by minimum difficulty
   if (filters.minDifficulty !== undefined) {
     filtered = filtered.filter(
-      (m) => m.difficultyLevel !== undefined && m.difficultyLevel >= filters.minDifficulty!
+      (m) =>
+        m.difficultyLevel !== undefined &&
+        m.difficultyLevel !== null &&
+        m.difficultyLevel >= filters.minDifficulty!
     );
   }
 
   // Filter by maximum difficulty
   if (filters.maxDifficulty !== undefined) {
     filtered = filtered.filter(
-      (m) => m.difficultyLevel !== undefined && m.difficultyLevel <= filters.maxDifficulty!
+      (m) =>
+        m.difficultyLevel !== undefined &&
+        m.difficultyLevel !== null &&
+        m.difficultyLevel <= filters.maxDifficulty!
     );
   }
 

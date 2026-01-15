@@ -26,7 +26,7 @@ import { storage } from './storage-factory';
 
 describe('Learning Materials API', () => {
   // Sample test data
-  const mockLectures: Lecture[] = [
+  const mockLectures: Partial<Lecture>[] = [
     {
       id: 1,
       userId: 'user1',
@@ -48,7 +48,7 @@ describe('Learning Materials API', () => {
       requiresPurchase: false,
       distributionMethod: 'open',
       sendNotifications: true,
-    },
+    } as Lecture,
     {
       id: 2,
       userId: 'user1',
@@ -347,7 +347,7 @@ describe('Learning Materials API', () => {
 
   describe('getUniqueTags', () => {
     it('should return unique tags from materials', () => {
-      const tags = getUniqueTags(mockLectures);
+      const tags = getUniqueTags(mockLectures as Lecture[]);
 
       expect(tags).toContain('security');
       expect(tags).toContain('networking');
@@ -358,7 +358,7 @@ describe('Learning Materials API', () => {
 
   describe('getUniqueContentTypes', () => {
     it('should return unique content types from materials', () => {
-      const types = getUniqueContentTypes(mockLectures);
+      const types = getUniqueContentTypes(mockLectures as Lecture[]);
 
       expect(types).toContain('text');
       expect(types).toContain('video');
@@ -370,7 +370,7 @@ describe('Learning Materials API', () => {
 
   describe('getLearningMaterialsStats', () => {
     it('should return statistics about materials', () => {
-      const stats = getLearningMaterialsStats(mockLectures);
+      const stats = getLearningMaterialsStats(mockLectures as Lecture[]);
 
       expect(stats.total).toBe(4);
       expect(stats.byContentType).toEqual({
