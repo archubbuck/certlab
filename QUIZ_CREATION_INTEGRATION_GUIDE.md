@@ -134,9 +134,29 @@ For example:
 
 ## Storing Selected Materials
 
-To persist selected learning materials in the quiz template:
+To persist selected learning materials in the quiz template, you need to extend the QuizTemplate type to include a field for storing material associations.
 
-### Update Quiz Template Creation
+### Step 1: Extend QuizTemplate Type
+
+In `shared/schema.ts`, add the optional field to QuizTemplate:
+
+```typescript
+// In the quizTemplates table definition, add:
+linkedMaterialIds: jsonb('linked_material_ids').$type<number[]>(), // Optional: IDs of associated learning materials
+```
+
+Or if you're using TypeScript interfaces:
+
+```typescript
+export interface QuizTemplate {
+  // ... existing fields
+  linkedMaterialIds?: number[]; // Optional: IDs of associated learning materials
+}
+```
+
+**Note**: This field is optional and should be added to support the new feature. Existing quiz templates without this field will continue to work normally.
+
+### Step 2: Update Quiz Template Creation
 
 ```typescript
 const template: QuizTemplate = {
@@ -145,20 +165,21 @@ const template: QuizTemplate = {
   subcategoryIds: selectedSubcategories,
   customQuestions: sanitizedQuestions,
   
-  // Add this field (may need to extend QuizTemplate type):
-  linkedMaterialIds: selectedMaterialIds, // Store associated learning materials
+  // Include selected learning materials
+  linkedMaterialIds: selectedMaterialIds.length > 0 ? selectedMaterialIds : undefined,
   
   // ... rest of template
 };
 ```
 
-### Extend QuizTemplate Type (if needed)
+### Step 3: Update Quiz Template Loading
 
-In `shared/schema.ts`, you may want to add:
+When loading an existing template, restore the selected materials:
+
 ```typescript
-export interface QuizTemplate {
-  // ... existing fields
-  linkedMaterialIds?: number[]; // Optional: IDs of associated learning materials
+// When loading template
+if (template.linkedMaterialIds) {
+  setSelectedMaterialIds(template.linkedMaterialIds);
 }
 ```
 
