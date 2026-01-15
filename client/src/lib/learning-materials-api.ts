@@ -127,7 +127,11 @@ export async function getAccessibleLearningMaterials(
     };
   } catch (error) {
     console.error('Error fetching learning materials:', error);
-    throw new Error('Failed to fetch learning materials');
+    if (error instanceof Error) {
+      error.message = `Failed to fetch learning materials: ${error.message}`;
+      throw error;
+    }
+    throw new Error(`Failed to fetch learning materials: ${String(error)}`);
   }
 }
 
@@ -213,6 +217,10 @@ export async function searchLearningMaterials(
  * @param material - Learning material to check
  * @param userId - User ID
  * @returns True if accessible, false otherwise
+ * 
+ * @warning Purchase verification is not fully implemented. Materials requiring purchase
+ * are currently only accessible to their owners. Users who have purchased the content
+ * will be incorrectly denied access until purchase verification is implemented.
  */
 function checkMaterialAccess(material: Lecture, userId: string): boolean {
   // Check if requires purchase first (blocks access regardless of visibility)
@@ -294,80 +302,78 @@ function applyFilters(
   materials: LearningMaterialForQuiz[],
   filters: LearningMaterialsFilters
 ): LearningMaterialForQuiz[] {
-  let filtered = materials;
+  // Optimize filtering by combining all conditions in a single pass
+  return materials.filter((m) => {
+    // Filter by category IDs
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+      if (!filters.categoryIds.includes(m.categoryId)) return false;
+    }
 
-  // Filter by category IDs
-  if (filters.categoryIds && filters.categoryIds.length > 0) {
-    filtered = filtered.filter((m) => filters.categoryIds!.includes(m.categoryId));
-  }
+    // Filter by subcategory IDs
+    if (filters.subcategoryIds && filters.subcategoryIds.length > 0) {
+      if (!m.subcategoryId || !filters.subcategoryIds.includes(m.subcategoryId)) return false;
+    }
 
-  // Filter by subcategory IDs
-  if (filters.subcategoryIds && filters.subcategoryIds.length > 0) {
-    filtered = filtered.filter(
-      (m) => m.subcategoryId && filters.subcategoryIds!.includes(m.subcategoryId)
-    );
-  }
+    // Filter by difficulty level (exact match)
+    if (filters.difficultyLevel !== undefined) {
+      if (m.difficultyLevel !== filters.difficultyLevel) return false;
+    }
 
-  // Filter by difficulty level (exact match)
-  if (filters.difficultyLevel !== undefined) {
-    filtered = filtered.filter((m) => m.difficultyLevel === filters.difficultyLevel);
-  }
+    // Filter by minimum difficulty
+    if (filters.minDifficulty !== undefined) {
+      if (
+        m.difficultyLevel === undefined ||
+        m.difficultyLevel === null ||
+        m.difficultyLevel < filters.minDifficulty
+      ) {
+        return false;
+      }
+    }
 
-  // Filter by minimum difficulty
-  if (filters.minDifficulty !== undefined) {
-    filtered = filtered.filter(
-      (m) =>
-        m.difficultyLevel !== undefined &&
-        m.difficultyLevel !== null &&
-        m.difficultyLevel >= filters.minDifficulty!
-    );
-  }
+    // Filter by maximum difficulty
+    if (filters.maxDifficulty !== undefined) {
+      if (
+        m.difficultyLevel === undefined ||
+        m.difficultyLevel === null ||
+        m.difficultyLevel > filters.maxDifficulty
+      ) {
+        return false;
+      }
+    }
 
-  // Filter by maximum difficulty
-  if (filters.maxDifficulty !== undefined) {
-    filtered = filtered.filter(
-      (m) =>
-        m.difficultyLevel !== undefined &&
-        m.difficultyLevel !== null &&
-        m.difficultyLevel <= filters.maxDifficulty!
-    );
-  }
-
-  // Filter by tags (any match)
-  if (filters.tags && filters.tags.length > 0) {
-    filtered = filtered.filter((m) => {
+    // Filter by tags (any match)
+    if (filters.tags && filters.tags.length > 0) {
       if (!m.tags || m.tags.length === 0) return false;
-      return filters.tags!.some((tag) => m.tags!.includes(tag));
-    });
-  }
+      if (!filters.tags.some((tag) => m.tags!.includes(tag))) return false;
+    }
 
-  // Filter by content type
-  if (filters.contentType) {
-    filtered = filtered.filter((m) => m.contentType === filters.contentType);
-  }
+    // Filter by content type
+    if (filters.contentType) {
+      if (m.contentType !== filters.contentType) return false;
+    }
 
-  // Filter by visibility
-  if (filters.visibility) {
-    filtered = filtered.filter((m) => m.visibility === filters.visibility);
-  }
+    // Filter by visibility
+    if (filters.visibility) {
+      if (m.visibility !== filters.visibility) return false;
+    }
 
-  // Filter by read status
-  if (filters.isRead !== undefined) {
-    filtered = filtered.filter((m) => m.isRead === filters.isRead);
-  }
+    // Filter by read status
+    if (filters.isRead !== undefined) {
+      if (m.isRead !== filters.isRead) return false;
+    }
 
-  // Filter by search text
-  if (filters.searchText && filters.searchText.trim()) {
-    const searchLower = filters.searchText.toLowerCase().trim();
-    filtered = filtered.filter((m) => {
+    // Filter by search text
+    if (filters.searchText && filters.searchText.trim()) {
+      const searchLower = filters.searchText.toLowerCase().trim();
       const titleMatch = m.title?.toLowerCase().includes(searchLower);
       const descriptionMatch = m.description?.toLowerCase().includes(searchLower);
       const tagsMatch = m.tags?.some((tag) => tag.toLowerCase().includes(searchLower));
-      return titleMatch || descriptionMatch || tagsMatch;
-    });
-  }
+      if (!titleMatch && !descriptionMatch && !tagsMatch) return false;
+    }
 
-  return filtered;
+    // All filters passed
+    return true;
+  });
 }
 
 /**

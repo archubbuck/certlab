@@ -66,6 +66,9 @@ export function LearningMaterialsSelector({
     }
   };
 
+  // Filter materials to only those with valid IDs
+  const validMaterials = materials.filter((m) => m.id !== undefined && m.id !== null);
+
   return (
     <Card>
       <CardHeader>
@@ -96,7 +99,7 @@ export function LearningMaterialsSelector({
         )}
 
         {/* Empty State */}
-        {!isLoading && !isError && materials.length === 0 && (
+        {!isLoading && !isError && validMaterials.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground opacity-50 mb-3" />
             <p className="text-sm text-muted-foreground">
@@ -109,14 +112,14 @@ export function LearningMaterialsSelector({
         )}
 
         {/* Materials List */}
-        {!isLoading && !isError && materials.length > 0 && (
+        {!isLoading && !isError && validMaterials.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground mb-3">
-              Found {materials.length} learning material
-              {materials.length !== 1 ? 's' : ''} for the selected categories.
+              Found {validMaterials.length} learning material
+              {validMaterials.length !== 1 ? 's' : ''} for the selected categories.
             </p>
             <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border rounded-lg p-2">
-              {materials.map((material) => (
+              {validMaterials.map((material) => (
                 <label
                   key={material.id}
                   className="flex items-start space-x-3 p-3 border rounded cursor-pointer hover:bg-accent transition-colors"
