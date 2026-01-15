@@ -227,7 +227,7 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center min-w-0 shrink">
+          <nav className="hidden md:flex items-center">
             {isAdminArea ? (
               <div className="flex items-center space-x-4">
                 <Badge variant="secondary" className="text-xs">
