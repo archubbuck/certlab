@@ -329,13 +329,13 @@ export default function Header() {
               </div>
             ) : (
               <NavigationMenu>
-                <NavigationMenuList>
+                <NavigationMenuList className="space-x-0 gap-1">
                   {/* Dashboard */}
                   <NavigationMenuItem>
                     <Button
                       variant="ghost"
                       onClick={() => navigate('/app')}
-                      className={`h-10 px-4 py-2 ${
+                      className={`h-10 px-3 py-2 ${
                         isActivePath('/app')
                           ? 'text-primary font-semibold border-b-2 border-primary rounded-b-none'
                           : 'text-muted-foreground hover:text-primary'
@@ -351,7 +351,7 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       onClick={() => navigate('/app/achievements')}
-                      className={`h-10 px-4 py-2 ${
+                      className={`h-10 px-3 py-2 ${
                         isActivePath('/app/achievements')
                           ? 'text-primary font-semibold border-b-2 border-primary rounded-b-none'
                           : 'text-muted-foreground hover:text-primary'
@@ -367,7 +367,7 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       onClick={() => navigate('/app/leaderboard')}
-                      className={`h-10 px-4 py-2 ${
+                      className={`h-10 px-3 py-2 ${
                         isActivePath('/app/leaderboard')
                           ? 'text-primary font-semibold border-b-2 border-primary rounded-b-none'
                           : 'text-muted-foreground hover:text-primary'
@@ -383,15 +383,16 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       onClick={() => navigate('/app/daily-challenges')}
-                      className={`h-10 px-4 py-2 ${
+                      className={`h-10 px-3 py-2 whitespace-nowrap ${
                         isActivePath('/app/daily-challenges')
                           ? 'text-primary font-semibold border-b-2 border-primary rounded-b-none'
                           : 'text-muted-foreground hover:text-primary'
                       }`}
                     >
-                      <Target className="w-4 h-4 mr-2" />
-                      Daily Challenges
-                      <Badge variant="secondary" className="ml-2 text-xs">
+                      <Target className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="hidden lg:inline">Daily Challenges</span>
+                      <span className="lg:hidden">Challenges</span>
+                      <Badge variant="secondary" className="ml-2 text-xs flex-shrink-0">
                         NEW
                       </Badge>
                     </Button>
@@ -402,7 +403,7 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       onClick={() => navigate('/app/performance')}
-                      className={`h-10 px-4 py-2 ${
+                      className={`h-10 px-3 py-2 ${
                         isActivePath('/app/performance')
                           ? 'text-primary font-semibold border-b-2 border-primary rounded-b-none'
                           : 'text-muted-foreground hover:text-primary'
@@ -415,7 +416,7 @@ export default function Header() {
 
                   {/* Tools & Features */}
                   <NavigationMenuItem>
-                    <NavigationMenuTrigger className="text-muted-foreground hover:text-primary h-10 px-4 py-2">
+                    <NavigationMenuTrigger className="text-muted-foreground hover:text-primary h-10 px-3 py-2">
                       <Settings className="w-4 h-4 mr-2" />
                       Tools & Features
                     </NavigationMenuTrigger>
