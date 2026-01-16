@@ -354,7 +354,8 @@ export default function Header() {
                         isActivePath('/app/performance') ||
                         isActivePath('/app/practice-tests') ||
                         isActivePath('/app/question-bank') ||
-                        isActivePath('/app/study-timer')
+                        isActivePath('/app/study-timer') ||
+                        isActivePath('/app/analytics')
                           ? 'text-primary font-semibold'
                           : 'text-muted-foreground hover:text-primary'
                       }`}
@@ -485,7 +486,9 @@ export default function Header() {
                   <NavigationMenuItem>
                     <NavigationMenuTrigger
                       className={`h-10 px-3 py-2 ${
-                        isActivePath('/app/achievements') || isActivePath('/app/leaderboard')
+                        isActivePath('/app/achievements') ||
+                        isActivePath('/app/leaderboard') ||
+                        isActivePath('/app/certificates')
                           ? 'text-primary font-semibold'
                           : 'text-muted-foreground hover:text-primary'
                       }`}
