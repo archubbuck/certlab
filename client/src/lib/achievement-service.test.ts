@@ -15,7 +15,6 @@ vi.mock('./storage-factory', () => ({
     getBadges: vi.fn(),
     awardBadge: vi.fn(),
     getUserGameStats: vi.fn(),
-    getUserQuizzes: vi.fn(),
     updateUserGameStats: vi.fn(),
     getUserQuizzes: vi.fn(),
   },
