@@ -351,18 +351,22 @@ const location = useLocation();
 
 ### Protected Routes
 
-The application uses a `ProtectedRoute` component to handle authentication:
+The application uses a `ProtectedRoute` component to wrap the entire authenticated app section:
 
 ```typescript
 <ProtectedRoute>
   <AuthenticatedLayout>
     <Routes>
       <Route path="/app" element={<Dashboard />} />
-      {/* Protected routes */}
+      <Route path="/app/quiz/:id" element={<Quiz />} />
+      <Route path="/app/results/:id" element={<Results />} />
+      {/* More protected routes */}
     </Routes>
   </AuthenticatedLayout>
 </ProtectedRoute>
 ```
+
+The `ProtectedRoute` component checks authentication status and redirects unauthenticated users to the landing page, while the `AuthenticatedLayout` provides the common UI structure (header, navigation, etc.) for all authenticated routes.
 
 ### Base Path Configuration
 
@@ -512,7 +516,7 @@ The build uses manual chunks for optimal loading:
 | `vendor-react` | React, React DOM |
 | `vendor-ui` | Radix UI components |
 | `vendor-charts` | Recharts |
-| `vendor-utils` | date-fns, clsx, react-router-dom |
+| `vendor-utils` | date-fns, clsx, tailwind-merge, react-router-dom |
 | `index` | Main application code |
 | Page chunks | Lazy-loaded page components |
 
