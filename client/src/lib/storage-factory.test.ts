@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as storageFactory from './storage-factory';
 import * as firestoreService from './firestore-service';
 import * as firebase from './firebase';
+import { firestoreStorage } from './firestore-storage';
 
 // Mock the dependencies
 vi.mock('./firestore-service');
@@ -53,6 +54,8 @@ describe('Storage Factory', () => {
 
       // Should not call getCurrentFirebaseUser when user is provided
       expect(firebase.getCurrentFirebaseUser).not.toHaveBeenCalled();
+      // Should call setCurrentUserId with the provided user's uid
+      expect(firestoreStorage.setCurrentUserId).toHaveBeenCalledWith('test-user-123');
     });
 
     it('should get current Firebase user when not provided', async () => {
@@ -65,6 +68,8 @@ describe('Storage Factory', () => {
       await storageFactory.initializeStorage();
 
       expect(firebase.getCurrentFirebaseUser).toHaveBeenCalled();
+      // Should call setCurrentUserId with the retrieved user's uid
+      expect(firestoreStorage.setCurrentUserId).toHaveBeenCalledWith('test-user-456');
     });
   });
 
