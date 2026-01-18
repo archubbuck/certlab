@@ -263,16 +263,84 @@ Since this is a client-side application, manual testing is critical:
 - Error handling and edge cases
 - Theme and accessibility features
 
+### CI/CD Testing Requirements
+
+All code changes are automatically tested in CI/CD pipelines before deployment:
+
+#### Automated Test Workflows
+
+1. **Test Workflow** (`.github/workflows/test.yml`)
+   - Runs on: Push to `main` and all pull requests
+   - Executes all unit, integration, and component tests
+   - Generates coverage reports
+   - Uploads test results and coverage as artifacts
+   - **Must pass** for PRs to be mergeable
+
+2. **Firebase Deploy Workflow** (`.github/workflows/firebase-deploy.yml`)
+   - Runs on: Push to `main` branch
+   - **Prerequisites**: All tests must pass before deployment
+   - Runs type checking, configuration validation, and build
+   - Deploys to Firebase Hosting only if all checks pass
+
+#### Coverage Requirements
+
+The project enforces minimum code coverage thresholds:
+- **Lines**: 60%
+- **Functions**: 60%
+- **Branches**: 60%
+- **Statements**: 60%
+
+Coverage reports are generated with every test run and available as CI artifacts.
+
+#### Test Artifacts
+
+After each CI run, the following artifacts are available:
+- **coverage-reports**: HTML and JSON coverage reports (retained for 30 days)
+- **test-results**: Detailed test execution results (retained for 30 days)
+
+You can download these artifacts from the GitHub Actions run page to review test results and coverage locally.
+
+#### Local Testing Before Push
+
+To ensure your changes will pass CI, run these commands locally:
+
+```bash
+# Run tests
+npm run test:run
+
+# Generate coverage report
+npm run test:coverage
+
+# Run type checking
+npm run check
+
+# Run linting
+npm run lint
+
+# Build the project
+npm run build
+```
+
+All of these checks must pass for your PR to be approved and merged.
+
 ## Submitting Changes
 
 ### Pull Request Process
 
 1. **Update documentation** if you've changed functionality
-2. **Ensure the build succeeds**: `npm run build`
+2. **Run all local checks** (see "Local Testing Before Push" above)
 3. **Write a clear PR description** explaining:
    - What changes were made
    - Why they were necessary
    - How to test the changes
+4. **Wait for CI checks to pass**:
+   - ✅ Tests must pass
+   - ✅ Type checking must pass
+   - ✅ Linting must pass
+   - ✅ Build must succeed
+5. **Review CI artifacts** if tests fail:
+   - Check test results artifact for failure details
+   - Download coverage reports to see coverage changes
 
 ### PR Title Format
 
@@ -285,6 +353,11 @@ Use conventional commit format:
 
 ### Review Process
 
+- **Automated checks** must pass before manual review
+  - All tests must pass
+  - Coverage thresholds must be met
+  - Type checking must succeed
+  - Linting must succeed
 - PRs require review before merging
 - Address review comments promptly
 - Keep PRs focused and small when possible
