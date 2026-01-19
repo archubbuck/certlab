@@ -56,7 +56,7 @@ This document summarizes the integration testing infrastructure added to CertLab
 ### ✅ Phase 5: Quiz Flow Integration Tests
 
 **File:** `quiz-flow.test.ts`  
-**Tests:** 18
+**Tests:** 17
 
 **Coverage:**
 - ✅ Quiz creation with configuration
@@ -182,7 +182,7 @@ integration/
     │   - 15 tests
     │
     └── quiz-flow.test.ts (780 lines)
-        - 18 tests
+        - 17 tests
 ```
 
 ## Key Technical Decisions
@@ -328,7 +328,7 @@ The integration tests focus on workflow coverage rather than line coverage:
 
 This implementation provides CertLab with a comprehensive integration testing framework that validates complex cross-module interactions. The infrastructure is extensible and can accommodate future testing needs as the application evolves.
 
-The 58 integration tests cover the most critical workflows:
+The 57 integration tests cover the most critical workflows:
 - Multi-tenant data isolation
 - Authentication and session management
 - Query caching and invalidation

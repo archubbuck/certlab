@@ -42,8 +42,7 @@ integration/
 Integration tests use **realistic mocks** that simulate actual behavior:
 
 1. **Firebase Mock**: Simulates authentication state changes, token refresh, etc.
-2. **Firestore Mock**: In-memory database with realistic query behavior
-3. **Storage Mock**: Simulates network delays and offline scenarios
+2. **Firestore Mock**: In-memory database with realistic query behavior, including storage operations with simulated network delays and offline scenarios
 
 These mocks are more complex than unit test mocks but less complex than the actual services, striking a balance between realism and test speed.
 
