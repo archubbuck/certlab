@@ -36,9 +36,15 @@ jobs:
           # Wait for up to 5 minutes
           for i in {1..300}; do
             if ! kill -0 $TEST_PID 2>/dev/null; then
-              # Process has exited, capture its exit code
+              # Process has exited, attempt to capture its exit code
               wait $TEST_PID
-              EXIT_CODE=$?
+              WAIT_STATUS=$?
+              if [ "$WAIT_STATUS" -eq 127 ]; then
+                echo "Warning: test process $TEST_PID no longer exists; treating as failure"
+                EXIT_CODE=1
+              else
+                EXIT_CODE=$WAIT_STATUS
+              fi
               break
             fi
             sleep 1
