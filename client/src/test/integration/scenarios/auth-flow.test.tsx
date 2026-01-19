@@ -126,21 +126,16 @@ describe('Authentication Flow Integration Tests', () => {
       firebaseMock.setConfigured(false);
 
       let authState: any = null;
-      let initError: Error | null = null;
 
-      try {
-        render(
-          <IntegrationTestProvider>
-            <AuthProvider>
-              <AuthTestComponent onAuthStateChange={(state) => (authState = state)} />
-            </AuthProvider>
-          </IntegrationTestProvider>
-        );
+      render(
+        <IntegrationTestProvider>
+          <AuthProvider>
+            <AuthTestComponent onAuthStateChange={(state) => (authState = state)} />
+          </AuthProvider>
+        </IntegrationTestProvider>
+      );
 
-        await waitFor(() => expect(authState?.isLoading).toBe(false), { timeout: 2000 });
-      } catch (error) {
-        initError = error as Error;
-      }
+      await waitFor(() => expect(authState?.isLoading).toBe(false), { timeout: 2000 });
 
       // In dev mode, should continue without Firebase
       // In production mode, would throw error

@@ -212,8 +212,6 @@ describe('Query Caching and Invalidation Integration Tests', () => {
 
       await waitFor(() => expect(queryResult.current.isSuccess).toBe(true));
 
-      const initialData = queryResult.current.data;
-
       // Mutate user data
       const { result: mutationResult } = renderHook(
         () =>
@@ -252,7 +250,6 @@ describe('Query Caching and Invalidation Integration Tests', () => {
       );
 
       await waitFor(() => expect(queryResult.current.isSuccess).toBe(true));
-      const initialCount = queryResult.current.data?.length || 0;
 
       // Create new category
       const { result: mutationResult } = renderHook(

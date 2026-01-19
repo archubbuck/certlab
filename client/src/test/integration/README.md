@@ -9,17 +9,14 @@ integration/
 ├── README.md                    # This file
 ├── helpers/                     # Test utilities and helpers
 │   ├── test-providers.tsx      # Integration test providers with mocked services
-│   ├── integration-utils.ts    # Common utilities for integration tests
-│   └── assertions.ts           # Custom assertions for integration tests
+│   └── integration-utils.ts    # Common utilities for integration tests
 ├── mocks/                       # Realistic mocks for external dependencies
 │   ├── firebase-mock.ts        # Mock Firebase authentication
-│   ├── firestore-mock.ts       # Mock Firestore with realistic behavior
-│   └── storage-mock.ts         # Mock storage layer
+│   └── firestore-mock.ts       # Mock Firestore with realistic behavior
 └── scenarios/                   # Integration test suites
     ├── auth-flow.test.tsx      # Authentication flow tests
-    ├── multi-tenant.test.tsx   # Multi-tenancy tests
-    ├── cloud-sync.test.tsx     # Cloud sync integration tests
-    ├── quiz-flow.test.tsx      # Quiz workflow tests
+    ├── multi-tenant.test.ts    # Multi-tenancy tests
+    ├── quiz-flow.test.ts       # Quiz workflow tests
     └── query-cache.test.tsx    # Query caching/invalidation tests
 ```
 

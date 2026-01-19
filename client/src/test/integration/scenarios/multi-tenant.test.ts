@@ -19,7 +19,7 @@ import {
   createTestQuiz,
   waitForAsync,
 } from '../helpers/integration-utils';
-import { firestoreMock } from '../mocks/firestore-mock';
+import { firestoreMock } from '../helpers/test-providers';
 import { storage } from '@/lib/storage-factory';
 
 describe('Multi-Tenant Integration Tests', () => {
