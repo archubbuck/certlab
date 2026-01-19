@@ -56,6 +56,13 @@ jobs:
             echo "Tests timed out after 5 minutes"
             kill -9 $TEST_PID 2>/dev/null || true
             TIMED_OUT=true
+          else
+            # Process died between end of loop and this check - capture exit code
+            wait $TEST_PID 2>/dev/null
+            WAIT_STATUS=$?
+            if [ "$WAIT_STATUS" -ne 127 ] && [ "$EXIT_CODE" -eq 0 ]; then
+              EXIT_CODE=$WAIT_STATUS
+            fi
           fi
           
           # Exit with appropriate code
