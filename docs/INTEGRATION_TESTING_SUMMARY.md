@@ -6,6 +6,8 @@ This document summarizes the integration testing infrastructure added to CertLab
 
 ## Completed Work
 
+**Note:** Phase numbers follow the original task breakdown in the issue. Phase 4 (Cloud Sync) was intentionally skipped as explained in the "Phase 4: Cloud Sync Integration Tests" section below.
+
 ### ✅ Phase 1: Test Infrastructure Setup
 
 **Deliverables:**

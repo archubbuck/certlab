@@ -138,38 +138,32 @@ describe('Quiz Flow Integration Tests', () => {
       });
     });
 
-    it('should validate quiz configuration before creation', async () => {
-      // Valid configuration
-      const validConfig = {
+    it('should generate questions matching selected criteria', async () => {
+      // Create quiz with specific configuration
+      const quizConfig = {
         categoryIds: [1],
-        subcategoryIds: [1],
-        numberOfQuestions: 5,
+        subcategoryIds: [1, 2],
+        numberOfQuestions: 3,
       };
 
-      expect(validConfig.categoryIds.length).toBeGreaterThan(0);
-      expect(validConfig.numberOfQuestions).toBeGreaterThan(0);
+      // Get questions matching criteria
+      const availableQuestions = await storage.getQuestionsByCategories(
+        quizConfig.categoryIds,
+        quizConfig.subcategoryIds,
+        [1, 2],
+        1
+      );
 
-      // Invalid configuration (no categories)
-      const invalidConfig = {
-        categoryIds: [],
-        subcategoryIds: [],
-        numberOfQuestions: 10,
-      };
+      // Should have questions available
+      expect(availableQuestions.length).toBeGreaterThan(0);
 
-      // Should detect invalid configuration
-      expect(invalidConfig.categoryIds.length).toBe(0);
-    });
-
-    it('should handle insufficient questions scenario', async () => {
-      // Try to create quiz with more questions than available
-      const availableQuestions = await storage.getQuestionsByCategories([1], [1], [1], 1);
-      const availableCount = availableQuestions.length;
-
-      // Request more questions than available
-      const requestedCount = availableCount + 10;
-
-      // Application should handle this gracefully
-      expect(requestedCount).toBeGreaterThan(availableCount);
+      // All questions should match the criteria
+      availableQuestions.forEach((q) => {
+        expect(quizConfig.categoryIds).toContain(q.categoryId);
+        if (q.subcategoryId) {
+          expect(quizConfig.subcategoryIds).toContain(q.subcategoryId);
+        }
+      });
     });
   });
 
