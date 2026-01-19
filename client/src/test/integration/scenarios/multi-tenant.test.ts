@@ -202,14 +202,9 @@ describe('Multi-Tenant Integration Tests', () => {
 
       // Attempt to switch to inactive tenant should be validated
       // The switchTenant method in auth-provider checks tenant.isActive
-      let switchError: Error | null = null;
-      try {
-        // This would call storage.updateUser which doesn't validate
-        // But the auth-provider.switchTenant method validates first
-        await storage.updateUser('user1', { tenantId: 3 });
-      } catch (error) {
-        switchError = error as Error;
-      }
+      // This would call storage.updateUser which doesn't validate
+      // But the auth-provider.switchTenant method validates first
+      await storage.updateUser('user1', { tenantId: 3 });
 
       // In the actual application, auth-provider.switchTenant validates
       // tenant.isActive before calling storage.updateUser
