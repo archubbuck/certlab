@@ -16,10 +16,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./client/src/test/setup.ts'],
     include: ['client/src/**/*.{test,spec}.{ts,tsx}', 'shared/**/*.{test,spec}.{ts,tsx}'],
-    reporters: ['default', 'json'],
-    outputFile: {
-      json: './test-results.json',
-    },
+    reporters: ['default'],
+    testTimeout: 30000,
+    hookTimeout: 30000,
+    teardownTimeout: 10000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
