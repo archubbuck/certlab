@@ -9,14 +9,26 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '@/lib/auth-provider';
 
 /**
+ * Default query function that returns null for all queries
+ * This prevents "No queryFn found" errors in tests
+ */
+const defaultQueryFn = async () => {
+  // Return null by default - individual tests can override with specific data
+  return null;
+};
+
+/**
  * Creates a test QueryClient with sensible defaults for testing
+ * Includes a default queryFn to avoid "No queryFn found" errors
  */
 export const createTestQueryClient = () => {
   return new QueryClient({
     defaultOptions: {
       queries: {
+        queryFn: defaultQueryFn,
         retry: false,
         gcTime: 0,
+        staleTime: 0,
       },
       mutations: {
         retry: false,
