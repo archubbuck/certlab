@@ -120,12 +120,6 @@ describe('Accessibility Tests - WCAG 2.2 AA Compliance', () => {
           </AuthenticatedWrapper>
         );
         container = result.container;
-
-        // Wait for AuthProvider to finish initialization
-        await waitFor(() => {
-          // Check that loading is complete (AuthProvider should be initialized)
-          return true;
-        });
       });
 
       const results = await axe(container!);
@@ -141,11 +135,6 @@ describe('Accessibility Tests - WCAG 2.2 AA Compliance', () => {
           </AuthenticatedWrapper>
         );
         container = result.container;
-
-        // Wait for AuthProvider to finish initialization
-        await waitFor(() => {
-          return true;
-        });
       });
 
       const nav = container!.querySelector('nav');
@@ -161,11 +150,6 @@ describe('Accessibility Tests - WCAG 2.2 AA Compliance', () => {
           </AuthenticatedWrapper>
         );
         container = result.container;
-
-        // Wait for AuthProvider to finish initialization
-        await waitFor(() => {
-          return true;
-        });
       });
 
       const buttons = container!.querySelectorAll('button');
@@ -233,11 +217,6 @@ describe('Accessibility Tests - WCAG 2.2 AA Compliance', () => {
           </AuthenticatedWrapper>
         );
         container = result.container;
-
-        // Wait for AuthProvider and page to finish initialization
-        await waitFor(() => {
-          return true;
-        });
       });
 
       const results = await axe(container!);
@@ -253,11 +232,6 @@ describe('Accessibility Tests - WCAG 2.2 AA Compliance', () => {
           </AuthenticatedWrapper>
         );
         container = result.container;
-
-        // Wait for page to render
-        await waitFor(() => {
-          return true;
-        });
       });
 
       const h1 = container!.querySelector('h1');
@@ -276,11 +250,6 @@ describe('Accessibility Tests - WCAG 2.2 AA Compliance', () => {
           </AuthenticatedWrapper>
         );
         container = result.container;
-
-        // Wait for initialization
-        await waitFor(() => {
-          return true;
-        });
       });
 
       const interactiveElements = container!.querySelectorAll(
@@ -299,11 +268,6 @@ describe('Accessibility Tests - WCAG 2.2 AA Compliance', () => {
           </AuthenticatedWrapper>
         );
         container = result.container;
-
-        // Wait for initialization
-        await waitFor(() => {
-          return true;
-        });
       });
 
       const positiveTabIndex = container!.querySelectorAll(
