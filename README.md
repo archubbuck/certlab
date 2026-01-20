@@ -111,6 +111,7 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
 - **[Dynatrace Setup](docs/setup/dynatrace.md)** - Configure observability and monitoring
 - **[Deployment Guide](docs/setup/deployment.md)** - Deploy to Firebase Hosting or other platforms
 - **[E2E Testing Guide](docs/E2E_TESTING.md)** - End-to-end test automation with Playwright
+- **[Snapshot Testing Guide](docs/SNAPSHOT_TESTING.md)** - UI component snapshot testing workflow
 
 ### Project Information
 - **[Features](FEATURES.md)** - Complete list of all implemented features

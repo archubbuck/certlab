@@ -140,21 +140,28 @@ it('renders with custom className', () => {
 The following components have snapshot tests:
 
 **UI Components (`client/src/components/ui/`):**
-- ✅ Alert
-- ✅ Badge
-- ✅ Button
-- ✅ Card
-- ✅ Checkbox
-- ✅ Input
-- ✅ Label
-- ✅ Progress
-- ✅ Separator
-- ✅ Skeleton
-- ✅ Switch
+- ✅ Alert (5 tests)
+- ✅ Avatar (3 tests)
+- ✅ Badge (5 tests)
+- ✅ Button (7 tests)
+- ✅ Card (8 tests)
+- ✅ Checkbox (4 tests)
+- ✅ Input (6 tests)
+- ✅ Label (3 tests)
+- ✅ Pagination Controls (26 tests)
+- ✅ Progress (4 tests)
+- ✅ Separator (3 tests)
+- ✅ Skeleton (3 tests)
+- ✅ Switch (4 tests)
+- ✅ Table (3 tests)
+- ✅ Tabs (3 tests)
+- ✅ Textarea (5 tests)
 
 **Quiz Components (`client/src/components/quiz/`):**
-- ✅ QuestionNavigator
-- ✅ QuizTimer
+- ✅ QuestionNavigator (4 tests)
+- ✅ QuizTimer (4 tests)
+
+**Total: 100 snapshot tests across 18 component files**
 
 ### Adding Snapshot Tests for New Components
 
