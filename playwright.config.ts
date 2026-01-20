@@ -96,10 +96,12 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   // Note: Uncomment webServer when running locally
-  // In CI, the server should be started separately before tests
+  // The webServer will auto-start the preview server on port 4173.
+  // If you prefer to use the dev server, change the URL to http://localhost:5173
+  // and update the baseURL above to match.
   // webServer: {
-  //   command: 'npm run dev',
-  //   url: 'http://localhost:5173',
+  //   command: 'npm run preview',
+  //   url: 'http://localhost:4173',
   //   reuseExistingServer: !process.env.CI,
   //   timeout: 120000,
   //   stdout: 'ignore',
