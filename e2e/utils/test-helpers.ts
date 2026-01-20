@@ -28,7 +28,7 @@ export async function goToLandingPage(page: Page) {
  * Navigate to the dashboard (requires authentication)
  */
 export async function goToDashboard(page: Page) {
-  await page.goto('/dashboard');
+  await page.goto('/app/dashboard');
   await waitForAppReady(page);
 }
 
