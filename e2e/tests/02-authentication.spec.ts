@@ -30,10 +30,10 @@ test.describe('Authentication Flow', () => {
 
     // Check current URL - should be redirected to landing page
     const currentUrl = page.url();
+    const url = new URL(currentUrl);
     
     // Should be redirected to landing page (/)
-    // The URL will be baseURL + "/" which ends with the port and /
-    expect(currentUrl).toMatch(/\/$|^http:\/\/localhost:\d+\/$/);
+    expect(url.pathname).toBe('/');
     
     // Should see the Get Started button on landing page (not auto-shown login UI)
     const getStartedButton = page.getByRole('button', { name: /get started/i }).first();
