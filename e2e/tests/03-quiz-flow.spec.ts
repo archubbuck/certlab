@@ -157,7 +157,10 @@ test.describe('Quiz Taking Flow', () => {
       await page.waitForLoadState('networkidle');
 
       // Button should now indicate flagged state
-      const flagIndicator = page.locator('[data-flagged="true"], .flagged').or(page.getByText(/flagged/i));
+      const flagIndicator = page
+        .locator('[data-flagged="true"]')
+        .or(page.locator('.flagged'))
+        .or(page.getByText(/flagged/i));
       const indicatorVisible = await flagIndicator.isVisible({ timeout: 2000 }).catch(() => false);
 
       if (indicatorVisible) {
@@ -247,9 +250,13 @@ test.describe('Quiz Results and Review', () => {
     await page.waitForLoadState('networkidle');
 
     // Look for answer indicators
-    const correctIndicator = page.getByText(/correct|✓|✔/i).or(page.locator('[data-correct="true"]')).first();
+    const correctIndicator = page
+      .getByText(/correct|✓|✔/i)
+      .or(page.locator('[data-correct="true"]'))
+      .first();
     const incorrectIndicator = page
-      .locator('text=/incorrect|✗|✘/i, [data-correct="false"]')
+      .getByText(/incorrect|✗|✘/i)
+      .or(page.locator('[data-correct="false"]'))
       .first();
 
     const correctVisible = await correctIndicator.isVisible({ timeout: 5000 }).catch(() => false);
@@ -268,7 +275,8 @@ test.describe('Quiz Results and Review', () => {
 
     // Look for explanation section
     const explanation = page
-      .locator('text=/Explanation|Why|Correct answer/i, [data-testid*="explanation"]')
+      .getByText(/Explanation|Why|Correct answer/i)
+      .or(page.locator('[data-testid*="explanation"]'))
       .first();
     const explanationVisible = await explanation.isVisible({ timeout: 5000 }).catch(() => false);
 

@@ -80,9 +80,9 @@ test.describe('Dashboard Statistics', () => {
     await goToDashboard(page);
 
     // Look for streak display
-    const streakDisplay = page.locator(
-      'text=/\\d+ day streak|streak: \\d+/i, [data-testid*="streak"]'
-    );
+    const streakDisplay = page
+      .getByText(/\d+ day streak|streak: \d+/i)
+      .or(page.locator('[data-testid*="streak"]'));
     const streakVisible = await streakDisplay.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (streakVisible) {
@@ -95,9 +95,9 @@ test.describe('Dashboard Statistics', () => {
     await goToDashboard(page);
 
     // Look for quiz count
-    const quizCount = page.locator(
-      'text=/\\d+ quizzes|total quizzes/i, [data-testid*="quiz-count"]'
-    );
+    const quizCount = page
+      .getByText(/\d+ quizzes|total quizzes/i)
+      .or(page.locator('[data-testid*="quiz-count"]'));
     const countVisible = await quizCount.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (countVisible) {
@@ -110,9 +110,9 @@ test.describe('Dashboard Statistics', () => {
     await goToDashboard(page);
 
     // Look for average score
-    const avgScore = page.locator(
-      'text=/\\d+% average|average score/i, [data-testid*="avg-score"]'
-    );
+    const avgScore = page
+      .getByText(/\d+% average|average score/i)
+      .or(page.locator('[data-testid*="avg-score"]'));
     const scoreVisible = await avgScore.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (scoreVisible) {
@@ -221,7 +221,9 @@ test.describe('Gamification Elements', () => {
     await page.waitForLoadState('networkidle');
 
     // Look for challenge cards
-    const challenges = page.locator('[data-testid*="challenge"], .challenge-card');
+    const challenges = page
+      .locator('[data-testid*="challenge"]')
+      .or(page.locator('.challenge-card'));
     const challengeCount = await challenges.count();
 
     // Should have at least structure for challenges
