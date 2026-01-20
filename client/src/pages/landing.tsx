@@ -407,7 +407,7 @@ export default function Landing() {
                 <h1
                   className={`text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight mb-8 ${theme.text}`}
                 >
-                  CertLab: Master Your
+                  Master Your
                   <br />
                   Certifications
                 </h1>

@@ -37,8 +37,8 @@ npm run test:e2e:codegen         # Record new tests
 
 **Error Examples**:
 ```
-Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/
-Timed out waiting for http://localhost:5173
+Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5000/
+Timed out waiting for http://localhost:5000
 ```
 
 **Solutions**:
@@ -69,7 +69,7 @@ Uncomment `webServer` in `playwright.config.ts`:
 ```typescript
 webServer: {
   command: 'npm run dev',
-  url: 'http://localhost:5173',
+  url: 'http://localhost:5000',
   reuseExistingServer: !process.env.CI,
   timeout: 120000,
 },
@@ -134,7 +134,7 @@ firebase emulators:start --only auth
 #### Option C: Storage State (Session Replay)
 ```bash
 # Login manually once
-npx playwright codegen http://localhost:5173 --save-storage=auth.json
+npx playwright codegen http://localhost:5000 --save-storage=auth.json
 
 # Use in tests
 test.use({ storageState: 'auth.json' });
