@@ -25,11 +25,10 @@ test.describe('Keyboard Navigation', () => {
     await goToLandingPage(page);
 
     // Tab to sign in button and activate with Enter
-    let focused = false;
     let attempts = 0;
     const maxAttempts = 15;
 
-    while (!focused && attempts < maxAttempts) {
+    while (attempts < maxAttempts) {
       await page.keyboard.press('Tab');
       attempts++;
 
@@ -38,8 +37,6 @@ test.describe('Keyboard Navigation', () => {
       const elementText = await page.evaluate((el) => el?.textContent || '', focusedElement);
 
       if (elementText.toLowerCase().match(/sign in|login|get started/)) {
-        focused = true;
-
         // Press Enter to activate
         await page.keyboard.press('Enter');
         await page.waitForLoadState('domcontentloaded');
