@@ -18,7 +18,7 @@ The Performance Insights Dashboard provides comprehensive analytics for understa
 
 ### 1. Data Layer & Analytics Functions
 
-**Location**: `client/src/lib/client-storage.ts`, `client/src/lib/firestore-storage.ts`
+**Location**: `client/src/lib/firestore-storage.ts`
 
 Implemented 6 new analytics methods:
 
@@ -203,16 +203,15 @@ All analytics functions are fully type-safe with TypeScript:
 1. `client/src/pages/performance.tsx` - Main performance insights page (550 lines)
 
 ### Modified Files
-1. `client/src/lib/client-storage.ts` - Added 6 analytics methods (~400 lines)
-2. `client/src/lib/firestore-storage.ts` - Implemented analytics methods (~400 lines)
-3. `client/src/lib/storage-factory.ts` - Added proxy methods (130 lines)
-4. `shared/storage-interface.ts` - Extended IClientStorage interface (108 lines)
-5. `client/src/lib/queryClient.ts` - Added query keys and handlers (40 lines)
-6. `client/src/App.tsx` - Added route (1 line)
-7. `client/src/components/Header.tsx` - Added navigation link (12 lines)
-8. `client/src/components/MobileNavigationEnhanced.tsx` - Added mobile nav (6 lines)
-9. `package.json` - Added recharts dependency
-10. `package-lock.json` - Locked recharts and dependencies
+1. `client/src/lib/firestore-storage.ts` - Implemented analytics methods (~400 lines)
+2. `client/src/lib/storage-factory.ts` - Added proxy methods (130 lines)
+3. `shared/storage-interface.ts` - Extended IClientStorage interface (108 lines)
+4. `client/src/lib/queryClient.ts` - Added query keys and handlers (40 lines)
+5. `client/src/App.tsx` - Added route (1 line)
+6. `client/src/components/Header.tsx` - Added navigation link (12 lines)
+7. `client/src/components/MobileNavigationEnhanced.tsx` - Added mobile nav (6 lines)
+8. `package.json` - Added recharts dependency
+9. `package-lock.json` - Locked recharts and dependencies
 
 ### Total Changes
 - **~1,650 lines of new code**

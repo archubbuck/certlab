@@ -307,14 +307,14 @@ After MVP is working:
 
 ### Performance
 
-- **IndexedDB Cache**: Keeps UI fast, reduces Firestore reads
+- **Cloud-Native**: All data stored in Firestore reduces API read/write costs
 - **Batch Operations**: Should batch writes to reduce costs
 - **Query Optimization**: Indexes already configured in `firestore.indexes.json`
 
 ### Costs
 
 - Firebase free tier is generous (50k reads/day, 20k writes/day)
-- IndexedDB caching significantly reduces Firestore operations
+- Cloud-first architecture optimized for minimal Firestore operations
 - Most users will stay within free tier
 - Monitor usage and add budget alerts
 
@@ -367,10 +367,9 @@ To continue implementation:
 
 1. Review this status document
 2. Read `FIREBASE_SETUP.md` for Firebase configuration
-3. Start with Phase 2 (Firestore storage adapter)
-4. Use `firestore-service.ts` utilities
-5. Reference `client-storage.ts` for interface implementation
-6. Test with Firebase Emulator: `npm run emulators:start`
+3. Use `firestore-service.ts` utilities
+4. Reference `firestore-storage.ts` for implementation details
+5. Test with Firebase Emulator: `npm run emulators:start`
 
 ## 📚 Additional Resources
 

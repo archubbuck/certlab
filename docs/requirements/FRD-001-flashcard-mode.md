@@ -734,7 +734,7 @@ describe('Flashcard Session Flow', () => {
   - `getNextCard()`
   - `recordReview()`
   - `calculateStats()`
-- [ ] **Step 2.2**: Implement storage operations in `client-storage.ts`
+- [ ] **Step 2.2**: Implement storage operations in `firestore-storage.ts`
   - CRUD for decks
   - CRUD for flashcards
   - CRUD for reviews

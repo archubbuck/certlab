@@ -261,7 +261,7 @@ service cloud.firestore {
 ### Potential Improvements
 - [ ] WebRTC for direct peer communication
 - [ ] CRDT-based text editing
-- [ ] Offline-first conflict resolution
+- [ ] Enhanced cloud-based conflict resolution
 - [ ] Auto-merge compatible changes
 - [ ] Role-based editing permissions
 
