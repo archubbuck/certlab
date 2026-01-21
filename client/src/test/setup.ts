@@ -84,12 +84,22 @@ vi.mock('@/lib/client-auth', () => ({
 // Note: errors module is NOT mocked globally because many tests need the real implementation
 // Tests that need logError mocked should do so individually
 
-// Mock dynatrace module
+// Mock dynatrace module with all necessary exports
 vi.mock('@/lib/dynatrace', () => ({
+  reportError: vi.fn(),
   identifyUser: vi.fn(),
   endSession: vi.fn(),
+  trackAction: vi.fn(() => -1),
+  completeAction: vi.fn(),
   trackEvent: vi.fn(),
+  isDynatraceAvailable: vi.fn(() => false),
   isDynatraceConfigured: vi.fn().mockReturnValue(false),
+  getDynatraceConfig: vi.fn(() => null),
+  initializeDynatrace: vi.fn(() => false),
+  sendBeacon: vi.fn(() => false),
+  now: vi.fn(() => Date.now()),
+  trackAsyncAction: vi.fn(async (name, fn) => await fn()),
+  trackSyncAction: vi.fn((name, fn) => fn()),
 }));
 
 // Mock gamification service
