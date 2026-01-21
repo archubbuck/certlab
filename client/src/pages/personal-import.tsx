@@ -20,6 +20,9 @@ import {
   type ImportResult,
 } from '@/lib/import-personal-questions';
 
+// Maximum number of errors to display in UI
+const MAX_DISPLAYED_ERRORS = 10;
+
 interface ImportState {
   isImporting: boolean;
   progress: ImportProgress | null;
@@ -171,14 +174,17 @@ export default function PersonalImportPage() {
                   </div>
                 ) : (
                   <div className="mt-2 max-h-60 overflow-y-auto">
-                    {importState.result.errors.slice(0, 10).map((error, index) => (
-                      <div key={index} className="text-sm">
-                        • {error}
-                      </div>
-                    ))}
-                    {importState.result.errors.length > 10 && (
+                    {importState.result.errors
+                      .slice(0, MAX_DISPLAYED_ERRORS)
+                      .map((error, index) => (
+                        <div key={index} className="text-sm">
+                          • {error}
+                        </div>
+                      ))}
+                    {importState.result.errors.length > MAX_DISPLAYED_ERRORS && (
                       <div className="text-sm mt-1 font-medium">
-                        ... and {importState.result.errors.length - 10} more errors
+                        ... and {importState.result.errors.length - MAX_DISPLAYED_ERRORS} more
+                        errors
                       </div>
                     )}
                   </div>
