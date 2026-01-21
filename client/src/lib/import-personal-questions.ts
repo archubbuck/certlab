@@ -8,6 +8,9 @@ import { storage } from './storage-factory';
 import type { Subcategory } from '@shared/schema';
 import { questionOptionsSchema, validateCorrectAnswer } from '@shared/schema';
 
+// Import batch size for optimal performance
+const IMPORT_BATCH_SIZE = 50;
+
 export interface QuestionImportData {
   text: string;
   options: Array<{ id: number; text: string }>;
@@ -158,7 +161,7 @@ export async function importPersonalQuestionsFromYAML(
     }
 
     // Import questions in batches
-    const batchSize = 50;
+    const batchSize = IMPORT_BATCH_SIZE;
     let imported = 0;
     let skipped = 0;
 
