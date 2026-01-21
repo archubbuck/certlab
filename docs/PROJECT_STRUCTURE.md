@@ -52,7 +52,7 @@ client/
 │   ├── hooks/          # Custom React hooks
 │   ├── lib/            # Utilities and services
 │   │   ├── auth-provider.tsx    # Authentication context
-│   │   ├── client-storage.ts    # IndexedDB storage layer
+│   │   ├── firestore-storage.ts # Firestore storage layer
 │   │   ├── storage-factory.ts   # Storage abstraction
 │   │   ├── firebase.ts          # Firebase configuration
 │   │   ├── dynatrace.ts         # Observability integration

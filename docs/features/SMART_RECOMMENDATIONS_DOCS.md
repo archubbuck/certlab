@@ -13,9 +13,9 @@ This document describes the implementation of the Smart Study Recommendations fe
    - No external API dependencies
    - Runs entirely in the browser
 
-2. **Storage Integration** (`client/src/lib/client-storage.ts`)
+2. **Storage Integration** (`client/src/lib/firestore-storage.ts`)
    - Methods to fetch recommendation data
-   - Integrates with IndexedDB through storage-factory pattern
+   - Integrates with Firestore through storage-factory pattern
 
 3. **UI Components**
    - `SmartRecommendations.tsx` - Displays personalized study recommendations
@@ -297,7 +297,7 @@ Added methods to `IStorageAdapter` interface:
 - `analyzePerformance(userId, categoryId?, subcategoryId?): Promise<PerformanceMetrics>`
 
 Implemented in:
-- `client-storage.ts` (IndexedDB implementation)
+- `firestore-storage.ts` (Firestore implementation)
 - `storage-factory.ts` (routing layer)
 - `storage-interface.ts` (type definitions)
 

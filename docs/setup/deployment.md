@@ -190,13 +190,12 @@ npx serve
 - Persists across browsers
 
 ### Backup Strategy
-Users should export their data regularly:
+Users' data is automatically backed up in Firestore:
 
 ```javascript
-// In browser console or via UI
-import { clientStorage } from './lib/client-storage';
-const data = await clientStorage.exportData();
-// Download or save the JSON
+// Data is automatically synced to Firestore
+// Users can access their data from any device
+// Firebase provides automatic backups
 ```
 
 ## Monitoring

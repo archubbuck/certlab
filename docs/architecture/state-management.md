@@ -213,7 +213,7 @@ const { data: quiz, isLoading, error } = useQuery<Quiz>({
 
 // Good: Mutation with cache invalidation
 const submitQuizMutation = useMutation({
-  mutationFn: async (answers) => clientStorage.submitQuiz(quizId, answers),
+  mutationFn: async (answers) => storage.submitQuiz(quizId, answers),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.user.all(userId) });
   },
@@ -236,8 +236,8 @@ const { data: questions = [], isLoading: isLoadingQuestions } = useQuery<Questio
 // From hooks/useQuizState.ts
 const submitQuizMutation = useMutation({
   mutationFn: async (quizAnswers) => {
-    const { clientStorage } = await import('@/lib/client-storage');
-    return await clientStorage.submitQuiz(quizId, quizAnswers);
+    const { storage } = await import('@/lib/storage-factory');
+    return await storage.submitQuiz(quizId, quizAnswers);
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.user.all(quiz?.userId) });
@@ -369,7 +369,7 @@ function useQuizState({ quizId, quiz, questions }) {
   
   // TanStack Mutation for submissions
   const submitMutation = useMutation({
-    mutationFn: (answers) => clientStorage.submitQuiz(quizId, answers),
+    mutationFn: (answers) => storage.submitQuiz(quizId, answers),
   });
 }
 ```

@@ -125,13 +125,13 @@ await switchTenant(tenantId);
 
 ```typescript
 // Get all tenants
-const tenants = await clientStorage.getTenants();
+const tenants = await storage.getTenants();
 
 // Get specific tenant
-const tenant = await clientStorage.getTenant(tenantId);
+const tenant = await storage.getTenant(tenantId);
 
 // Create tenant
-const newTenant = await clientStorage.createTenant({
+const newTenant = await storage.createTenant({
   name: 'My Organization',
   domain: null,
   settings: {},
@@ -139,13 +139,13 @@ const newTenant = await clientStorage.createTenant({
 });
 
 // Update tenant
-await clientStorage.updateTenant(tenantId, {
+await storage.updateTenant(tenantId, {
   name: 'Updated Name',
   isActive: false,
 });
 
 // Get users by tenant
-const users = await clientStorage.getUsersByTenant(tenantId);
+const users = await storage.getUsersByTenant(tenantId);
 ```
 
 ### Query Client
@@ -165,9 +165,9 @@ const { data: categories } = useQuery({
 To programmatically add a new tenant:
 
 ```typescript
-import { clientStorage } from '@/lib/client-storage';
+import { storage } from '@/lib/storage-factory';
 
-const newTenant = await clientStorage.createTenant({
+const newTenant = await storage.createTenant({
   name: 'CompTIA Training',
   domain: null,
   settings: {
@@ -183,7 +183,7 @@ const newTenant = await clientStorage.createTenant({
 When creating categories, subcategories, or questions, specify the `tenantId`:
 
 ```typescript
-const category = await clientStorage.createCategory({
+const category = await storage.createCategory({
   tenantId: 2,
   name: 'Security+',
   description: 'CompTIA Security+ Certification',
@@ -197,7 +197,7 @@ To test tenant switching in development:
 1. Open the browser console
 2. Use the tenant switcher UI to switch between tenants
 3. Verify that categories and data change appropriately
-4. Check IndexedDB to confirm data isolation
+4. Check Firestore to confirm data isolation
 
 ## Migration Guide
 
@@ -211,12 +211,12 @@ If you have custom code that creates categories, subcategories, or questions, en
 
 ```typescript
 // Old code (will default to tenant 1)
-await clientStorage.createCategory({
+await storage.createCategory({
   name: 'My Category',
 });
 
 // New code (explicitly set tenant)
-await clientStorage.createCategory({
+await storage.createCategory({
   tenantId: user.tenantId,  // Use current user's tenant
   name: 'My Category',
 });
@@ -273,12 +273,12 @@ For questions or issues with tenant switching:
 ## Changelog
 
 ### Version 2 (Current)
-- Added tenant table to IndexedDB
+- Added tenant table to Firestore
 - Implemented tenant switcher UI component
 - Added switchTenant method to auth provider
 - Updated queries to filter by tenantId
 - Created initial seed data for 3 tenants
-- Added tenant management functions to client-storage
+- Added tenant management functions to storage layer
 
 ### Version 1
 - Basic multi-tenant schema with tenantId fields

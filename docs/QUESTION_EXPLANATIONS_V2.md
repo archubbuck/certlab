@@ -116,7 +116,7 @@ Extended Question schema with new fields (all optional for backward compatibilit
 - `hasAlternativeViews?: boolean`
 
 ### Storage Layer
-Location: `/client/src/lib/client-storage.ts`
+Location: `/client/src/lib/firestore-storage.ts`
 
 Updated `createQuestion` method to handle V2 fields with defaults:
 - All V2 fields default to `null` or appropriate fallback values
@@ -326,7 +326,7 @@ For existing deployments:
 
 - [ROADMAP.md](../../ROADMAP.md#L266) - Feature requirements
 - [shared/schema.ts](../../shared/schema.ts) - Data model definitions
-- [client/src/lib/client-storage.ts](../../client/src/lib/client-storage.ts) - Storage implementation
+- [client/src/lib/firestore-storage.ts](../../client/src/lib/firestore-storage.ts) - Storage implementation
 - [client/src/components/EnhancedExplanation.tsx](../../client/src/components/EnhancedExplanation.tsx) - Component source
 
 ## Contributors
