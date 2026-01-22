@@ -96,16 +96,11 @@ export function useFirestoreConnection(): FirestoreConnectionState {
 
   // Use refs to avoid stale closures in checkConnection
   const statusRef = useRef(status);
-  const reconnectAttemptsRef = useRef(reconnectAttempts);
 
   // Keep refs in sync with state
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
-
-  useEffect(() => {
-    reconnectAttemptsRef.current = reconnectAttempts;
-  }, [reconnectAttempts]);
 
   /**
    * Check if Firestore is connected by attempting a lightweight query
@@ -240,7 +235,14 @@ export function useFirestoreConnection(): FirestoreConnectionState {
     const handleOffline = () => {
       console.log('[Firestore Connection] Browser is offline');
       setIsOnline(false);
-      setStatus('offline');
+
+      // Only update status if cloud sync is enabled and Firestore is initialized
+      if (isCloudSyncEnabled && isFirestoreInitialized()) {
+        setStatus('offline');
+        setError(null);
+        setIsSyncing(false);
+        setReconnectAttempts(0);
+      }
     };
 
     window.addEventListener('online', handleOnline);
@@ -250,7 +252,7 @@ export function useFirestoreConnection(): FirestoreConnectionState {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [checkConnection, status]);
+  }, [checkConnection, status, isCloudSyncEnabled]);
 
   /**
    * Monitor Firestore connection status via snapshot listener
@@ -300,9 +302,11 @@ export function useFirestoreConnection(): FirestoreConnectionState {
 
             if (isBrowserOffline) {
               // Browser reports offline - reflect this explicitly
+              setError(null);
               setStatus('offline');
             } else if (statusRef.current === 'connected') {
               // We were connected, now using cache without pending writes - likely reconnecting
+              setError(null);
               setStatus('reconnecting');
             }
 
@@ -323,17 +327,26 @@ export function useFirestoreConnection(): FirestoreConnectionState {
           setStatus('error');
           setIsSyncing(false);
 
-          // Try to reconnect after a delay
-          setReconnectAttempts((prev) => prev + 1);
-          // Clear any existing reconnect timeout before scheduling a new one
-          if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current);
-            reconnectTimeoutRef.current = null;
-          }
-          reconnectTimeoutRef.current = setTimeout(() => {
-            setStatus('reconnecting');
-            checkConnection();
-          }, 5000);
+          // Try to reconnect after a delay using exponential backoff
+          setReconnectAttempts((prev) => {
+            const nextAttempts = prev + 1;
+            const baseDelayMs = 1000;
+            const maxDelayMs = 30000;
+            const delayMs = Math.min(baseDelayMs * Math.pow(2, nextAttempts - 1), maxDelayMs);
+
+            // Clear any existing reconnect timeout before scheduling a new one
+            if (reconnectTimeoutRef.current) {
+              clearTimeout(reconnectTimeoutRef.current);
+              reconnectTimeoutRef.current = null;
+            }
+
+            reconnectTimeoutRef.current = setTimeout(() => {
+              setStatus('reconnecting');
+              checkConnection();
+            }, delayMs);
+
+            return nextAttempts;
+          });
         }
       );
     } catch (err) {
@@ -402,10 +415,10 @@ export function useFirestoreConnection(): FirestoreConnectionState {
 }
 
 /**
- * Make the hook available in window for debugging
+ * Make the hook available in window for debugging (dev only)
  * Developers can access connection state via: window.__FIRESTORE_CONNECTION_HOOK__
  */
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   (window as any).__FIRESTORE_CONNECTION_HOOK__ = {
     name: 'useFirestoreConnection',
     description: 'Monitor Firestore connection status in DevTools',
