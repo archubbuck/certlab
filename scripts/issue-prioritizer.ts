@@ -176,7 +176,60 @@ function mapIssueToPhase(issue: any): PrioritizedIssue | null {
   const body = (issue.body || '').toLowerCase();
   const labels = issue.labels?.map((l: any) => l.name) || [];
 
-  // Detect Firebase completion issues (Q1 2025 roadmap)
+  // Firebase completion issues - map each to specific dependencies and order
+  const firebaseIssues: Record<number, { reasoning: string; dependencies: number[] }> = {
+    770: {
+      reasoning:
+        'Comprehensive testing should be done last, after all other Firebase features are implemented and stable. This ensures all edge cases, sync scenarios, and integration points are covered.',
+      dependencies: [771, 772, 773, 774, 775],
+    },
+    771: {
+      reasoning:
+        'Connection status indicators provide visibility into Firestore state. Should be implemented early to help debug and monitor other Firebase features during development.',
+      dependencies: [],
+    },
+    772: {
+      reasoning:
+        'Query optimization should be done before implementing complex sync logic. Efficient queries reduce costs and improve performance for all subsequent features.',
+      dependencies: [771],
+    },
+    773: {
+      reasoning:
+        'Offline queue is foundational infrastructure for reliable sync. Must be in place before implementing conflict resolution and edge case handling.',
+      dependencies: [771, 772],
+    },
+    774: {
+      reasoning:
+        'Conflict resolution depends on having offline queue in place. Handles racing updates and simultaneous edits from multiple clients.',
+      dependencies: [773],
+    },
+    775: {
+      reasoning:
+        'Real-time sync edge cases are the final polish on sync implementation. Should be done after conflict resolution is working properly.',
+      dependencies: [774],
+    },
+  };
+
+  if (firebaseIssues[issue.number]) {
+    const { reasoning, dependencies } = firebaseIssues[issue.number];
+    return {
+      number: issue.number,
+      title: issue.title,
+      phase: 'firebase-completion',
+      phaseNumber: PHASES['firebase-completion'].number,
+      priority: 'high',
+      criticalPath: true,
+      security: false,
+      accessibility: false,
+      roadmapSection: 'Short-Term Roadmap (Q1-Q2 2025) > Q1 2025: Firebase Completion & Enhancement',
+      reasoning,
+      dependencies,
+      labels: labels,
+      timeline: labels.find((l) => l.startsWith('timeline:')) || 'Q1 2025',
+    };
+  }
+
+  // General Firebase/Firestore detection (for future issues)
   if (
     title.includes('firestore') ||
     title.includes('firebase') ||
@@ -271,6 +324,39 @@ function mapIssueToPhase(issue: any): PrioritizedIssue | null {
 }
 
 /**
+ * Sort issues within a phase by specific ordering logic
+ */
+function sortIssuesWithinPhase(issues: PrioritizedIssue[], phaseName: string): PrioritizedIssue[] {
+  // For Firebase completion, order by logical dependency chain
+  if (phaseName === 'firebase-completion') {
+    // Recommended order based on dependencies and logical flow:
+    // 1. #771 - Connection Status (no dependencies, helps debug others)
+    // 2. #772 - Query Performance (depends on #771)
+    // 3. #773 - Offline Queue (depends on #771, #772)
+    // 4. #774 - Conflict Resolution (depends on #773)
+    // 5. #775 - Sync Edge Cases (depends on #774)
+    // 6. #770 - Comprehensive Testing (depends on all above)
+    const ordering = new Map([
+      [771, 1], // Connection Status Indicators - first, helps debug others
+      [772, 2], // Query Performance - optimize before complex logic
+      [773, 3], // Offline Queue - foundation for sync
+      [774, 4], // Conflict Resolution - handles sync conflicts
+      [775, 5], // Real-time Sync Edge Cases - final sync polish
+      [770, 6], // Comprehensive Testing - last, tests everything
+    ]);
+
+    return issues.sort((a, b) => {
+      const orderA = ordering.get(a.number) || 999;
+      const orderB = ordering.get(b.number) || 999;
+      return orderA - orderB;
+    });
+  }
+
+  // Default: by issue number (older issues first)
+  return issues.sort((a, b) => a.number - b.number);
+}
+
+/**
  * Generate markdown report
  */
 export function generateReport(prioritizedIssues: PrioritizedIssue[]): string {
@@ -336,7 +422,10 @@ This document provides a prioritized ordering of all open issues in the CertLab 
       report += `### ${phaseName}\n\n`;
     }
 
-    for (const issue of issues) {
+    // Sort issues within phase by specific ordering logic
+    const sortedIssues = sortIssuesWithinPhase(issues, phaseName);
+
+    for (const issue of sortedIssues) {
       const badges = [];
       if (issue.criticalPath) badges.push('🔴 CRITICAL PATH');
       if (issue.security) badges.push('🔒 SECURITY');
@@ -358,6 +447,10 @@ This document provides a prioritized ordering of all open issues in the CertLab 
 
       if (issue.labels.length > 0) {
         report += `**Labels**: ${issue.labels.join(', ')}\n\n`;
+      }
+
+      if (issue.dependencies.length > 0) {
+        report += `**Dependencies**: ${issue.dependencies.map(d => `#${d}`).join(', ')}\n\n`;
       }
 
       report += `**GitHub Issue**: [#${issue.number}](https://github.com/archubbuck/certlab/issues/${issue.number})\n\n`;
