@@ -460,10 +460,11 @@ describe('useFirestoreConnection', () => {
 
     it('should cap exponential backoff at 30 seconds', async () => {
       // This test verifies the backoff calculation caps at 30s
-      // We don't need to run the full hook, just verify the math
+      // Simulates the implementation: delay = 1000 * 2^(nextAttempt) where nextAttempt = prev + 1
       const delays = [];
-      for (let attempt = 0; attempt < 20; attempt++) {
-        const delay = Math.min(1000 * Math.pow(2, attempt + 1), 30000);
+      for (let currentAttempts = 0; currentAttempts < 20; currentAttempts++) {
+        const nextAttempt = currentAttempts + 1;
+        const delay = Math.min(1000 * Math.pow(2, nextAttempt), 30000);
         delays.push(delay);
       }
 
@@ -471,7 +472,7 @@ describe('useFirestoreConnection', () => {
       const maxDelay = Math.max(...delays);
       expect(maxDelay).toBe(30000);
 
-      // Verify we reach the cap (should happen after attempt 5: 2^6 * 1000 = 64000 > 30000)
+      // Verify we reach the cap (should happen when nextAttempt >= 5: 2^5 * 1000 = 32000 > 30000)
       const cappedDelays = delays.filter((d) => d === 30000);
       expect(cappedDelays.length).toBeGreaterThan(10); // Most delays should be capped
     });
