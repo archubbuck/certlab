@@ -91,9 +91,21 @@ export function useFirestoreConnection(): FirestoreConnectionState {
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
   const unsubscribeRef = useRef<Unsubscribe | null>(null);
-  const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const healthCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Use refs to avoid stale closures in checkConnection
+  const statusRef = useRef(status);
+  const reconnectAttemptsRef = useRef(reconnectAttempts);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  useEffect(() => {
+    reconnectAttemptsRef.current = reconnectAttempts;
+  }, [reconnectAttempts]);
 
   /**
    * Check if Firestore is connected by attempting a lightweight query
@@ -101,11 +113,17 @@ export function useFirestoreConnection(): FirestoreConnectionState {
   const checkConnection = useCallback(async () => {
     if (!isCloudSyncEnabled || !isFirestoreInitialized()) {
       setStatus('disabled');
+      setError(null);
+      setIsSyncing(false);
+      setReconnectAttempts(0);
       return;
     }
 
     if (!navigator.onLine) {
       setStatus('offline');
+      setError(null);
+      setIsSyncing(false);
+      setReconnectAttempts(0);
       return;
     }
 
@@ -119,19 +137,45 @@ export function useFirestoreConnection(): FirestoreConnectionState {
       const q = query(categoriesRef, limit(1));
 
       // Set up a one-time snapshot listener with a timeout
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      let unsubscribe: Unsubscribe | null = null;
+
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Connection check timeout')), 5000);
+        timeoutId = setTimeout(() => {
+          // If the timeout wins the race, make sure we clean up the listener
+          if (unsubscribe) {
+            unsubscribe();
+            unsubscribe = null;
+          }
+          reject(new Error('Connection check timeout'));
+        }, 5000);
       });
 
       const snapshotPromise = new Promise<void>((resolve, reject) => {
-        const unsubscribe = onSnapshot(
+        unsubscribe = onSnapshot(
           q,
           () => {
-            unsubscribe();
+            // Snapshot arrived first: clear timeout and clean up listener
+            if (timeoutId !== null) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
+            if (unsubscribe) {
+              unsubscribe();
+              unsubscribe = null;
+            }
             resolve();
           },
           (err) => {
-            unsubscribe();
+            // Error from snapshot: clear timeout and clean up listener
+            if (timeoutId !== null) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
+            if (unsubscribe) {
+              unsubscribe();
+              unsubscribe = null;
+            }
             reject(err);
           }
         );
@@ -149,23 +193,29 @@ export function useFirestoreConnection(): FirestoreConnectionState {
       console.error('[Firestore Connection] Check failed:', error);
       setError(error);
 
-      // Determine if we're reconnecting or have an error
-      if (status === 'connected' || status === 'reconnecting') {
-        setStatus('reconnecting');
-        setReconnectAttempts((prev) => prev + 1);
+      // Use refs to get current values and avoid stale closure
+      const currentStatus = statusRef.current;
+      const currentAttempts = reconnectAttemptsRef.current;
 
-        // Schedule a retry with exponential backoff (max 30s)
-        const retryDelay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-        reconnectTimeoutRef.current = setTimeout(() => {
-          checkConnection();
-        }, retryDelay);
+      // Determine if we're reconnecting or have an error
+      if (currentStatus === 'connected' || currentStatus === 'reconnecting') {
+        setStatus('reconnecting');
+        setReconnectAttempts((prev) => {
+          const nextAttempt = prev + 1;
+          // Schedule a retry with exponential backoff (max 30s)
+          const retryDelay = Math.min(1000 * Math.pow(2, nextAttempt), 30000);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            checkConnection();
+          }, retryDelay);
+          return nextAttempt;
+        });
       } else {
         setStatus('error');
       }
     } finally {
       setIsSyncing(false);
     }
-  }, [isCloudSyncEnabled, reconnectAttempts, status]);
+  }, [isCloudSyncEnabled]);
 
   /**
    * Set up browser online/offline event listeners
@@ -232,13 +282,20 @@ export function useFirestoreConnection(): FirestoreConnectionState {
       unsubscribeRef.current = onSnapshot(
         q,
         (snapshot) => {
-          // Successfully received snapshot - we're connected
+          // Successfully received snapshot
           if (snapshot.metadata.fromCache && !snapshot.metadata.hasPendingWrites) {
-            // Data is from cache, might be offline
-            if (status === 'connected') {
-              // We were connected, now using cache - might be offline
-              console.log('[Firestore Connection] Now using cached data');
+            // Data is from cache, might be offline or reconnecting
+            const isBrowserOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+
+            if (isBrowserOffline) {
+              // Browser reports offline - reflect this explicitly
+              setStatus('offline');
+            } else if (statusRef.current === 'connected') {
+              // We were connected, now using cache without pending writes - likely reconnecting
+              setStatus('reconnecting');
             }
+
+            console.log('[Firestore Connection] Now using cached data');
           } else {
             // Data is from server or successfully synced
             setStatus('connected');
@@ -276,10 +333,6 @@ export function useFirestoreConnection(): FirestoreConnectionState {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
-      }
-      if (checkTimeoutRef.current) {
-        clearTimeout(checkTimeoutRef.current);
-        checkTimeoutRef.current = null;
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
@@ -334,7 +387,7 @@ export function useFirestoreConnection(): FirestoreConnectionState {
 
 /**
  * Make the hook available in window for debugging
- * Developers can access connection state via: window.__FIRESTORE_DEBUG__
+ * Developers can access connection state via: window.__FIRESTORE_CONNECTION_HOOK__
  */
 if (typeof window !== 'undefined') {
   (window as any).__FIRESTORE_CONNECTION_HOOK__ = {

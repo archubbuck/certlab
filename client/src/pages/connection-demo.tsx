@@ -199,7 +199,7 @@ export default function ConnectionDemo() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm">
-            The connection state is exposed to the browser's developer tools for debugging:
+            The hook metadata is exposed to the browser's developer tools for reference:
           </p>
           <div className="bg-muted p-4 rounded-md font-mono text-sm space-y-2">
             <div>

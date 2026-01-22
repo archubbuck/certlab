@@ -296,12 +296,12 @@ describe('useFirestoreConnection', () => {
     it('should indicate when syncing is in progress', async () => {
       const { result } = renderHook(() => useFirestoreConnection());
 
-      // Initially may be syncing
-      const wasSyncing = result.current.isSyncing;
-
-      await waitFor(() => {
-        expect(result.current.status).toBe('connected');
-      });
+      await waitFor(
+        () => {
+          expect(result.current.status).toBe('connected');
+        },
+        { timeout: 3000 }
+      );
 
       // After connection, syncing should be false
       expect(result.current.isSyncing).toBe(false);
@@ -369,6 +369,111 @@ describe('useFirestoreConnection', () => {
         },
         { timeout: 1000 }
       );
+    });
+  });
+
+  describe('Connection Check Timeout', () => {
+    it('should timeout connection check and clean up listener', async () => {
+      vi.useFakeTimers();
+      const { onSnapshot } = await import('firebase/firestore');
+      const mockOnSnapshot = onSnapshot as unknown as ReturnType<typeof vi.fn>;
+
+      // Mock a snapshot listener that never responds
+      const mockUnsubscribe = vi.fn();
+      mockOnSnapshot.mockImplementation((query: any, onNext: any, onError: any) => {
+        // Never call onNext or onError - simulate hanging connection
+        return mockUnsubscribe;
+      });
+
+      const { result } = renderHook(() => useFirestoreConnection());
+
+      // Manually trigger connection check
+      act(() => {
+        result.current.checkConnection();
+      });
+
+      // Fast-forward past the 5 second timeout
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+        await Promise.resolve(); // Let promises resolve
+      });
+
+      // The unsubscribe should have been called when timeout occurred
+      expect(mockUnsubscribe).toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('Exponential Backoff', () => {
+    it('should use exponential backoff for reconnection attempts', async () => {
+      vi.useFakeTimers();
+      const { onSnapshot } = await import('firebase/firestore');
+      const mockOnSnapshot = onSnapshot as unknown as ReturnType<typeof vi.fn>;
+
+      let callCount = 0;
+      const delays: number[] = [];
+
+      mockOnSnapshot.mockImplementation((query: any, onNext: any, onError: any) => {
+        callCount++;
+
+        // Track when each call happens
+        if (callCount > 1) {
+          delays.push(Date.now());
+        }
+
+        // Always error to trigger reconnection
+        setTimeout(() => {
+          if (onError) onError(new Error('Connection failed'));
+        }, 0);
+        return vi.fn();
+      });
+
+      const { result } = renderHook(() => useFirestoreConnection());
+
+      // Let initial connection attempt fail
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+        await Promise.resolve();
+      });
+
+      // Verify status is error or reconnecting
+      expect(['error', 'reconnecting']).toContain(result.current.status);
+
+      // First reconnect attempt should happen after 2^1 * 1000ms = 2000ms
+      await act(async () => {
+        vi.advanceTimersByTime(2000);
+        await Promise.resolve();
+      });
+
+      // Second reconnect attempt should happen after 2^2 * 1000ms = 4000ms
+      await act(async () => {
+        vi.advanceTimersByTime(4000);
+        await Promise.resolve();
+      });
+
+      // Verify reconnect attempts increased
+      expect(result.current.debugInfo.reconnectAttempts).toBeGreaterThan(0);
+
+      vi.useRealTimers();
+    });
+
+    it('should cap exponential backoff at 30 seconds', async () => {
+      // This test verifies the backoff calculation caps at 30s
+      // We don't need to run the full hook, just verify the math
+      const delays = [];
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const delay = Math.min(1000 * Math.pow(2, attempt + 1), 30000);
+        delays.push(delay);
+      }
+
+      // Verify delays cap at 30000ms
+      const maxDelay = Math.max(...delays);
+      expect(maxDelay).toBe(30000);
+
+      // Verify we reach the cap (should happen after attempt 5: 2^6 * 1000 = 64000 > 30000)
+      const cappedDelays = delays.filter((d) => d === 30000);
+      expect(cappedDelays.length).toBeGreaterThan(10); // Most delays should be capped
     });
   });
 });

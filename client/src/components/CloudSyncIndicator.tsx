@@ -63,7 +63,7 @@ export function CloudSyncIndicator({
         return {
           icon: Loader2,
           label: 'Reconnecting...',
-          description: `Attempting to reconnect to Firebase... (Attempt ${debugInfo.reconnectAttempts})`,
+          description: `Attempting to reconnect to Firebase... (Attempt ${(debugInfo?.reconnectAttempts ?? 0) + 1})`,
           color: 'text-yellow-500',
           showWarning: true,
           animate: true,
