@@ -945,14 +945,11 @@ class FirestoreStorage implements IClientStorage {
 
   async getUserQuizzes(userId: string, tenantId?: number): Promise<Quiz[]> {
     try {
-      // Add limit and orderBy for better performance
-      const constraints = [
-        orderBy('createdAt', 'desc'),
-        limit(500), // Safety limit - most users won't have more than 500 quizzes
-      ];
+      // Add orderBy for better performance
+      const constraints = [orderBy('createdAt', 'desc')];
 
-      // If tenantId provided, filter on server
-      if (tenantId) {
+      // If tenantId provided (including 0), filter on server
+      if (tenantId !== undefined && tenantId !== null) {
         constraints.unshift(where('tenantId', '==', tenantId));
       }
 
@@ -1303,14 +1300,11 @@ class FirestoreStorage implements IClientStorage {
    */
   async getUserQuizTemplates(userId: string, tenantId?: number): Promise<QuizTemplate[]> {
     try {
-      // Add limit and orderBy for better performance
-      const constraints = [
-        orderBy('createdAt', 'desc'),
-        limit(200), // Safety limit - typical users won't have 200+ templates
-      ];
+      // Add orderBy for better performance
+      const constraints = [orderBy('createdAt', 'desc')];
 
-      // If tenantId provided, filter on server
-      if (tenantId) {
+      // If tenantId provided (including 0), filter on server
+      if (tenantId !== undefined && tenantId !== null) {
         constraints.unshift(where('tenantId', '==', tenantId));
       }
 
@@ -2766,23 +2760,25 @@ class FirestoreStorage implements IClientStorage {
   async getActiveQuests(): Promise<Quest[]> {
     try {
       // Use Firestore where() clause to filter active quests on the server
-      const activeQuests = await getSharedDocuments<Quest>('quests', [
+      const activeQuestsRaw = await getSharedDocuments<Quest>('quests', [
         where('isActive', '==', true),
         // Note: For validUntil filtering, we need to handle null/undefined values
         // So we still do client-side filtering for expired quests
       ]);
 
+      // Convert timestamps first, then filter
+      const activeQuests = activeQuestsRaw.map((quest) => convertTimestamps<Quest>(quest));
+
       const now = new Date();
       // Filter out expired quests (must be done client-side due to null handling)
-      return activeQuests
-        .filter((quest) => {
-          if (quest.validUntil) {
-            const expiryDate = new Date(quest.validUntil);
-            return expiryDate >= now;
-          }
-          return true;
-        })
-        .map((quest) => convertTimestamps(quest));
+      return activeQuests.filter((quest) => {
+        if (quest.validUntil) {
+          const expiryDate =
+            quest.validUntil instanceof Date ? quest.validUntil : new Date(quest.validUntil);
+          return expiryDate >= now;
+        }
+        return true;
+      });
     } catch (error) {
       logError('getActiveQuests', error);
       return [];
@@ -2795,22 +2791,24 @@ class FirestoreStorage implements IClientStorage {
   async getQuestsByType(type: string): Promise<Quest[]> {
     try {
       // Combine both where() clauses for maximum efficiency
-      const quests = await getSharedDocuments<Quest>('quests', [
+      const questsRaw = await getSharedDocuments<Quest>('quests', [
         where('isActive', '==', true),
         where('type', '==', type),
       ]);
 
+      // Convert timestamps first, then filter
+      const quests = questsRaw.map((quest) => convertTimestamps<Quest>(quest));
+
       const now = new Date();
       // Filter out expired quests (must be done client-side due to null handling)
-      return quests
-        .filter((quest) => {
-          if (quest.validUntil) {
-            const expiryDate = new Date(quest.validUntil);
-            return expiryDate >= now;
-          }
-          return true;
-        })
-        .map((quest) => convertTimestamps(quest));
+      return quests.filter((quest) => {
+        if (quest.validUntil) {
+          const expiryDate =
+            quest.validUntil instanceof Date ? quest.validUntil : new Date(quest.validUntil);
+          return expiryDate >= now;
+        }
+        return true;
+      });
     } catch (error) {
       logError('getQuestsByType', error);
       return [];
@@ -2848,8 +2846,11 @@ class FirestoreStorage implements IClientStorage {
    */
   async getUserQuestProgress(userId: string, tenantId: number): Promise<UserQuestProgress[]> {
     try {
-      // Add limit to prevent excessive reads
+      // Add tenant filter and deterministic ordering before limit to prevent cross-tenant leakage
+      // and ensure predictable results when limiting to 100 documents.
       const progressList = await getUserDocuments<UserQuestProgress>(userId, 'questProgress', [
+        where('tenantId', '==', tenantId),
+        orderBy('updatedAt', 'desc'),
         limit(100), // Safety limit - unlikely to have more than 100 active quest progresses
       ]);
       return progressList.map((progress) => convertTimestamps(progress));
@@ -3332,9 +3333,10 @@ class FirestoreStorage implements IClientStorage {
 
   /**
    * Get study timer statistics for a user.
-   * Calculates today, week, month, and all-time statistics.
+   * Calculates today, week, month, and 90-day statistics.
+   * Note: All-time stats limited to last 90 days for performance optimization.
    * @param userId - The user's unique identifier
-   * @returns Study timer statistics
+   * @returns Study timer statistics (based on last 90 days)
    */
   async getStudyTimerStats(userId: string): Promise<StudyTimerStats> {
     try {
@@ -3343,11 +3345,16 @@ class FirestoreStorage implements IClientStorage {
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-      const allSessions = await getUserDocuments<StudyTimerSession>(userId, 'timerSessions', [
+      const sessionsRaw = await getUserDocuments<StudyTimerSession>(userId, 'timerSessions', [
         where('startedAt', '>=', Timestamp.fromDate(ninetyDaysAgo)),
         orderBy('startedAt', 'desc'),
         limit(1000), // Safety limit
       ]);
+
+      // Convert Firestore timestamps to Dates before any date math
+      const allSessions = sessionsRaw.map((session) =>
+        convertTimestamps<StudyTimerSession>(session)
+      );
 
       const MS_PER_DAY = 24 * 60 * 60 * 1000;
       const now = new Date();

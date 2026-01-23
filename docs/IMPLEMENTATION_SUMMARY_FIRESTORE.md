@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document summarizes the Firestore query performance optimizations implemented to address issue #[issue_number] and meet the acceptance criteria.
+This document summarizes the Firestore query performance optimizations implemented to improve application performance and reduce cloud costs, addressing the performance optimization requirements outlined in the project roadmap.
 
 ## Acceptance Criteria Status
 

@@ -138,8 +138,10 @@ To measure the actual impact of these optimizations:
 
 1. **Enable Firestore Debug Logging**:
    ```typescript
-   import { enableIndexedDbPersistence } from 'firebase/firestore';
-   // Enable debug mode in console
+   import { setLogLevel } from 'firebase/firestore';
+
+   // Enable verbose Firestore SDK logging in the browser console
+   setLogLevel('debug');
    ```
 
 2. **Monitor Firestore Usage**:
