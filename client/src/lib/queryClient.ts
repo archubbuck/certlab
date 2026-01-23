@@ -903,8 +903,9 @@ export async function apiRequest({
  * - Default stale time is 30 seconds (staleTime.user) - optimal for frequently changing user data
  * - Individual queries can override with longer stale times using staleTime.static (5 min),
  *   staleTime.auth (1 min), or staleTime.quiz (2 min)
- * - Disables window focus refetching (data is local, no need to refresh on focus)
- * - Disables retries (IndexedDB operations are synchronous and deterministic)
+ * - Garbage collection time (gcTime) is 10 minutes - keeps data in cache even after it becomes stale
+ * - Disables window focus refetching (prevents excessive Firestore reads when switching tabs)
+ * - Disables retries (Firestore operations should succeed or fail immediately)
  *
  * @example
  * ```tsx
@@ -929,6 +930,10 @@ export const queryClient = new QueryClient({
       // Default stale time for user data - most common query type
       // Individual queries can override this using the staleTime constants
       staleTime: staleTime.user,
+      // Garbage collection time - how long unused cached data stays in memory
+      // Set to 10 minutes to avoid re-fetching data when navigating between pages
+      // This significantly reduces Firestore read costs
+      gcTime: 10 * 60 * 1000, // 10 minutes
       retry: false,
     },
     mutations: {
