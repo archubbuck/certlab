@@ -31,82 +31,14 @@ import { logInfo } from './errors';
 import type { IClientStorage } from '@shared/storage-interface';
 
 /**
- * List of methods that perform write operations and should be queued
+ * Check if a method name indicates a write operation
+ * Write operations include: create*, update*, delete*, set*
  */
-const WRITE_METHODS = new Set([
-  'createTenant',
-  'updateTenant',
-  'createUser',
-  'updateUser',
-  'updateUserGoals',
-  'createCategory',
-  'updateCategory',
-  'deleteCategory',
-  'createSubcategory',
-  'updateSubcategory',
-  'deleteSubcategory',
-  'createQuestion',
-  'updateQuestion',
-  'deleteQuestion',
-  'createPersonalCategory',
-  'createPersonalSubcategory',
-  'createPersonalQuestion',
-  'deletePersonalQuestion',
-  'createQuiz',
-  'updateQuiz',
-  'createQuizVersion',
-  'deleteQuizTemplate',
-  'updateUserProgress',
-  'createLecture',
-  'updateLecture',
-  'deleteLecture',
-  'updateMasteryScore',
-  'createUserBadge',
-  'updateUserBadge',
-  'updateUserGameStats',
-  'createChallenge',
-  'createChallengeAttempt',
-  'createStudyGroup',
-  'createPracticeTest',
-  'createPracticeTestAttempt',
-  'updatePracticeTestAttempt',
-  'updateUserQuestProgress',
-  'setSelectedTitle',
-  'updateStudyTimerSettings',
-  'createStudyTimerSession',
-  'updateStudyTimerSession',
-  'createProduct',
-  'updateProduct',
-  'deleteProduct',
-  'createGroup',
-  'updateGroup',
-  'deleteGroup',
-  'createPurchase',
-  'updatePurchase',
-  'createQuizTemplateLibrary',
-  'createMaterialTemplateLibrary',
-  'updateQuizTemplateLibrary',
-  'updateMaterialTemplateLibrary',
-  'deleteTemplateLibrary',
-  'createCertificate',
-  'deleteCertificate',
-  'createCertificateTemplate',
-  'updateCertificateTemplate',
-  'deleteCertificateTemplate',
-  'createNotification',
-  'deleteExpiredNotifications',
-  'updateNotificationPreferences',
-  'updateEnrollmentProgress',
-  'updateAssignmentStatus',
-  'updateAssignmentProgress',
-  'updateLeaderboardEntry',
-  'setOrganizationBranding',
-  'setUserThemePreferences',
-  'updateUserThemePreferences',
-  'updateAttachment',
-  'deleteAttachment',
-  'deleteResourceAttachments',
-]);
+function isWriteMethod(methodName: string): boolean {
+  const writePatterns = ['create', 'update', 'delete', 'set'];
+  const lowerMethod = methodName.toLowerCase();
+  return writePatterns.some((pattern) => lowerMethod.startsWith(pattern));
+}
 
 /**
  * Check if the current environment is offline
@@ -132,7 +64,7 @@ export function createFirestoreStorageWithQueue<T extends IClientStorage>(storag
       const originalMethod = target[prop as keyof T];
 
       // If not a function or not a write method, return as-is
-      if (typeof originalMethod !== 'function' || !WRITE_METHODS.has(prop)) {
+      if (typeof originalMethod !== 'function' || !isWriteMethod(prop)) {
         return originalMethod;
       }
 
