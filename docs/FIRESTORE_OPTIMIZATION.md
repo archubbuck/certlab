@@ -225,11 +225,17 @@ Before deploying these changes to production:
 
 - [x] Update `firestore.indexes.json` with new composite indexes
 - [x] Deploy Firestore indexes: `firebase deploy --only firestore:indexes`
-- [ ] Wait for index creation to complete (check Firebase Console)
-- [x] Deploy application code with optimized queries
-- [ ] Monitor Firestore usage for 24-48 hours
-- [ ] Compare read counts before and after
-- [ ] Check for any index-related errors in logs
+  - Note: Run this command from the project root
+  - Monitor index creation status in Firebase Console
+- [ ] **IMPORTANT**: Wait for all index creation to complete (check Firebase Console → Firestore → Indexes)
+  - Index creation can take 5-30 minutes depending on data volume
+  - Do NOT deploy application code until indexes show "Enabled" status
+- [ ] Deploy application code with optimized queries: `firebase deploy --only hosting`
+- [ ] Monitor Firestore usage for 24-48 hours after deployment
+- [ ] Compare read counts before and after using Firebase Console
+- [ ] Check application logs for any index-related errors
+
+**Note**: The order is critical - deploy indexes first, wait for completion, then deploy code.
 
 ## Related Files
 
