@@ -2766,19 +2766,19 @@ class FirestoreStorage implements IClientStorage {
   async getActiveQuests(): Promise<Quest[]> {
     try {
       // Use Firestore where() clause to filter active quests on the server
-      const now = Timestamp.now();
       const activeQuests = await getSharedDocuments<Quest>('quests', [
         where('isActive', '==', true),
         // Note: For validUntil filtering, we need to handle null/undefined values
         // So we still do client-side filtering for expired quests
       ]);
 
+      const now = new Date();
       // Filter out expired quests (must be done client-side due to null handling)
       return activeQuests
         .filter((quest) => {
           if (quest.validUntil) {
             const expiryDate = new Date(quest.validUntil);
-            return expiryDate >= new Date();
+            return expiryDate >= now;
           }
           return true;
         })
@@ -2795,18 +2795,18 @@ class FirestoreStorage implements IClientStorage {
   async getQuestsByType(type: string): Promise<Quest[]> {
     try {
       // Combine both where() clauses for maximum efficiency
-      const now = Timestamp.now();
       const quests = await getSharedDocuments<Quest>('quests', [
         where('isActive', '==', true),
         where('type', '==', type),
       ]);
 
+      const now = new Date();
       // Filter out expired quests (must be done client-side due to null handling)
       return quests
         .filter((quest) => {
           if (quest.validUntil) {
             const expiryDate = new Date(quest.validUntil);
-            return expiryDate >= new Date();
+            return expiryDate >= now;
           }
           return true;
         })
