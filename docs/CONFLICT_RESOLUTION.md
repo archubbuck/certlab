@@ -559,6 +559,6 @@ localStorage.setItem('debug', 'certlab:conflicts');
 ## References
 
 - [Firestore Documentation](https://firebase.google.com/docs/firestore)
-- [Collaborative Editing Module](./collaborative-editing.ts)
+- [Collaborative Editing Module](../client/src/lib/collaborative-editing.ts)
 - [ROADMAP.md](../ROADMAP.md)
-- [Conflict Resolution Tests](./conflict-resolution.test.ts)
+- [Conflict Resolution Tests](../client/src/lib/conflict-resolution.test.ts)

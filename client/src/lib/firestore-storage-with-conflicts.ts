@@ -77,9 +77,9 @@ export async function updateWithConflictResolution<T extends Record<string, any>
 
       // Check for version conflict
       if (expectedVersion !== undefined && lock.version !== expectedVersion) {
-        // Version conflict detected - fetch remote version
-        // Note: In a real implementation, we'd fetch the remote document here
-        // For now, we'll throw a conflict error
+        // Version conflict detected
+        // The caller should fetch the remote document and trigger conflict resolution
+        // via the useConflictResolution hook or resolveConflict function
         throw new ConflictError('Version conflict detected', {
           documentType,
           documentId,

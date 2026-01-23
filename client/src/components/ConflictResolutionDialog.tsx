@@ -94,7 +94,8 @@ export function ConflictResolutionDialog({
   };
 
   const formatTimestamp = (date: Date): string => {
-    return date.toLocaleString('en-US', {
+    // Use browser's default locale for better i18n support
+    return date.toLocaleString(undefined, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
