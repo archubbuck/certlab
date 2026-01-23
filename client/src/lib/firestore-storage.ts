@@ -773,10 +773,11 @@ class FirestoreStorage implements IClientStorage {
    */
   async getPersonalSubcategories(userId: string, categoryId: number): Promise<Subcategory[]> {
     try {
-      const subcategories = await getUserDocuments<Subcategory>(userId, 'personalSubcategories');
-      return subcategories
-        .filter((s) => s.categoryId === categoryId)
-        .map((s) => convertTimestamps<Subcategory>(s));
+      // Use Firestore where() clause instead of client-side filtering
+      const subcategories = await getUserDocuments<Subcategory>(userId, 'personalSubcategories', [
+        where('categoryId', '==', categoryId),
+      ]);
+      return subcategories.map((s) => convertTimestamps<Subcategory>(s));
     } catch (error) {
       logError('getPersonalSubcategories', error, { userId, categoryId });
       return [];
@@ -2744,21 +2745,24 @@ class FirestoreStorage implements IClientStorage {
    */
   async getActiveQuests(): Promise<Quest[]> {
     try {
-      const allQuests = await this.getQuests();
-      const now = new Date();
+      // Use Firestore where() clause to filter active quests on the server
+      const now = Timestamp.now();
+      const activeQuests = await getSharedDocuments<Quest>('quests', [
+        where('isActive', '==', true),
+        // Note: For validUntil filtering, we need to handle null/undefined values
+        // So we still do client-side filtering for expired quests
+      ]);
 
-      return allQuests.filter((quest) => {
-        // Include quest if it's active
-        if (!quest.isActive) return false;
-
-        // Check if quest has expired
-        if (quest.validUntil) {
-          const expiryDate = new Date(quest.validUntil);
-          if (expiryDate < now) return false;
-        }
-
-        return true;
-      });
+      // Filter out expired quests (must be done client-side due to null handling)
+      return activeQuests
+        .filter((quest) => {
+          if (quest.validUntil) {
+            const expiryDate = new Date(quest.validUntil);
+            return expiryDate >= new Date();
+          }
+          return true;
+        })
+        .map((quest) => convertTimestamps(quest));
     } catch (error) {
       logError('getActiveQuests', error);
       return [];
@@ -2770,8 +2774,23 @@ class FirestoreStorage implements IClientStorage {
    */
   async getQuestsByType(type: string): Promise<Quest[]> {
     try {
-      const allQuests = await this.getActiveQuests();
-      return allQuests.filter((quest) => quest.type === type);
+      // Combine both where() clauses for maximum efficiency
+      const now = Timestamp.now();
+      const quests = await getSharedDocuments<Quest>('quests', [
+        where('isActive', '==', true),
+        where('type', '==', type),
+      ]);
+
+      // Filter out expired quests (must be done client-side due to null handling)
+      return quests
+        .filter((quest) => {
+          if (quest.validUntil) {
+            const expiryDate = new Date(quest.validUntil);
+            return expiryDate >= new Date();
+          }
+          return true;
+        })
+        .map((quest) => convertTimestamps(quest));
     } catch (error) {
       logError('getQuestsByType', error);
       return [];
@@ -3272,17 +3291,16 @@ class FirestoreStorage implements IClientStorage {
     endDate: Date
   ): Promise<StudyTimerSession[]> {
     try {
-      // Get all sessions for the user
-      const allSessions = await getUserDocuments<StudyTimerSession>(userId, 'timerSessions');
+      // Use Firestore where() clauses instead of client-side filtering
+      // This significantly reduces read costs by filtering on the server
+      const sessions = await getUserDocuments<StudyTimerSession>(userId, 'timerSessions', [
+        where('startedAt', '>=', Timestamp.fromDate(startDate)),
+        where('startedAt', '<=', Timestamp.fromDate(endDate)),
+        orderBy('startedAt', 'desc'),
+        limit(1000), // Safety limit to prevent excessive reads
+      ]);
 
-      // Filter by date range
-      const filteredSessions = allSessions.filter((session) => {
-        if (!session.startedAt) return false;
-        const sessionDate = new Date(session.startedAt);
-        return sessionDate >= startDate && sessionDate <= endDate;
-      });
-
-      return filteredSessions.map((session) => convertTimestamps(session));
+      return sessions.map((session) => convertTimestamps(session));
     } catch (error) {
       logError('getStudyTimerSessionsByDateRange', error);
       return [];
@@ -3297,8 +3315,16 @@ class FirestoreStorage implements IClientStorage {
    */
   async getStudyTimerStats(userId: string): Promise<StudyTimerStats> {
     try {
-      // Get all sessions for the user
-      const allSessions = await getUserDocuments<StudyTimerSession>(userId, 'timerSessions');
+      // Query sessions from the last 90 days instead of all sessions
+      // This reduces read costs while still providing accurate stats
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+      const allSessions = await getUserDocuments<StudyTimerSession>(userId, 'timerSessions', [
+        where('startedAt', '>=', Timestamp.fromDate(ninetyDaysAgo)),
+        orderBy('startedAt', 'desc'),
+        limit(1000), // Safety limit
+      ]);
 
       const MS_PER_DAY = 24 * 60 * 60 * 1000;
       const now = new Date();
