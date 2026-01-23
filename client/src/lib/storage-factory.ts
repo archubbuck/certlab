@@ -35,6 +35,7 @@
  */
 
 import { firestoreStorage } from './firestore-storage';
+import { createFirestoreStorageWithQueue } from './firestore-storage-queued';
 import { initializeFirestoreService, isFirestoreInitialized } from './firestore-service';
 import { getCurrentFirebaseUser } from './firebase';
 import { logError } from './errors';
@@ -76,6 +77,11 @@ const STORAGE_MODE: StorageMode = 'cloud';
 let firestoreAvailable = false;
 
 /**
+ * Firestore storage with offline queue support
+ */
+let queuedFirestoreStorage: IClientStorage | null = null;
+
+/**
  * Initialize the storage system
  * This should be called on app startup
  * Firestore is mandatory for the application
@@ -94,7 +100,10 @@ export async function initializeStorage(firebaseUser?: any | null): Promise<void
       );
     }
 
-    console.log('[Storage Factory] Firestore initialized successfully');
+    // Wrap Firestore storage with offline queue support
+    queuedFirestoreStorage = createFirestoreStorageWithQueue(firestoreStorage);
+
+    console.log('[Storage Factory] Firestore initialized successfully with offline queue support');
 
     // Check if user is logged in with Firebase
     const currentFirebaseUser = firebaseUser || getCurrentFirebaseUser();
@@ -134,24 +143,24 @@ export function isUsingCloudSync(): boolean {
  */
 class StorageRouter implements IClientStorage {
   /**
-   * Get the active storage backend (always Firestore)
+   * Get the active storage backend (always Firestore with offline queue)
    * @throws {Error} If Firestore is not initialized. This indicates a critical initialization failure
    * that should have been caught during app startup in initializeStorage().
    */
   private getActiveStorage(): IClientStorage {
-    if (!firestoreAvailable) {
+    if (!firestoreAvailable || !queuedFirestoreStorage) {
       throw new Error(
         'Firestore is not available. This indicates a critical initialization failure.\n' +
           'Storage operations cannot proceed without Firestore.\n' +
           'Ensure initializeStorage() is called and completes successfully before any storage operations.'
       );
     }
-    return firestoreStorage;
+    return queuedFirestoreStorage;
   }
 
   /**
    * Execute a storage operation with error logging
-   * Always routes to Firestore
+   * Always routes to Firestore with offline queue support
    */
   private async executeStorageOperation<T>(
     operation: (storage: IClientStorage) => Promise<T>,

@@ -21,6 +21,9 @@ vi.mock('./firestore-storage', () => ({
     setCurrentUserId: vi.fn().mockResolvedValue(undefined),
   },
 }));
+vi.mock('./firestore-storage-queued', () => ({
+  createFirestoreStorageWithQueue: vi.fn((storage) => storage), // Return the storage as-is for tests
+}));
 vi.mock('./errors', () => ({
   logError: vi.fn(),
 }));
