@@ -17,6 +17,17 @@ import { ConflictError } from './errors';
 import { getDocumentLock, updateDocumentVersion, type DocumentLock } from './collaborative-editing';
 
 /**
+ * Shared document types for conflict resolution
+ */
+export type ConflictDocumentType =
+  | 'quiz'
+  | 'quizTemplate'
+  | 'lecture'
+  | 'material'
+  | 'question'
+  | 'userProgress';
+
+/**
  * Conflict resolution strategies
  */
 export type ConflictStrategy =
@@ -30,7 +41,7 @@ export type ConflictStrategy =
  * Represents a conflict between two versions of a document
  */
 export interface DocumentConflict<T = any> {
-  documentType: 'quiz' | 'quizTemplate' | 'lecture' | 'material' | 'question' | 'userProgress';
+  documentType: ConflictDocumentType;
   documentId: string;
   localVersion: T;
   remoteVersion: T;
@@ -385,7 +396,7 @@ export async function resolveConflict<T extends Record<string, any>>(
  * Check for version conflicts and resolve if possible
  */
 export async function checkAndResolveVersionConflict<T extends Record<string, any>>(
-  documentType: 'quiz' | 'quizTemplate' | 'lecture' | 'material',
+  documentType: ConflictDocumentType,
   documentId: string,
   localData: T,
   expectedVersion: number | undefined,
@@ -430,7 +441,7 @@ export async function checkAndResolveVersionConflict<T extends Record<string, an
  * Apply resolved changes and update document version
  */
 export async function applyResolvedChanges<T extends Record<string, any>>(
-  documentType: 'quiz' | 'quizTemplate' | 'lecture' | 'material',
+  documentType: ConflictDocumentType,
   documentId: string,
   mergedData: T,
   userId: string,
