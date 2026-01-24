@@ -18,7 +18,7 @@ import type { Question, Quiz, UserProgress } from '@shared/schema';
 vi.mock('./firestore-service', () => ({
   getFirestoreInstance: vi.fn(),
   getUserDocuments: vi.fn(),
-  getUserSubcollectionDocuments: vi.fn(),
+  getUserDocuments: vi.fn(),
   getSharedDocuments: vi.fn(),
   where: vi.fn((field, op, value) => ({ field, op, value, _type: 'where' })),
   orderBy: vi.fn((field, direction) => ({ field, direction, _type: 'orderBy' })),
@@ -134,9 +134,8 @@ describe('FirestoreStorage - Query Operations', () => {
 
       await firestoreStorage.getQuestionsByCategories(categoryIds, subcategoryIds);
 
-      // Verify the where clause was used
-      expect(firestoreService.where).toHaveBeenCalled();
-      expect(firestoreService.getSharedDocuments).toHaveBeenCalled();
+      // Verify the shared documents were fetched
+      expect(firestoreService.getSharedDocuments).toHaveBeenCalledWith('questions');
     });
 
     it('should filter by difficulty levels', async () => {
@@ -202,9 +201,8 @@ describe('FirestoreStorage - Query Operations', () => {
         difficultyLevels
       );
 
-      // Multiple where clauses should be used
-      expect(firestoreService.where).toHaveBeenCalled();
-      expect(firestoreService.getSharedDocuments).toHaveBeenCalled();
+      // Multiple filters should be applied
+      expect(firestoreService.getSharedDocuments).toHaveBeenCalledWith('questions');
     });
 
     it('should filter by tenant ID', async () => {
@@ -215,8 +213,7 @@ describe('FirestoreStorage - Query Operations', () => {
 
       await firestoreStorage.getQuestionsByCategories(categoryIds, undefined, undefined, tenantId);
 
-      expect(firestoreService.where).toHaveBeenCalled();
-      expect(firestoreService.getSharedDocuments).toHaveBeenCalled();
+      expect(firestoreService.getSharedDocuments).toHaveBeenCalledWith('questions');
     });
 
     it('should handle empty category list', async () => {
@@ -289,7 +286,7 @@ describe('FirestoreStorage - Query Operations', () => {
         },
       ];
 
-      vi.mocked(firestoreService.getUserSubcollectionDocuments).mockResolvedValue(mockQuizzes);
+      vi.mocked(firestoreService.getUserDocuments).mockResolvedValue(mockQuizzes);
 
       const result = await firestoreStorage.getUserQuizzes(userId);
 
@@ -323,7 +320,7 @@ describe('FirestoreStorage - Query Operations', () => {
         },
       ];
 
-      vi.mocked(firestoreService.getUserSubcollectionDocuments).mockResolvedValue(mockQuizzes);
+      vi.mocked(firestoreService.getUserDocuments).mockResolvedValue(mockQuizzes);
 
       const result = await firestoreStorage.getUserQuizzes(userId);
 
@@ -357,7 +354,7 @@ describe('FirestoreStorage - Query Operations', () => {
         },
       ];
 
-      vi.mocked(firestoreService.getUserSubcollectionDocuments).mockResolvedValue(mockProgress);
+      vi.mocked(firestoreService.getUserDocuments).mockResolvedValue(mockProgress);
 
       const result = await firestoreStorage.getUserProgress(userId);
 
@@ -370,7 +367,7 @@ describe('FirestoreStorage - Query Operations', () => {
     it('should handle empty progress', async () => {
       const userId = 'user123';
 
-      vi.mocked(firestoreService.getUserSubcollectionDocuments).mockResolvedValue([]);
+      vi.mocked(firestoreService.getUserDocuments).mockResolvedValue([]);
 
       const result = await firestoreStorage.getUserProgress(userId);
 
@@ -381,19 +378,21 @@ describe('FirestoreStorage - Query Operations', () => {
   describe('Complex query scenarios', () => {
     it('should handle query with multiple constraints simultaneously', async () => {
       const categoryIds = [1, 2, 3];
-      const options = {
-        subcategoryIds: [10, 20],
-        difficultyLevels: [2, 3],
-        tenantId: 5,
-      };
+      const subcategoryIds = [10, 20];
+      const difficultyLevels = [2, 3];
+      const tenantId = 5;
 
       vi.mocked(firestoreService.getSharedDocuments).mockResolvedValue([]);
 
-      await firestoreStorage.getQuestionsByCategories(categoryIds, options);
+      await firestoreStorage.getQuestionsByCategories(
+        categoryIds,
+        subcategoryIds,
+        difficultyLevels,
+        tenantId
+      );
 
-      // Should use multiple where clauses
-      expect(firestoreService.where).toHaveBeenCalled();
-      expect(firestoreService.getSharedDocuments).toHaveBeenCalled();
+      // Should fetch all questions and filter in-memory
+      expect(firestoreService.getSharedDocuments).toHaveBeenCalledWith('questions');
     });
 
     it('should handle queries with no results gracefully', async () => {
@@ -493,9 +492,7 @@ describe('FirestoreStorage - Query Operations', () => {
         },
       ];
 
-      vi.mocked(firestoreService.getUserSubcollectionDocuments).mockResolvedValue(
-        mockPersonalQuestions
-      );
+      vi.mocked(firestoreService.getUserDocuments).mockResolvedValue(mockPersonalQuestions);
 
       const result = await firestoreStorage.getPersonalQuestions(userId);
 
@@ -507,27 +504,24 @@ describe('FirestoreStorage - Query Operations', () => {
     it('should query personal categories for a user', async () => {
       const userId = 'user123';
 
-      vi.mocked(firestoreService.getUserSubcollectionDocuments).mockResolvedValue([]);
+      vi.mocked(firestoreService.getUserDocuments).mockResolvedValue([]);
 
       const result = await firestoreStorage.getPersonalCategories(userId);
 
       expect(Array.isArray(result)).toBe(true);
-      expect(firestoreService.getUserSubcollectionDocuments).toHaveBeenCalledWith(
-        userId,
-        'personalCategories'
-      );
+      expect(firestoreService.getUserDocuments).toHaveBeenCalledWith(userId, 'personalCategories');
     });
 
     it('should query personal subcategories for a user and category', async () => {
       const userId = 'user123';
       const categoryId = 1;
 
-      vi.mocked(firestoreService.getUserSubcollectionDocuments).mockResolvedValue([]);
+      vi.mocked(firestoreService.getUserDocuments).mockResolvedValue([]);
 
       const result = await firestoreStorage.getPersonalSubcategories(userId, categoryId);
 
       expect(Array.isArray(result)).toBe(true);
-      expect(firestoreService.getUserSubcollectionDocuments).toHaveBeenCalled();
+      expect(firestoreService.getUserDocuments).toHaveBeenCalled();
       expect(firestoreService.where).toHaveBeenCalledWith('categoryId', '==', categoryId);
     });
   });

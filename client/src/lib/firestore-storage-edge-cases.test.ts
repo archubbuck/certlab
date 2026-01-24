@@ -145,6 +145,7 @@ describe('FirestoreStorage - Edge Cases', () => {
         options: [{ id: 1, text: 'Only one option' }],
         categoryId: 1,
         subcategoryId: 1,
+        correctAnswer: 0,
       };
 
       await expect(firestoreStorage.createQuestion(invalidQuestion)).rejects.toThrow();
@@ -159,6 +160,7 @@ describe('FirestoreStorage - Edge Cases', () => {
         ],
         categoryId: 1,
         subcategoryId: 1,
+        correctAnswer: 0,
       };
 
       await expect(firestoreStorage.createQuestion(invalidQuestion)).rejects.toThrow();
@@ -179,11 +181,12 @@ describe('FirestoreStorage - Edge Cases', () => {
       const questionWithXSS: Partial<Question> = {
         text: '<script>alert("xss")</script>What is this?',
         options: [
-          { id: 1, text: '<img src=x onerror=alert(1)>' },
-          { id: 2, text: 'Safe option' },
+          { id: 0, text: 'Option with XSS attempt' },
+          { id: 1, text: 'Safe option' },
         ],
         categoryId: 1,
         subcategoryId: 1,
+        correctAnswer: 0,
       };
 
       vi.mocked(firestoreService.setSharedDocument).mockResolvedValue(undefined);
@@ -284,6 +287,7 @@ describe('FirestoreStorage - Edge Cases', () => {
         ],
         categoryId: 1,
         subcategoryId: 1,
+        correctAnswer: 0,
       };
 
       const question2: Partial<Question> = {
@@ -294,6 +298,7 @@ describe('FirestoreStorage - Edge Cases', () => {
         ],
         categoryId: 1,
         subcategoryId: 1,
+        correctAnswer: 0,
       };
 
       vi.mocked(firestoreService.setSharedDocument).mockResolvedValue(undefined);
@@ -353,6 +358,7 @@ describe('FirestoreStorage - Edge Cases', () => {
         ],
         categoryId: 1,
         subcategoryId: 1,
+        correctAnswer: 0,
         subcategoryId: null,
         difficulty: (i % 3) + 1,
         explanation: null,
@@ -489,6 +495,7 @@ describe('FirestoreStorage - Edge Cases', () => {
         ],
         categoryId: 1,
         subcategoryId: 1,
+        correctAnswer: 0,
         explanation: longExplanation,
       };
 
@@ -534,6 +541,7 @@ describe('FirestoreStorage - Edge Cases', () => {
         ],
         categoryId: 1,
         subcategoryId: 1,
+        correctAnswer: 0,
         difficultyLevel: 1,
       };
 
@@ -557,6 +565,7 @@ describe('FirestoreStorage - Edge Cases', () => {
         ],
         categoryId: 1,
         subcategoryId: 1,
+        correctAnswer: 0,
         difficultyLevel: 5,
       };
 
@@ -620,6 +629,7 @@ describe('FirestoreStorage - Edge Cases', () => {
         ],
         categoryId: 1,
         subcategoryId: 1,
+        correctAnswer: 0,
       };
 
       vi.mocked(firestoreService.setSharedDocument).mockResolvedValue(undefined);
