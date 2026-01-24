@@ -234,7 +234,7 @@ function QuizListComponent({ userId }: { userId: string }) {
 
 ### Hook Options
 
-All hooks support these options:
+**Generic Hooks** (`useRealtimeDocument` and `useRealtimeCollection`) support these options:
 
 ```typescript
 {
@@ -244,12 +244,14 @@ All hooks support these options:
   // Include metadata changes (triggers on cache status changes)
   includeMetadataChanges?: boolean;
   
-  // Collection-specific options
+  // Collection-specific options (useRealtimeCollection only)
   filters?: Array<{ field: string; operator: any; value: any }>;
   orderBy?: { field: string; direction?: 'asc' | 'desc' };
   limit?: number;
 }
 ```
+
+**Specialized Hooks** (`useRealtimeUserQuizzes`, `useRealtimeUserProgress`, `useRealtimeUserBadges`) have pre-configured `orderBy` settings and do not accept additional options. If you need custom filtering or ordering for these collections, use `useRealtimeCollection` directly.
 
 ## Edge Cases Handled
 
