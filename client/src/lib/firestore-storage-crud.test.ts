@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { firestoreStorage } from './firestore-storage';
 import * as firestoreService from './firestore-service';
-import type { User, Quiz, Question, Category, Subcategory, UserProgress } from '@shared/schema';
+import type { User, Quiz, Question, Category, Subcategory } from '@shared/schema';
 
 // Mock the firestore-service module
 vi.mock('./firestore-service', () => ({
@@ -622,15 +622,14 @@ describe('FirestoreStorage - Question Operations', () => {
   });
 
   describe('deleteQuestion', () => {
-    it('should call deleteDoc for question deletion', async () => {
-      const questionId = 1;
-
+    it('should have deleteQuestion method available', async () => {
       // The deleteQuestion method uses dynamic import and calls deleteDoc
       // Testing this requires mocking the firebase/firestore module which is complex
       // For now, we test that the method exists and has the correct signature
       expect(typeof firestoreStorage.deleteQuestion).toBe('function');
 
       // Note: Full integration tests should verify deletion works end-to-end
+      // This is a placeholder test until proper firebase/firestore mocking is implemented
     });
   });
 });
@@ -733,15 +732,14 @@ describe('FirestoreStorage - Category Operations', () => {
   });
 
   describe('deleteCategory', () => {
-    it('should call deleteDoc for category deletion', async () => {
-      const categoryId = 1;
-
+    it('should have deleteCategory method available', async () => {
       // The deleteCategory method uses dynamic import and calls deleteDoc
       // Testing this requires mocking the firebase/firestore module which is complex
       // For now, we test that the method exists and has the correct signature
       expect(typeof firestoreStorage.deleteCategory).toBe('function');
 
       // Note: Full integration tests should verify deletion works end-to-end
+      // This is a placeholder test until proper firebase/firestore mocking is implemented
     });
   });
 });
@@ -826,15 +824,14 @@ describe('FirestoreStorage - Subcategory Operations', () => {
   });
 
   describe('deleteSubcategory', () => {
-    it('should call deleteDoc for subcategory deletion', async () => {
-      const subcategoryId = 1;
-
+    it('should have deleteSubcategory method available', async () => {
       // The deleteSubcategory method uses dynamic import and calls deleteDoc
       // Testing this requires mocking the firebase/firestore module which is complex
       // For now, we test that the method exists and has the correct signature
       expect(typeof firestoreStorage.deleteSubcategory).toBe('function');
 
       // Note: Full integration tests should verify deletion works end-to-end
+      // This is a placeholder test until proper firebase/firestore mocking is implemented
     });
   });
 });

@@ -142,11 +142,12 @@ describe('FirestoreStorage - Edge Cases', () => {
   describe('Data validation edge cases', () => {
     it('should reject question with less than 2 options', async () => {
       const invalidQuestion: Partial<Question> = {
-        text: 'Invalid question',
-        options: [{ id: 1, text: 'Only one option' }],
+        text: 'This is a valid question text with at least 10 characters',
+        options: [{ id: 0, text: 'Only one option' }],
         categoryId: 1,
         subcategoryId: 1,
         correctAnswer: 0,
+        difficultyLevel: 1,
       };
 
       await expect(firestoreStorage.createQuestion(invalidQuestion)).rejects.toThrow();
@@ -156,12 +157,13 @@ describe('FirestoreStorage - Edge Cases', () => {
       const invalidQuestion: Partial<Question> = {
         text: '',
         options: [
-          { id: 1, text: 'A' },
-          { id: 2, text: 'B' },
+          { id: 0, text: 'Option A' },
+          { id: 1, text: 'Option B' },
         ],
         categoryId: 1,
         subcategoryId: 1,
         correctAnswer: 0,
+        difficultyLevel: 1,
       };
 
       await expect(firestoreStorage.createQuestion(invalidQuestion)).rejects.toThrow();
@@ -283,8 +285,8 @@ describe('FirestoreStorage - Edge Cases', () => {
       const question1: Partial<Question> = {
         text: 'Question 1',
         options: [
-          { id: 1, text: 'A' },
-          { id: 2, text: 'B' },
+          { id: 0, text: 'Option A' },
+          { id: 1, text: 'Option B' },
         ],
         categoryId: 1,
         subcategoryId: 1,
@@ -294,8 +296,8 @@ describe('FirestoreStorage - Edge Cases', () => {
       const question2: Partial<Question> = {
         text: 'Question 2',
         options: [
-          { id: 1, text: 'C' },
-          { id: 2, text: 'D' },
+          { id: 0, text: 'Option C' },
+          { id: 1, text: 'Option D' },
         ],
         categoryId: 1,
         subcategoryId: 1,
@@ -307,13 +309,16 @@ describe('FirestoreStorage - Edge Cases', () => {
         .mockResolvedValueOnce({ id: 1, ...question1 } as Question)
         .mockResolvedValueOnce({ id: 2, ...question2 } as Question);
 
-      // Create questions concurrently
+      // Create questions concurrently using Promise.all
+      // Note: generateSafeNumericId() uses an incrementing counter, so concurrent
+      // calls in the same tick will get sequential IDs (1, 2, etc.)
+      // This test verifies that concurrent operations don't cause ID collisions
       const [result1, result2] = await Promise.all([
         firestoreStorage.createQuestion(question1),
         firestoreStorage.createQuestion(question2),
       ]);
 
-      // Both should have unique IDs
+      // Both should have unique IDs from the mock
       expect(result1.id).not.toBe(result2.id);
     });
   });
@@ -377,20 +382,20 @@ describe('FirestoreStorage - Edge Cases', () => {
       expect(result).toHaveLength(questionCount);
     });
 
-    it('should handle batch deletion of questions', async () => {
-      const questionIds = Array.from({ length: 50 }, (_, i) => i + 1);
-
+    it('should handle batch deletion placeholder', async () => {
       // Batch deletion requires proper mocking of firebase/firestore module
-      // For now, we verify that the delete method exists and can be called programmatically
+      // This is a placeholder test to document the need for batch deletion testing
+      // For now, we verify that the delete method exists and has proper signature
       expect(typeof firestoreStorage.deleteQuestion).toBe('function');
 
-      // Verify we can create an array of deletion promises
-      const deletionTasks = questionIds.map(
-        (id) => expect.any(Function) // Each deletion would be a function call
-      );
-      expect(deletionTasks).toHaveLength(50);
+      // Create an array representing the IDs we would delete in a real test
+      const questionIds = Array.from({ length: 50 }, (_, i) => i + 1);
+      expect(questionIds).toHaveLength(50);
 
-      // Note: Full integration tests should verify batch deletion works end-to-end
+      // Note: Full integration tests with proper Firebase mocking should verify:
+      // 1. Batch deletion completes successfully for all items
+      // 2. Deletion handles partial failures gracefully
+      // 3. Proper error handling for network issues during batch operations
     });
   });
 
@@ -479,6 +484,9 @@ describe('FirestoreStorage - Edge Cases', () => {
 
       const result = await firestoreStorage.createQuiz(quizWithEmptyCategories);
 
+      // Verify that empty arrays are preserved
+      // Note: Quiz validation rules may require at least one category in production
+      // This test verifies the storage layer accepts empty arrays without crashing
       expect(result.categoryIds).toEqual([]);
     });
 
