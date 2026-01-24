@@ -111,11 +111,14 @@ class RealtimeSyncManager {
           includeMetadataChanges: options.includeMetadataChanges ?? true,
         },
         (snapshot: DocumentSnapshot) => {
-          const data = snapshot.exists() ? (snapshot.data() as T) : null;
+          const rawData = snapshot.exists() ? (snapshot.data() as T & { deleted?: boolean }) : null;
+          const isSoftDeleted = !!rawData && (rawData as any).deleted === true;
+          const data = snapshot.exists() ? (rawData as T) : null;
           const metadata = {
             fromCache: snapshot.metadata.fromCache,
             hasPendingWrites: snapshot.metadata.hasPendingWrites,
-            isDeleted: !snapshot.exists(),
+            // Treat both hard deletes (no document) and soft deletes (deleted === true) as deleted
+            isDeleted: !snapshot.exists() || isSoftDeleted,
           };
 
           callback(data, metadata);
