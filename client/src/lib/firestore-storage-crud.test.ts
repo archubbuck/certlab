@@ -10,7 +10,7 @@
  * - Error handling and edge cases
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { firestoreStorage } from './firestore-storage';
 import * as firestoreService from './firestore-service';
 import type { User, Quiz, Question, Category, Subcategory, UserProgress } from '@shared/schema';
@@ -72,7 +72,7 @@ describe('FirestoreStorage - User Operations', () => {
     it('should create a new user with valid data', async () => {
       const newUser: Partial<User> = {
         id: 'user123',
-        username: 'testuser',
+        usertitle: 'testuser',
         email: 'test@example.com',
       };
 
@@ -125,7 +125,7 @@ describe('FirestoreStorage - User Operations', () => {
 
     it('should handle errors during user creation', async () => {
       const newUser: Partial<User> = {
-        username: 'testuser',
+        usertitle: 'testuser',
         email: 'test@example.com',
       };
 
@@ -229,43 +229,57 @@ describe('FirestoreStorage - Quiz Operations', () => {
     it('should create a new quiz with valid data', async () => {
       const newQuiz: Partial<Quiz> = {
         userId: 'user123',
-        name: 'Test Quiz',
+        title: 'Test Quiz',
         categoryIds: [1, 2],
+        subcategoryIds: [],
+        questionCount: 10,
         mode: 'practice',
       };
 
       const mockCreatedQuiz: Quiz = {
         id: 1,
         userId: 'user123',
-        name: 'Test Quiz',
+        title: 'Test Quiz',
         categoryIds: [1, 2],
+        subcategoryIds: [],
+        questionCount: 10,
         mode: 'practice',
-        questions: [],
-        currentQuestionIndex: 0,
-        answers: {},
+        answers: null,
         score: null,
-        totalQuestions: 0,
-        correctAnswers: 0,
-        createdAt: null,
+        totalQuestions: null,
+        correctAnswers: null,
+        startedAt: null,
         completedAt: null,
-        timeSpent: null,
-        flaggedQuestions: [],
-        passed: null,
-        version: 1,
-      };
+        tenantId: 1,
+        description: null,
+        tags: null,
+        questionIds: null,
+        timeLimit: null,
+        isAdaptive: false,
+        adaptiveMetrics: null,
+        difficultyLevel: 1,
+        difficultyFilter: null,
+        isPassing: false,
+        missedTopics: null,
+        author: null,
+        authorName: null,
+        prerequisites: null,
+        createdAt: null,
+        updatedAt: null,
+      } as Quiz;
 
-      vi.mocked(firestoreService.setUserSubcollectionDocument).mockResolvedValue(undefined);
-      vi.mocked(firestoreService.getUserSubcollectionDocument).mockResolvedValue(mockCreatedQuiz);
+      vi.mocked(firestoreService.setUserDocument).mockResolvedValue(undefined);
+      vi.mocked(firestoreService.getUserDocument).mockResolvedValue(mockCreatedQuiz);
 
       const result = await firestoreStorage.createQuiz(newQuiz);
 
       expect(result).toEqual(mockCreatedQuiz);
-      expect(firestoreService.setUserSubcollectionDocument).toHaveBeenCalledWith(
+      expect(firestoreService.setUserDocument).toHaveBeenCalledWith(
         'user123',
         'quizzes',
         expect.any(String),
         expect.objectContaining({
-          name: 'Test Quiz',
+          title: 'Test Quiz',
           categoryIds: [1, 2],
         })
       );
@@ -275,7 +289,7 @@ describe('FirestoreStorage - Quiz Operations', () => {
       vi.spyOn(firestoreStorage, 'getCurrentUserId').mockResolvedValue(null);
 
       const newQuiz: Partial<Quiz> = {
-        name: 'Test Quiz',
+        title: 'Test Quiz',
       };
 
       await expect(firestoreStorage.createQuiz(newQuiz)).rejects.toThrow('User ID required');
@@ -284,7 +298,7 @@ describe('FirestoreStorage - Quiz Operations', () => {
     it('should generate a numeric ID for the quiz', async () => {
       const newQuiz: Partial<Quiz> = {
         userId: 'user123',
-        name: 'Test Quiz',
+        title: 'Test Quiz',
       };
 
       vi.mocked(firestoreService.setUserSubcollectionDocument).mockResolvedValue(undefined);
@@ -307,7 +321,7 @@ describe('FirestoreStorage - Quiz Operations', () => {
         {
           id: 1,
           userId,
-          name: 'Quiz 1',
+          title: 'Quiz 1',
           categoryIds: [1],
           mode: 'practice',
           questions: [],
@@ -326,7 +340,7 @@ describe('FirestoreStorage - Quiz Operations', () => {
         {
           id: 2,
           userId,
-          name: 'Quiz 2',
+          title: 'Quiz 2',
           categoryIds: [2],
           mode: 'exam',
           questions: [],
@@ -369,7 +383,7 @@ describe('FirestoreStorage - Quiz Operations', () => {
     it('should update an existing quiz', async () => {
       const quizId = 1;
       const updates: Partial<Quiz> = {
-        name: 'Updated Quiz',
+        title: 'Updated Quiz',
         score: 85,
         completedAt: new Date(),
       };
@@ -377,7 +391,7 @@ describe('FirestoreStorage - Quiz Operations', () => {
       const mockUpdatedQuiz: Quiz = {
         id: quizId,
         userId: 'user123',
-        name: 'Updated Quiz',
+        title: 'Updated Quiz',
         categoryIds: [1],
         mode: 'practice',
         questions: [],
@@ -405,7 +419,7 @@ describe('FirestoreStorage - Quiz Operations', () => {
 
     it('should return null if quiz does not exist', async () => {
       const quizId = 999;
-      const updates: Partial<Quiz> = { name: 'Updated' };
+      const updates: Partial<Quiz> = { title: 'Updated' };
 
       vi.mocked(firestoreService.updateUserDocument).mockResolvedValue(undefined);
       vi.mocked(firestoreService.getUserSubcollectionDocument).mockResolvedValue(null);
@@ -667,13 +681,13 @@ describe('FirestoreStorage - Category Operations', () => {
   describe('createCategory', () => {
     it('should create a new category with valid data', async () => {
       const newCategory: Partial<Category> = {
-        name: 'Test Category',
+        title: 'Test Category',
         description: 'A test category',
       };
 
       const mockCreatedCategory: Category = {
         id: 1,
-        name: 'Test Category',
+        title: 'Test Category',
         description: 'A test category',
         tenantId: null,
       };
@@ -689,7 +703,7 @@ describe('FirestoreStorage - Category Operations', () => {
 
     it('should validate category data before creation', async () => {
       const invalidCategory: Partial<Category> = {
-        name: '', // Empty name should fail validation
+        title: '', // Empty name should fail validation
       };
 
       await expect(firestoreStorage.createCategory(invalidCategory)).rejects.toThrow();
@@ -699,8 +713,8 @@ describe('FirestoreStorage - Category Operations', () => {
   describe('getCategories', () => {
     it('should retrieve all categories', async () => {
       const mockCategories: Category[] = [
-        { id: 1, name: 'Category 1', description: null, tenantId: null },
-        { id: 2, name: 'Category 2', description: null, tenantId: null },
+        { id: 1, title: 'Category 1', description: null, tenantId: null },
+        { id: 2, title: 'Category 2', description: null, tenantId: null },
       ];
 
       vi.mocked(firestoreService.getSharedDocuments).mockResolvedValue(mockCategories);
@@ -725,13 +739,13 @@ describe('FirestoreStorage - Category Operations', () => {
     it('should update an existing category', async () => {
       const categoryId = 1;
       const updates: Partial<Category> = {
-        name: 'Updated Category',
+        title: 'Updated Category',
         description: 'Updated description',
       };
 
       const mockUpdatedCategory: Category = {
         id: categoryId,
-        name: 'Updated Category',
+        title: 'Updated Category',
         description: 'Updated description',
         tenantId: null,
       };
@@ -746,7 +760,7 @@ describe('FirestoreStorage - Category Operations', () => {
 
     it('should throw error if category does not exist', async () => {
       const categoryId = 999;
-      const updates: Partial<Category> = { name: 'Updated' };
+      const updates: Partial<Category> = { title: 'Updated' };
 
       vi.mocked(firestoreService.getSharedDocument).mockResolvedValue(null);
 
@@ -794,13 +808,13 @@ describe('FirestoreStorage - Subcategory Operations', () => {
   describe('createSubcategory', () => {
     it('should create a new subcategory', async () => {
       const newSubcategory: Partial<Subcategory> = {
-        name: 'Test Subcategory',
+        title: 'Test Subcategory',
         categoryId: 1,
       };
 
       const mockCreatedSubcategory: Subcategory = {
         id: 1,
-        name: 'Test Subcategory',
+        title: 'Test Subcategory',
         categoryId: 1,
         description: null,
         tenantId: null,
@@ -819,8 +833,8 @@ describe('FirestoreStorage - Subcategory Operations', () => {
   describe('getSubcategories', () => {
     it('should retrieve all subcategories', async () => {
       const mockSubcategories: Subcategory[] = [
-        { id: 1, name: 'Subcategory 1', categoryId: 1, description: null, tenantId: null },
-        { id: 2, name: 'Subcategory 2', categoryId: 1, description: null, tenantId: null },
+        { id: 1, title: 'Subcategory 1', categoryId: 1, description: null, tenantId: null },
+        { id: 2, title: 'Subcategory 2', categoryId: 1, description: null, tenantId: null },
       ];
 
       vi.mocked(firestoreService.getSharedDocuments).mockResolvedValue(mockSubcategories);
@@ -845,12 +859,12 @@ describe('FirestoreStorage - Subcategory Operations', () => {
     it('should update an existing subcategory', async () => {
       const subcategoryId = 1;
       const updates: Partial<Subcategory> = {
-        name: 'Updated Subcategory',
+        title: 'Updated Subcategory',
       };
 
       const mockUpdatedSubcategory: Subcategory = {
         id: subcategoryId,
-        name: 'Updated Subcategory',
+        title: 'Updated Subcategory',
         categoryId: 1,
         description: null,
         tenantId: null,

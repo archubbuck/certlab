@@ -245,14 +245,14 @@ describe('Firestore Sync - Integration Tests', () => {
       // Tab 1 creates a quiz
       vi.mocked(mockStorage.createQuiz!).mockResolvedValue({
         id: 1,
-        name: 'Shared Quiz',
+        title: 'Shared Quiz',
       } as Quiz);
 
-      await queuedStorage.createQuiz({ name: 'Shared Quiz' } as any);
+      await queuedStorage.createQuiz({ title: 'Shared Quiz' } as any);
 
       // Tab 2 queries for quizzes and should see the new one
       vi.mocked(mockStorage.getUserQuizzes!).mockResolvedValue([
-        { id: 1, name: 'Shared Quiz' } as Quiz,
+        { id: 1, title: 'Shared Quiz' } as Quiz,
       ]);
 
       const quizzes = await queuedStorage.getUserQuizzes('user123', 1);
@@ -269,11 +269,11 @@ describe('Firestore Sync - Integration Tests', () => {
       // First update succeeds
       vi.mocked(mockStorage.updateQuiz!).mockResolvedValueOnce({
         id: quizId,
-        name: 'Updated',
+        title: 'Updated',
         version: 2,
       } as Quiz);
 
-      await queuedStorage.updateQuiz(quizId, { name: 'Updated' });
+      await queuedStorage.updateQuiz(quizId, { title: 'Updated' });
 
       // Second update with stale version should be detected
       // (In real implementation, version checks would happen in firestore-storage-with-conflicts)
