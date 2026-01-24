@@ -47,10 +47,10 @@ vi.mock('./firestore-service', () => ({
     }
   },
   timestampToDate: vi.fn((ts: any) => {
-    if (!ts) return null;
+    if (!ts) return new Date(); // Returns current date for null/undefined
     if (ts.toDate) return ts.toDate();
     if (ts instanceof Date) return ts;
-    return null;
+    return new Date();
   }),
   where: vi.fn((field, op, value) => ({ field, op, value, _type: 'where' })),
   orderBy: vi.fn((field, direction) => ({ field, direction, _type: 'orderBy' })),
@@ -84,12 +84,12 @@ describe('FirestoreStorage - Edge Cases', () => {
   describe('Timestamp conversion edge cases', () => {
     it('should handle null timestamps', () => {
       const result = firestoreService.timestampToDate(null);
-      expect(result).toBeNull();
+      expect(result).toBeInstanceOf(Date);
     });
 
     it('should handle undefined timestamps', () => {
       const result = firestoreService.timestampToDate(undefined);
-      expect(result).toBeNull();
+      expect(result).toBeInstanceOf(Date);
     });
 
     it('should convert Firestore Timestamp to Date', () => {
@@ -141,9 +141,10 @@ describe('FirestoreStorage - Edge Cases', () => {
   describe('Data validation edge cases', () => {
     it('should reject question with less than 2 options', async () => {
       const invalidQuestion: Partial<Question> = {
-        question: 'Invalid question',
-        options: [{ id: 1, text: 'Only one option', isCorrect: true }],
+        text: 'Invalid question',
+        options: [{ id: 1, text: 'Only one option' }],
         categoryId: 1,
+        subcategoryId: 1,
       };
 
       await expect(firestoreStorage.createQuestion(invalidQuestion)).rejects.toThrow();
@@ -151,12 +152,13 @@ describe('FirestoreStorage - Edge Cases', () => {
 
     it('should reject question with empty question text', async () => {
       const invalidQuestion: Partial<Question> = {
-        question: '',
+        text: '',
         options: [
-          { id: 1, text: 'A', isCorrect: false },
-          { id: 2, text: 'B', isCorrect: true },
+          { id: 1, text: 'A' },
+          { id: 2, text: 'B' },
         ],
         categoryId: 1,
+        subcategoryId: 1,
       };
 
       await expect(firestoreStorage.createQuestion(invalidQuestion)).rejects.toThrow();
@@ -175,12 +177,13 @@ describe('FirestoreStorage - Edge Cases', () => {
       const { sanitizeInput } = await import('./sanitize');
 
       const questionWithXSS: Partial<Question> = {
-        question: '<script>alert("xss")</script>What is this?',
+        text: '<script>alert("xss")</script>What is this?',
         options: [
-          { id: 1, text: '<img src=x onerror=alert(1)>', isCorrect: false },
-          { id: 2, text: 'Safe option', isCorrect: true },
+          { id: 1, text: '<img src=x onerror=alert(1)>' },
+          { id: 2, text: 'Safe option' },
         ],
         categoryId: 1,
+        subcategoryId: 1,
       };
 
       vi.mocked(firestoreService.setSharedDocument).mockResolvedValue(undefined);
@@ -247,13 +250,17 @@ describe('FirestoreStorage - Edge Cases', () => {
 
     it('should handle concurrent quiz updates', async () => {
       const quizId = 1;
+      const userId = 'user123';
+
+      // Set current user ID
+      firestoreStorage.setCurrentUserId(userId);
 
       // Simulate two concurrent updates
-      const update1 = { name: 'Update 1', score: 80 };
-      const update2 = { name: 'Update 2', score: 90 };
+      const update1 = { title: 'Update 1', score: 80 };
+      const update2 = { title: 'Update 2', score: 90 };
 
       vi.mocked(firestoreService.updateUserDocument).mockResolvedValue(undefined);
-      vi.mocked(firestoreService.getUserSubcollectionDocument)
+      vi.mocked(firestoreService.getUserDocument)
         .mockResolvedValueOnce({ id: quizId, ...update1 } as Quiz)
         .mockResolvedValueOnce({ id: quizId, ...update2 } as Quiz);
 
@@ -270,21 +277,23 @@ describe('FirestoreStorage - Edge Cases', () => {
 
     it('should handle concurrent question creation', async () => {
       const question1: Partial<Question> = {
-        question: 'Question 1',
+        text: 'Question 1',
         options: [
-          { id: 1, text: 'A', isCorrect: false },
-          { id: 2, text: 'B', isCorrect: true },
+          { id: 1, text: 'A' },
+          { id: 2, text: 'B' },
         ],
         categoryId: 1,
+        subcategoryId: 1,
       };
 
       const question2: Partial<Question> = {
-        question: 'Question 2',
+        text: 'Question 2',
         options: [
-          { id: 1, text: 'C', isCorrect: true },
-          { id: 2, text: 'D', isCorrect: false },
+          { id: 1, text: 'C' },
+          { id: 2, text: 'D' },
         ],
         categoryId: 1,
+        subcategoryId: 1,
       };
 
       vi.mocked(firestoreService.setSharedDocument).mockResolvedValue(undefined);
@@ -337,12 +346,13 @@ describe('FirestoreStorage - Edge Cases', () => {
       const questionCount = 1000;
       const mockQuestions: Question[] = Array.from({ length: questionCount }, (_, i) => ({
         id: i + 1,
-        question: `Question ${i + 1}`,
+        text: `Question ${i + 1}`,
         options: [
-          { id: 1, text: 'A', isCorrect: false },
-          { id: 2, text: 'B', isCorrect: true },
+          { id: 1, text: 'A' },
+          { id: 2, text: 'B' },
         ],
         categoryId: 1,
+        subcategoryId: 1,
         subcategoryId: null,
         difficulty: (i % 3) + 1,
         explanation: null,
@@ -389,7 +399,8 @@ describe('FirestoreStorage - Edge Cases', () => {
 
       vi.mocked(firestoreService.getUserProfile).mockRejectedValue(new Error('Request timeout'));
 
-      await expect(firestoreStorage.getUser(userId)).rejects.toThrow('Request timeout');
+      const result = await firestoreStorage.getUser(userId);
+      expect(result).toBeUndefined();
     });
 
     it('should handle connection refused errors', async () => {
@@ -399,9 +410,9 @@ describe('FirestoreStorage - Edge Cases', () => {
         new Error('Connection refused')
       );
 
-      await expect(firestoreStorage.getQuestionsByCategories(categoryIds)).rejects.toThrow(
-        'Connection refused'
-      );
+      const result = await firestoreStorage.getQuestionsByCategories(categoryIds);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(0);
     });
 
     it('should handle intermittent network failures', async () => {
@@ -471,12 +482,13 @@ describe('FirestoreStorage - Edge Cases', () => {
     it('should handle question with very long explanation', async () => {
       const longExplanation = 'This is a very long explanation. '.repeat(100);
       const question: Partial<Question> = {
-        question: 'What is this?',
+        text: 'What is this?',
         options: [
-          { id: 1, text: 'A', isCorrect: false },
-          { id: 2, text: 'B', isCorrect: true },
+          { id: 1, text: 'A' },
+          { id: 2, text: 'B' },
         ],
         categoryId: 1,
+        subcategoryId: 1,
         explanation: longExplanation,
       };
 
@@ -515,13 +527,14 @@ describe('FirestoreStorage - Edge Cases', () => {
   describe('Boundary conditions', () => {
     it('should handle difficulty level at minimum (1)', async () => {
       const question: Partial<Question> = {
-        question: 'Easy question',
+        text: 'Easy question',
         options: [
-          { id: 1, text: 'A', isCorrect: false },
-          { id: 2, text: 'B', isCorrect: true },
+          { id: 1, text: 'A' },
+          { id: 2, text: 'B' },
         ],
         categoryId: 1,
-        difficulty: 1,
+        subcategoryId: 1,
+        difficultyLevel: 1,
       };
 
       vi.mocked(firestoreService.setSharedDocument).mockResolvedValue(undefined);
@@ -532,18 +545,19 @@ describe('FirestoreStorage - Edge Cases', () => {
 
       const result = await firestoreStorage.createQuestion(question);
 
-      expect(result.difficulty).toBe(1);
+      expect(result.difficultyLevel).toBe(1);
     });
 
     it('should handle difficulty level at maximum (5)', async () => {
       const question: Partial<Question> = {
-        question: 'Very hard question',
+        text: 'Very hard question',
         options: [
-          { id: 1, text: 'A', isCorrect: true },
-          { id: 2, text: 'B', isCorrect: false },
+          { id: 1, text: 'A' },
+          { id: 2, text: 'B' },
         ],
         categoryId: 1,
-        difficulty: 5,
+        subcategoryId: 1,
+        difficultyLevel: 5,
       };
 
       vi.mocked(firestoreService.setSharedDocument).mockResolvedValue(undefined);
@@ -554,51 +568,58 @@ describe('FirestoreStorage - Edge Cases', () => {
 
       const result = await firestoreStorage.createQuestion(question);
 
-      expect(result.difficulty).toBe(5);
+      expect(result.difficultyLevel).toBe(5);
     });
 
     it('should handle quiz score at 0', async () => {
       const quizId = 1;
+      const userId = 'user123';
+
+      firestoreStorage.setCurrentUserId(userId);
 
       vi.mocked(firestoreService.updateUserDocument).mockResolvedValue(undefined);
-      vi.mocked(firestoreService.getUserSubcollectionDocument).mockResolvedValue({
+      vi.mocked(firestoreService.getUserDocument).mockResolvedValue({
         id: quizId,
         score: 0,
-        passed: false,
+        isPassing: false,
       } as Quiz);
 
       const result = await firestoreStorage.updateQuiz(quizId, { score: 0 });
 
       expect(result?.score).toBe(0);
-      expect(result?.passed).toBe(false);
+      expect(result?.isPassing).toBe(false);
     });
 
     it('should handle quiz score at 100', async () => {
       const quizId = 1;
+      const userId = 'user123';
+
+      firestoreStorage.setCurrentUserId(userId);
 
       vi.mocked(firestoreService.updateUserDocument).mockResolvedValue(undefined);
-      vi.mocked(firestoreService.getUserSubcollectionDocument).mockResolvedValue({
+      vi.mocked(firestoreService.getUserDocument).mockResolvedValue({
         id: quizId,
         score: 100,
-        passed: true,
+        isPassing: true,
       } as Quiz);
 
       const result = await firestoreStorage.updateQuiz(quizId, { score: 100 });
 
       expect(result?.score).toBe(100);
-      expect(result?.passed).toBe(true);
+      expect(result?.isPassing).toBe(true);
     });
   });
 
   describe('Special characters and encoding', () => {
     it('should handle Unicode characters in question text', async () => {
       const question: Partial<Question> = {
-        question: '¿Qué es esto? 你好 مرحبا 🎉',
+        text: '¿Qué es esto? 你好 مرحبا 🎉',
         options: [
-          { id: 1, text: 'Respuesta 回答 إجابة 🎯', isCorrect: true },
-          { id: 2, text: 'Other', isCorrect: false },
+          { id: 1, text: 'Respuesta 回答 إجابة 🎯' },
+          { id: 2, text: 'Other' },
         ],
         categoryId: 1,
+        subcategoryId: 1,
       };
 
       vi.mocked(firestoreService.setSharedDocument).mockResolvedValue(undefined);

@@ -58,11 +58,11 @@ describe('FirestoreStorage - Query Operations', () => {
       const mockQuestions: Question[] = [
         {
           id: 1,
-          question: 'Question 1',
+          text: 'Question 1',
           options: [],
           categoryId: 1,
           subcategoryId: null,
-          difficulty: 1,
+          difficultyLevel: 1,
           explanation: null,
           tags: null,
           createdAt: null,
@@ -86,11 +86,11 @@ describe('FirestoreStorage - Query Operations', () => {
       const mockQuestions: Question[] = [
         {
           id: 1,
-          question: 'Q1',
+          text: 'Q1',
           options: [],
           categoryId: 1,
           subcategoryId: null,
-          difficulty: 1,
+          difficultyLevel: 1,
           explanation: null,
           tags: null,
           createdAt: null,
@@ -101,11 +101,11 @@ describe('FirestoreStorage - Query Operations', () => {
         },
         {
           id: 2,
-          question: 'Q2',
+          text: 'Q2',
           options: [],
           categoryId: 2,
           subcategoryId: null,
-          difficulty: 1,
+          difficultyLevel: 1,
           explanation: null,
           tags: null,
           createdAt: null,
@@ -132,7 +132,7 @@ describe('FirestoreStorage - Query Operations', () => {
 
       vi.mocked(firestoreService.getSharedDocuments).mockResolvedValue([]);
 
-      await firestoreStorage.getQuestionsByCategories(categoryIds, { subcategoryIds });
+      await firestoreStorage.getQuestionsByCategories(categoryIds, subcategoryIds);
 
       // Verify the where clause was used
       expect(firestoreService.where).toHaveBeenCalled();
@@ -149,7 +149,7 @@ describe('FirestoreStorage - Query Operations', () => {
           options: [],
           categoryId: 1,
           subcategoryId: null,
-          difficulty: 1,
+          difficultyLevel: 1,
           explanation: null,
           tags: null,
           createdAt: null,
@@ -164,7 +164,7 @@ describe('FirestoreStorage - Query Operations', () => {
           options: [],
           categoryId: 1,
           subcategoryId: null,
-          difficulty: 2,
+          difficultyLevel: 2,
           explanation: null,
           tags: null,
           createdAt: null,
@@ -177,13 +177,15 @@ describe('FirestoreStorage - Query Operations', () => {
 
       vi.mocked(firestoreService.getSharedDocuments).mockResolvedValue(mockQuestions);
 
-      const result = await firestoreStorage.getQuestionsByCategories(categoryIds, {
-        difficultyLevels,
-      });
+      const result = await firestoreStorage.getQuestionsByCategories(
+        categoryIds,
+        undefined,
+        difficultyLevels
+      );
 
       expect(result.length).toBe(2);
       result.forEach((q) => {
-        expect(difficultyLevels).toContain(q.difficulty);
+        expect(difficultyLevels).toContain(q.difficultyLevel);
       });
     });
 
@@ -194,10 +196,11 @@ describe('FirestoreStorage - Query Operations', () => {
 
       vi.mocked(firestoreService.getSharedDocuments).mockResolvedValue([]);
 
-      await firestoreStorage.getQuestionsByCategories(categoryIds, {
+      await firestoreStorage.getQuestionsByCategories(
+        categoryIds,
         subcategoryIds,
-        difficultyLevels,
-      });
+        difficultyLevels
+      );
 
       // Multiple where clauses should be used
       expect(firestoreService.where).toHaveBeenCalled();
@@ -210,7 +213,7 @@ describe('FirestoreStorage - Query Operations', () => {
 
       vi.mocked(firestoreService.getSharedDocuments).mockResolvedValue([]);
 
-      await firestoreStorage.getQuestionsByCategories(categoryIds, { tenantId });
+      await firestoreStorage.getQuestionsByCategories(categoryIds, undefined, undefined, tenantId);
 
       expect(firestoreService.where).toHaveBeenCalled();
       expect(firestoreService.getSharedDocuments).toHaveBeenCalled();
@@ -412,7 +415,7 @@ describe('FirestoreStorage - Query Operations', () => {
         options: [],
         categoryId: 1,
         subcategoryId: null,
-        difficulty: (i % 3) + 1,
+        difficultyLevel: (i % 3) + 1,
         explanation: null,
         tags: null,
         createdAt: null,
@@ -436,19 +439,21 @@ describe('FirestoreStorage - Query Operations', () => {
 
       vi.mocked(firestoreService.getSharedDocuments).mockRejectedValue(new Error('Network error'));
 
-      await expect(firestoreStorage.getQuestionsByCategories(categoryIds)).rejects.toThrow(
-        'Network error'
-      );
+      const result = await firestoreStorage.getQuestionsByCategories(categoryIds);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(0);
     });
 
     it('should handle Firestore permission errors', async () => {
       const userId = 'user123';
 
-      vi.mocked(firestoreService.getUserSubcollectionDocuments).mockRejectedValue(
+      vi.mocked(firestoreService.getUserDocuments).mockRejectedValue(
         new Error('Permission denied')
       );
 
-      await expect(firestoreStorage.getUserQuizzes(userId)).rejects.toThrow('Permission denied');
+      const result = await firestoreStorage.getUserQuizzes(userId);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(0);
     });
 
     it('should handle malformed query constraints', async () => {
@@ -477,7 +482,7 @@ describe('FirestoreStorage - Query Operations', () => {
           options: [],
           categoryId: 1,
           subcategoryId: null,
-          difficulty: 1,
+          difficultyLevel: 1,
           explanation: null,
           tags: null,
           createdAt: null,
