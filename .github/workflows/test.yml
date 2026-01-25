@@ -72,4 +72,4 @@ jobs:
           fi
         # Note: The bash wrapper enforces a 5-minute timeout for quicker feedback,
         # while this step-level timeout (10 minutes) acts as a hard upper bound.
-      timeout-minutes: 10
+        timeout-minutes: 10
