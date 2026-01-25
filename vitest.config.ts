@@ -19,7 +19,9 @@ export default defineConfig({
     testTimeout: 10000,
     hookTimeout: 10000,
     teardownTimeout: 10000, // Increased from 5000 to allow cleanup of event listeners
-    // File parallelism is safe now that offline queue doesn't set up event listeners in test mode
+    // Re-enable file parallelism with caution: while offline queue no longer sets up event
+    // listeners in test mode, tests still share localStorage mock and offlineQueue singleton.
+    // Monitor for potential race conditions if issues arise.
     fileParallelism: true,
     coverage: {
       provider: 'v8',

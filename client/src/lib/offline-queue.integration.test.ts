@@ -50,15 +50,13 @@ describe('Offline Queue Integration Tests', () => {
   afterEach(async () => {
     offlineQueue.clearQueue();
 
-    // Wait for any pending queue processing to complete
-    // This prevents hanging tests due to background processing promises
-    const state = offlineQueue.getState();
-    if (state.isProcessing) {
-      await offlineQueue.processQueue();
-    }
+    // Always wait for any pending queue processing to complete.
+    // processQueue() will return the existing processing promise if one is active.
+    await offlineQueue.processQueue();
 
-    // Give a small delay to allow any final microtasks to complete
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // Flush any remaining microtasks without relying on arbitrary timeouts
+    await Promise.resolve();
+    await Promise.resolve();
   });
 
   describe('Offline/Online Transitions', () => {
