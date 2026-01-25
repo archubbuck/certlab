@@ -275,7 +275,13 @@ All code changes are automatically tested in CI/CD pipelines before deployment:
 - Then runs E2E tests, type checking, configuration validation, and build
 - Deploys to Firebase Hosting only if all checks pass
 
-**Note**: All tests must pass before code can be deployed to production. The firebase-deploy workflow ensures this by running the full test suite before any deployment.
+**E2E Tests Workflow** (`.github/workflows/e2e-tests.yml`)
+- Runs on: Pull requests and pushes to `main`
+- Builds the application and runs end-to-end tests using Playwright
+- Uploads Playwright test reports and results as artifacts
+- **Informational only**: Not required for PR merges, but helps catch integration issues
+
+**Note**: While unit tests are not required status checks for PRs (they run on merge via firebase-deploy), it is **strongly recommended** to run tests locally (`npm run test:run`) before submitting a PR to catch issues early.
 
 #### Coverage in CI
 
@@ -346,9 +352,9 @@ Use conventional commit format:
 ### Review Process
 
 - **Automated checks** must pass before manual review
-  - All tests must pass
-  - Type checking must succeed
-  - Linting must succeed
+  - Type checking must succeed (required status check)
+  - Linting must succeed (required status check)
+  - Running tests locally before submitting is strongly recommended
 - PRs require review before merging
 - Address review comments promptly
 - Keep PRs focused and small when possible

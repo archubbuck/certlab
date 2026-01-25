@@ -8,6 +8,7 @@ CertLab uses GitHub Actions for continuous integration and deployment with the f
 
 - **type-check.yml**: Validates TypeScript types on all PRs and pushes to main
 - **lint.yml**: Checks code style and formatting on all PRs and pushes to main
+- **e2e-tests.yml**: Runs end-to-end tests on all PRs and pushes to main (informational, not required for PR merges)
 - **firebase-deploy.yml**: Runs tests and deploys to Firebase Hosting when code is pushed to main
 
 **Note**: Tests are run by the firebase-deploy.yml workflow before deployment. This ensures all tests pass before code reaches production.
@@ -67,6 +68,19 @@ This workflow:
 - Checks code style and formatting
 - Fails if there are linting errors
 
+### E2E Tests Workflow (e2e-tests.yml)
+
+**Status Check Name**: `e2e-tests`
+
+**Runs on**: Pull requests and pushes to main
+
+This workflow:
+- Builds the application
+- Starts a preview server
+- Runs end-to-end tests using Playwright
+- Uploads test reports and results as artifacts
+- **Informational only**: Not required for PR merges, but helps catch integration issues early
+
 ### Firebase Deploy Workflow (firebase-deploy.yml)
 
 **Runs on**: Push to main branch only
@@ -83,7 +97,7 @@ This workflow:
 
 **Note on Coverage**: Coverage generation has been temporarily disabled due to technical issues (hanging CI jobs). Tests run with `npm run test:run` which does not produce coverage reports. Coverage can still be generated locally with `npm run test:coverage`.
 
-**Note on Artifacts**: Test artifacts are not currently uploaded due to coverage being disabled.
+**Note on Artifacts**: Unit test and coverage artifacts are not currently uploaded due to coverage being disabled. However, E2E Playwright artifacts (e.g., `playwright-report/`, `test-results/`) are uploaded by the `firebase-deploy.yml` and `e2e-tests.yml` workflows.
 
 ## Testing Branch Protection
 
