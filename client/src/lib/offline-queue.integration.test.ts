@@ -197,6 +197,9 @@ describe('Offline Queue Integration Tests', () => {
     });
 
     it('should retry failed operations with exponential backoff', async () => {
+      // Note: This test uses the retry logic from retry-utils.ts which is configured
+      // with fast defaults in test environment (10ms initial, 100ms max, 2 attempts)
+      // to prevent CI timeouts. See client/src/test/setup.ts for environment config.
       let attempts = 0;
       const operation = vi.fn().mockImplementation(async () => {
         attempts++;
@@ -216,6 +219,7 @@ describe('Offline Queue Integration Tests', () => {
 
       // Process queue (will retry internally with withRetry)
       // The processQueue promise will resolve when all retries are complete
+      // With fast test defaults, this completes quickly (~10-20ms instead of 1000ms+)
       await offlineQueue.processQueue();
 
       // Should have retried at least twice (initial + 1 retry)
