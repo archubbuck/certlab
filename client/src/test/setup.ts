@@ -33,11 +33,12 @@ afterAll(async () => {
       offlineQueue.clearQueue();
     }
   } catch (error) {
-    // Ignore errors if module wasn't imported
-  }
+    // Log cleanup errors instead of silently ignoring them to aid debugging.
+    // This includes module import failures and errors in destroy/clearQueue,
+    // but we do not rethrow to avoid masking test results.
 
-  // Give a small delay to allow cleanup to complete
-  await new Promise((resolve) => setTimeout(resolve, 100));
+    console.error('[test setup] Failed to clean up offlineQueue in afterAll hook:', error);
+  }
 });
 
 // Set CI environment variable for fast-mock mode in tests
