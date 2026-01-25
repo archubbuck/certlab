@@ -269,18 +269,13 @@ All code changes are automatically tested in CI/CD pipelines before deployment:
 
 #### Automated Test Workflows
 
-1. **Test Workflow** (`.github/workflows/test.yml`)
-   - Runs on: All pull requests to `main`
-   - Executes the Vitest suite via `npm run test:run`
-   - Does **not** currently generate coverage reports in CI (see [Coverage in CI](#coverage-in-ci))
-   - Does **not** upload coverage artifacts at this time
-   - **Must pass** for PRs to be mergeable
+**Firebase Deploy Workflow** (`.github/workflows/firebase-deploy.yml`)
+- Runs on: Push to `main` branch only
+- **First runs all tests** (blocking deployment if they fail)
+- Then runs E2E tests, type checking, configuration validation, and build
+- Deploys to Firebase Hosting only if all checks pass
 
-2. **Firebase Deploy Workflow** (`.github/workflows/firebase-deploy.yml`)
-   - Runs on: Push to `main` branch only
-   - **First runs all tests** (blocking deployment if they fail)
-   - Then runs type checking, configuration validation, and build
-   - Deploys to Firebase Hosting only if all checks pass
+**Note**: All tests must pass before code can be deployed to production. The firebase-deploy workflow ensures this by running the full test suite before any deployment.
 
 #### Coverage in CI
 
@@ -362,18 +357,17 @@ Use conventional commit format:
 
 The `main` branch is protected with the following requirements:
 
-- ✅ **Test workflow** must pass (`test.yml`)
 - ✅ **Type check workflow** must pass (`type-check.yml`)
 - ✅ **Lint workflow** must pass (`lint.yml`)
 - ✅ At least one approving review required
 - ✅ Up-to-date with base branch before merging
 
-These protections ensure code quality and prevent broken code from reaching production.
+These protections ensure code quality and prevent broken code from reaching production. Additionally, all tests are run as part of the firebase-deploy workflow before any deployment to production.
 
 **For repository administrators**: Branch protection rules are configured in:
 - GitHub Repository → Settings → Branches → Branch protection rules
 - Rule for `main` branch should require:
-  - Status checks: `test`, `type-check`, `lint`
+  - Status checks: `type-check`, `lint`
   - Require approving reviews: 1
   - Dismiss stale reviews when new commits are pushed
   - Require branches to be up to date before merging
