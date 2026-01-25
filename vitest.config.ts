@@ -26,9 +26,10 @@ export default defineConfig({
     // Use threads pool with limited concurrency to balance speed and resource usage
     pool: 'threads',
     // Limit concurrent tests to avoid resource exhaustion (Vitest 4+ format)
-    maxConcurrency: 4,
+    // Reduced to 2 workers to minimize resource contention and deadlock risk
+    maxConcurrency: 2,
     minWorkers: 1,
-    maxWorkers: 4,
+    maxWorkers: 2,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
