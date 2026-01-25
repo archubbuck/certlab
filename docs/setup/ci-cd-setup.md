@@ -6,12 +6,11 @@ This guide explains how to configure the CI/CD pipeline and branch protection ru
 
 CertLab uses GitHub Actions for continuous integration and deployment with the following workflows:
 
-- **test.yml**: Runs the test suite on all PRs to main
 - **type-check.yml**: Validates TypeScript types on all PRs and pushes to main
 - **lint.yml**: Checks code style and formatting on all PRs and pushes to main
 - **firebase-deploy.yml**: Runs tests and deploys to Firebase Hosting when code is pushed to main
 
-**Note**: On main branch pushes, firebase-deploy.yml runs tests before deployment. The separate test.yml workflow only runs on PRs to avoid duplicate test execution.
+**Note**: Tests are run by the firebase-deploy.yml workflow before deployment. This ensures all tests pass before code reaches production.
 
 ## Branch Protection Rules
 
@@ -31,7 +30,6 @@ To enforce quality gates and prevent broken code from reaching production, branc
    - ✅ Check **Require status checks to pass before merging**
    - ✅ Check **Require branches to be up to date before merging**
    - Select the following status checks as required:
-     - `test` (from test.yml workflow)
      - `type-check` (from type-check.yml workflow)
      - `lint` (from lint.yml workflow)
 
@@ -50,22 +48,6 @@ To enforce quality gates and prevent broken code from reaching production, branc
    - Click **Create** or **Save changes** at the bottom
 
 ## Workflow Status Checks
-
-### Test Workflow (test.yml)
-
-**Status Check Name**: `test`
-
-**Runs on**: Pull requests to main
-
-This workflow:
-- Runs all unit, integration, and component tests via `npm run test:run`
-- Uses a bash timeout wrapper to prevent hanging (5-minute hard timeout)
-- Fails if any tests fail or timeout
-- Does **not** generate coverage reports or upload artifacts
-
-**Note on Coverage**: Coverage generation has been temporarily disabled due to technical issues (hanging CI jobs). Tests run with `npm run test:run` which does not produce coverage reports. Coverage can still be generated locally with `npm run test:coverage`.
-
-**Note**: On main branch pushes, tests are run by the firebase-deploy.yml workflow instead to avoid duplication.
 
 ### Type Check Workflow (type-check.yml)
 
@@ -91,14 +73,17 @@ This workflow:
 
 This workflow:
 1. **Runs all tests first** (blocks deployment if tests fail)
-2. Validates TypeScript types
-3. Validates Firebase configuration
-4. Builds the application
-5. Deploys to Firebase Hosting
+2. Runs E2E tests
+3. Validates TypeScript types
+4. Validates Firebase configuration
+5. Builds the application
+6. Deploys to Firebase Hosting
 
-**Important**: This workflow includes test execution to ensure deployments are blocked by test failures. The separate test.yml workflow only runs on PRs to avoid duplicate test runs.
+**Important**: This workflow includes test execution to ensure deployments are blocked by test failures. Tests use a bash timeout wrapper to prevent hanging (5-minute hard timeout).
 
-**Note on Artifacts**: Test artifacts are not currently uploaded due to coverage being disabled. See the Test Workflow section for details.
+**Note on Coverage**: Coverage generation has been temporarily disabled due to technical issues (hanging CI jobs). Tests run with `npm run test:run` which does not produce coverage reports. Coverage can still be generated locally with `npm run test:coverage`.
+
+**Note on Artifacts**: Test artifacts are not currently uploaded due to coverage being disabled.
 
 ## Testing Branch Protection
 
@@ -138,7 +123,6 @@ After setting up branch protection rules, test them by:
 If status checks don't appear on your PR:
 
 1. **Check workflow files exist**:
-   - Verify `.github/workflows/test.yml` exists
    - Verify `.github/workflows/type-check.yml` exists
    - Verify `.github/workflows/lint.yml` exists
 
