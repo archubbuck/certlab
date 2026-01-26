@@ -34,8 +34,8 @@ export interface RetryOptions {
  *
  * **Test Environment Configuration:**
  * - `maxAttempts`: 2 (vs 3 in production)
- * - `initialDelay`: 10ms (vs 1000ms in production)
- * - `maxDelay`: 100ms (vs 10000ms in production)
+ * - `initialDelay`: 5ms (vs 1000ms in production)
+ * - `maxDelay`: 50ms (vs 10000ms in production)
  *
  * This ensures CI/CD workflows complete within timeout limits while still
  * testing retry logic. Environment variables can override these defaults:
@@ -51,7 +51,6 @@ function getEnvAwareRetryConfig() {
 
   if (isTest) {
     // Use minimal delays in test environment to avoid timeouts
-    // Further reduced from previous values to prevent CI timeouts
     return {
       maxAttempts: parseInt(process.env.OFFLINE_QUEUE_MAX_ATTEMPTS || '2', 10),
       initialDelay: parseInt(process.env.OFFLINE_QUEUE_INITIAL_DELAY || '5', 10),

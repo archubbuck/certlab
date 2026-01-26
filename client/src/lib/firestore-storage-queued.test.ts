@@ -38,10 +38,21 @@ describe('createFirestoreStorageWithQueue', () => {
     // Clear the queue and wait for any pending processing to complete
     offlineQueue.clearQueue();
 
-    // Always wait for any pending queue processing to complete with a timeout
+    // Always wait for any pending queue processing to complete with a timeout.
+    // If the timeout is hit, fail the test to avoid silent state leakage between tests.
     await Promise.race([
       offlineQueue.processQueue(),
-      new Promise((resolve) => setTimeout(resolve, 1000)),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                'offlineQueue.processQueue() did not complete within 1000ms during test cleanup.'
+              )
+            ),
+          1000
+        )
+      ),
     ]);
 
     // Flush any remaining microtasks without relying on arbitrary timeouts
@@ -222,12 +233,9 @@ describe('createFirestoreStorageWithQueue', () => {
       const stateBefore = offlineQueue.getState();
       expect(stateBefore.total).toBe(1);
 
-      // Go online and process queue with timeout to prevent hanging
+      // Go online and process queue
       (global.navigator as any).onLine = true;
-      await Promise.race([
-        offlineQueue.processQueue(),
-        new Promise((resolve) => setTimeout(resolve, 2000)),
-      ]);
+      await offlineQueue.processQueue();
 
       // Operation should have executed
       expect(mockStorage.createQuiz).toHaveBeenCalledTimes(2); // Once for initial attempt, once for retry
