@@ -250,6 +250,14 @@ export default function Landing() {
     <div
       className={`min-h-screen ${theme.bg} ${theme.text} overflow-x-hidden transition-colors duration-500`}
     >
+      {/* Skip to main content link for keyboard navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-background focus:text-foreground focus:px-4 focus:py-2 focus:rounded-md focus:border focus:border-primary focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       {/* Color Scheme Switcher - Floating on the right */}
       <div
         className="hidden md:fixed md:top-24 md:right-6 z-50 md:flex flex-col gap-3"
