@@ -33,7 +33,7 @@ test.describe('Quiz Creation Flow', () => {
     // Wait for button to be visible
     try {
       await createButton.waitFor({ state: 'visible', timeout: 10000 });
-    } catch (error) {
+    } catch (_error) {
       // If button doesn't exist, log and skip gracefully
       console.log('Quiz creation button not found - may need Firebase data seeded');
       test.skip(true, 'Quiz creation button not found - Firebase data may not be seeded');
@@ -94,7 +94,7 @@ test.describe('Quiz Creation Flow', () => {
 
     try {
       await createButton.waitFor({ state: 'visible', timeout: 10000 });
-    } catch (error) {
+    } catch (_error) {
       console.log('Quiz creation button not found');
       test.skip(true, 'Quiz creation button not found - Firebase data may not be seeded');
       return;

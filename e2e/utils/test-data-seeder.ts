@@ -33,7 +33,8 @@ export interface TestQuiz {
  * @param user - User to authenticate (optional)
  */
 export async function setupTestEnvironment(page: Page, user?: TestUser): Promise<void> {
-  // Import auth setup dynamically to avoid circular dependencies
+  // Note: Using dynamic import to allow this module to be imported without loading auth-setup immediately
+  // This keeps the module loading lightweight and avoids potential circular dependencies
   const { setupMockAuth, DEFAULT_TEST_USER } = await import('./auth-setup');
 
   // Set up authentication
