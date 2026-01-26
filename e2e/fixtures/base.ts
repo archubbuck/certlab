@@ -20,14 +20,18 @@ type CustomFixtures = {
  */
 export const test = base.extend<CustomFixtures>({
   /**
-   * Provides a page that can be used for authenticated tests
+   * Provides a page that can be used for tests that perform authentication themselves.
    *
-   * Note: This fixture does not automatically authenticate.
-   * Tests using this fixture should check if authentication is available
-   * and skip gracefully if not (e.g., when Firebase is not configured).
+   * Note: This fixture is just a named alias for Playwright's `page`.
+   * It does not automatically authenticate, check whether authentication is available,
+   * or provide any authentication-checking utilities.
    *
-   * In CI, Firebase credentials should be configured, allowing tests to work.
-   * Locally, use Firebase Auth Emulator or skip auth-required tests.
+   * Tests that require authentication are responsible for:
+   * - Performing any sign-in or session setup
+   * - Checking whether authentication is available in the current environment
+   * - Skipping gracefully if auth is not configured (e.g., when Firebase is not set up)
+   *
+   * In CI, Firebase credentials should be configured, allowing such tests to work.
    */
   authenticatedPage: async ({ page }, use) => {
     // Just provide the page - authentication must be handled by the test itself

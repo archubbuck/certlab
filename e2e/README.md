@@ -155,5 +155,3 @@ Quiz tests skip when:
 1. Not authenticated - check Firebase auth configuration
 2. No quiz data - ensure Firebase has seeded categories/questions
 3. Missing UI elements - verify app built correctly
-
-For more help, see [docs/E2E_TESTING.md](../docs/E2E_TESTING.md)

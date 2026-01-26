@@ -2,9 +2,9 @@
  * Quiz Flow E2E Tests
  *
  * Tests quiz creation, taking, and completion flows.
- * These tests use the authenticatedPage fixture for mock authentication.
+ * These tests use the authenticatedPage fixture but rely on real Firebase authentication (no mock auth).
  *
- * Note: These tests assume Firebase/Firestore is configured or emulator is running.
+ * Note: These tests assume Firebase/Firestore is configured or emulator is running; otherwise they skip gracefully.
  * In CI, real Firebase credentials should be available.
  */
 
@@ -59,21 +59,13 @@ test.describe('Quiz Creation Flow', () => {
 
     // Look for start quiz button
     const startQuizButton = page.getByRole('button', { name: /start quiz|begin|start/i });
-    const startButtonVisible = await startQuizButton
-      .isVisible({ timeout: 5000 })
-      .catch(() => false);
+    await expect(startQuizButton).toBeVisible({ timeout: 5000 });
+    await startQuizButton.click();
 
-    if (startButtonVisible) {
-      await startQuizButton.click();
-
-      // Verify navigated to quiz page
-      await page.waitForLoadState('networkidle');
-      const quizUrl = page.url();
-      expect(quizUrl).toMatch(/app\/quiz/i);
-    } else {
-      console.log('Start quiz button not found');
-      test.skip(true, 'Start quiz button not found');
-    }
+    // Verify navigated to quiz page
+    await page.waitForLoadState('networkidle');
+    const quizUrl = page.url();
+    expect(quizUrl).toMatch(/app\/quiz/i);
   });
 
   test('should create a multi-category quiz', async ({ authenticatedPage: page }) => {
@@ -103,37 +95,35 @@ test.describe('Quiz Creation Flow', () => {
     await createButton.click();
     await page.waitForLoadState('networkidle');
 
-    // Select multiple categories
+    // Select multiple categories - for consistency with basic quiz test, CISSP is required
     const cisspOption = page.getByText(/CISSP/i).first();
     const cismOption = page.getByText(/CISM/i).first();
 
     const cisspVisible = await cisspOption.isVisible({ timeout: 5000 }).catch(() => false);
-    const cismVisible = await cismOption.isVisible({ timeout: 5000 }).catch(() => false);
 
-    if (!cisspVisible && !cismVisible) {
-      console.log('Categories not found');
-      test.skip(true, 'Categories not found - Firebase data may not be seeded');
+    if (!cisspVisible) {
+      console.log('CISSP category not found');
+      test.skip(true, 'CISSP category not found - Firebase data may not be seeded');
       return;
     }
 
-    if (cisspVisible) await cisspOption.click();
-    if (cismVisible) await cismOption.click();
+    // Click CISSP (required) and CISM (optional)
+    await cisspOption.click();
+    
+    const cismVisible = await cismOption.isVisible({ timeout: 5000 }).catch(() => false);
+    if (cismVisible) {
+      await cismOption.click();
+    }
 
     // Start quiz
     const startButton = page.getByRole('button', { name: /start quiz|begin/i });
-    const startVisible = await startButton.isVisible({ timeout: 5000 }).catch(() => false);
+    await expect(startButton).toBeVisible({ timeout: 5000 });
+    await startButton.click();
+    await waitForNavigation(page);
 
-    if (startVisible) {
-      await startButton.click();
-      await waitForNavigation(page);
-
-      // Verify we're on a quiz page
-      const quizUrl = page.url();
-      expect(quizUrl).toMatch(/app\/quiz/i);
-    } else {
-      console.log('Start button not found');
-      test.skip(true, 'Start quiz button not found');
-    }
+    // Verify we're on a quiz page
+    const quizUrl = page.url();
+    expect(quizUrl).toMatch(/app\/quiz/i);
   });
 });
 
