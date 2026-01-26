@@ -17,6 +17,14 @@ test.describe('Quiz Creation Flow', () => {
     await page.goto('/app/dashboard');
     await page.waitForLoadState('networkidle');
 
+    // Check if we're redirected to landing (not authenticated)
+    const currentUrl = page.url();
+    if (!currentUrl.includes('/app/dashboard')) {
+      console.log('Not authenticated - redirected to landing page');
+      test.skip(true, 'Test requires authentication - Firebase credentials may not be configured');
+      return;
+    }
+
     // Look for "Start Learning" or "Create Quiz" button
     const createButton = page
       .getByRole('button', { name: /start learning|create quiz|quick practice/i })
@@ -60,8 +68,8 @@ test.describe('Quiz Creation Flow', () => {
 
       // Verify navigated to quiz page
       await page.waitForLoadState('networkidle');
-      const currentUrl = page.url();
-      expect(currentUrl).toMatch(/quiz|question/i);
+      const quizUrl = page.url();
+      expect(quizUrl).toMatch(/app\/quiz/i);
     } else {
       console.log('Start quiz button not found');
       test.skip(true, 'Start quiz button not found');
@@ -72,6 +80,14 @@ test.describe('Quiz Creation Flow', () => {
     // Navigate to dashboard
     await page.goto('/app/dashboard');
     await page.waitForLoadState('networkidle');
+
+    // Check if authenticated
+    const currentUrl = page.url();
+    if (!currentUrl.includes('/app/dashboard')) {
+      console.log('Not authenticated - skipping test');
+      test.skip(true, 'Test requires authentication');
+      return;
+    }
 
     // Navigate to quiz creation
     const createButton = page.getByRole('button', { name: /start learning|create quiz/i }).first();
@@ -112,8 +128,8 @@ test.describe('Quiz Creation Flow', () => {
       await waitForNavigation(page);
 
       // Verify we're on a quiz page
-      const currentUrl = page.url();
-      expect(currentUrl).toMatch(/app\/quiz|question/i);
+      const quizUrl = page.url();
+      expect(quizUrl).toMatch(/app\/quiz/i);
     } else {
       console.log('Start button not found');
       test.skip(true, 'Start quiz button not found');
