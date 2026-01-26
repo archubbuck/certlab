@@ -19,15 +19,13 @@ export default defineConfig({
     testTimeout: 10000,
     hookTimeout: 10000,
     teardownTimeout: 10000,
-    // Enable parallel test execution for faster test runs.
-    // Tests that share singleton state (offlineQueue) have been updated to properly
-    // clean up state in afterEach hooks, making parallel execution safe.
-    fileParallelism: true,
+    // Disable file-level parallelism because some tests rely on a singleton
+    // offlineQueue and shared localStorage state, which can cause race conditions
+    // when multiple test files run concurrently in the same process.
+    fileParallelism: false,
     // Use threads pool with limited concurrency to balance speed and resource usage
     pool: 'threads',
     // Limit concurrent tests to avoid resource exhaustion (Vitest 4+ format)
-    // Reduced to 2 workers to minimize resource contention and deadlock risk
-    maxConcurrency: 2,
     minWorkers: 1,
     maxWorkers: 2,
     coverage: {

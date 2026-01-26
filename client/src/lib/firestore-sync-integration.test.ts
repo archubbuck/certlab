@@ -74,10 +74,21 @@ describe('Firestore Sync - Integration Tests', () => {
   afterEach(async () => {
     offlineQueue.clearQueue();
 
-    // Always wait for any pending queue processing to complete with a timeout
+    // Always wait for any pending queue processing to complete with a timeout.
+    // If the timeout is hit, fail the test to avoid silent state leakage between tests.
     await Promise.race([
       offlineQueue.processQueue(),
-      new Promise((resolve) => setTimeout(resolve, 1000)),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                'offlineQueue.processQueue() did not complete within 1000ms during test cleanup.'
+              )
+            ),
+          1000
+        )
+      ),
     ]);
 
     // Flush any remaining microtasks without relying on arbitrary timeouts

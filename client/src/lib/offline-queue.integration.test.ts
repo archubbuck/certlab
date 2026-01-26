@@ -50,12 +50,21 @@ describe('Offline Queue Integration Tests', () => {
   afterEach(async () => {
     offlineQueue.clearQueue();
 
-    // Always wait for any pending queue processing to complete.
-    // processQueue() will return the existing processing promise if one is active.
-    // Add a timeout to prevent hanging if processQueue doesn't resolve
+    // Always wait for any pending queue processing to complete with a timeout.
+    // If the timeout is hit, fail the test to avoid silent state leakage between tests.
     await Promise.race([
       offlineQueue.processQueue(),
-      new Promise((resolve) => setTimeout(resolve, 1000)),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                'offlineQueue.processQueue() did not complete within 1000ms during test cleanup.'
+              )
+            ),
+          1000
+        )
+      ),
     ]);
 
     // Flush any remaining microtasks without relying on arbitrary timeouts
@@ -101,14 +110,8 @@ describe('Offline Queue Integration Tests', () => {
       // Go back online
       (global.navigator as any).onLine = true;
 
-      // Process the queue with a timeout to prevent hanging
-      await Promise.race([
-        offlineQueue.processQueue(),
-        new Promise((resolve) => setTimeout(resolve, 2000)),
-      ]);
-
-      // Wait a bit for processing (reduced from 100ms to 50ms)
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Process the queue - should complete quickly with reduced retry delays
+      await offlineQueue.processQueue();
 
       // Operations should have executed
       expect(mockStorage.createQuiz).toHaveBeenCalledTimes(4); // 2 initial + 2 retries
@@ -136,22 +139,16 @@ describe('Offline Queue Integration Tests', () => {
 
       (global.navigator as any).onLine = true;
       window.dispatchEvent(new Event('online'));
-      // In test mode, event listeners aren't set up, so manually process with timeout
-      await Promise.race([
-        offlineQueue.processQueue(),
-        new Promise((resolve) => setTimeout(resolve, 1000)),
-      ]);
+      // In test mode, event listeners aren't set up, so manually process
+      await offlineQueue.processQueue();
 
       (global.navigator as any).onLine = false;
       window.dispatchEvent(new Event('offline'));
 
       (global.navigator as any).onLine = true;
       window.dispatchEvent(new Event('online'));
-      // In test mode, event listeners aren't set up, so manually process with timeout
-      await Promise.race([
-        offlineQueue.processQueue(),
-        new Promise((resolve) => setTimeout(resolve, 1000)),
-      ]);
+      // In test mode, event listeners aren't set up, so manually process
+      await offlineQueue.processQueue();
 
       // Operation should have succeeded
       const state = offlineQueue.getState();
@@ -242,13 +239,8 @@ describe('Offline Queue Integration Tests', () => {
         operation,
       });
 
-      // Process queue with timeout to prevent hanging
-      // The processQueue promise will resolve when all retries are complete
-      // With fast test defaults, this completes quickly (~10-20ms instead of 1000ms+)
-      await Promise.race([
-        offlineQueue.processQueue(),
-        new Promise((resolve) => setTimeout(resolve, 1000)),
-      ]);
+      // Process queue - with fast test defaults, this completes quickly (~10-20ms)
+      await offlineQueue.processQueue();
 
       // Should have retried exactly twice (initial + 1 retry)
       expect(operation.mock.calls.length).toBe(2);
