@@ -10,28 +10,15 @@ Multiple quiz interaction and review flow e2e tests were skipped due to dependen
 
 ## Changes Made
 
-### 1. Test Infrastructure (`e2e/utils/`)
-
-#### auth-setup.ts
-- Created utilities for authentication setup in e2e tests
-- Provides `setupMockAuth()`, `clearAuth()`, `isAuthenticated()`, `getCurrentUser()`
-- Defines `DEFAULT_TEST_USER` for consistent test user
-- **Note**: Currently not used in active tests, but available for future mock auth implementations
-
-#### test-data-seeder.ts
-- Created utilities for test data seeding
-- Provides `setupTestEnvironment()` for auth setup
-- Provides `waitForDataLoad()` to wait for Firestore data
-- **Note**: Data seeding relies on Firebase/Firestore having pre-seeded test data
-
-### 2. Test Fixtures (`e2e/fixtures/base.ts`)
+### 1. Test Fixtures (`e2e/fixtures/base.ts`)
 
 - Updated `authenticatedPage` fixture
-- Now provides a page that tests can use for authenticated scenarios
+- Provides a named alias for Playwright's `page` for tests that perform authentication themselves
 - Does not automatically authenticate (relies on Firebase credentials in environment)
 - Tests must check authentication status and skip gracefully if not authenticated
+- Documentation clarifies that tests are responsible for all authentication checking logic
 
-### 3. Quiz Flow Tests (`e2e/tests/03-quiz-flow.spec.ts`)
+### 2. Quiz Flow Tests (`e2e/tests/03-quiz-flow.spec.ts`)
 
 Enabled all 11 tests (removed `test.skip()`):
 
@@ -60,7 +47,7 @@ Enabled all 11 tests (removed `test.skip()`):
 10. **"should display explanations in review"** - Requires programmatic quiz completion
 11. **"should show immediate feedback in study mode"** - Requires programmatic quiz setup
 
-### 4. Documentation (`e2e/README.md`)
+### 3. Documentation (`e2e/README.md`)
 
 - Comprehensive documentation for running e2e tests
 - Documents Firebase requirements and setup options
@@ -72,7 +59,7 @@ Enabled all 11 tests (removed `test.skip()`):
 
 ### Enabled Tests (Quiz Creation)
 
-Both enabled quiz creation tests:
+Both enabled quiz creation tests follow a consistent pattern:
 
 1. **Check Authentication**
    ```typescript
@@ -83,7 +70,7 @@ Both enabled quiz creation tests:
    }
    ```
 
-2. **Check UI Elements**
+2. **Check UI Elements (before test flow begins)**
    ```typescript
    try {
      await createButton.waitFor({ state: 'visible', timeout: 10000 });
@@ -93,19 +80,29 @@ Both enabled quiz creation tests:
    }
    ```
 
-3. **Check Data Availability**
+3. **Check Data Availability (before test flow begins)**
    ```typescript
    if (!cisspVisible) {
-     test.skip(true, 'Categories not found - Firebase data may not be seeded');
+     test.skip(true, 'CISSP category not found - Firebase data may not be seeded');
      return;
    }
    ```
 
-4. **Verify Success**
+4. **Execute Test Flow and Assert Success**
+   - After initial checks pass, tests proceed with the quiz creation flow
+   - Use standard assertions (not graceful skipping) for UI elements in the middle of the flow
+   - This ensures that if the flow starts, any missing elements are treated as test failures
    ```typescript
+   await expect(startQuizButton).toBeVisible({ timeout: 5000 });
+   await startQuizButton.click();
    const quizUrl = page.url();
    expect(quizUrl).toMatch(/app\/quiz/i);
    ```
+
+**Category Checking Consistency:**
+- Both tests require CISSP category to be present
+- Multi-category test also attempts to select CISM if available (optional)
+- This ensures consistent baseline requirements across both tests
 
 ### CI Execution
 
@@ -169,19 +166,25 @@ export const test = base.extend<QuizFixtures>({
 
 ## Files Changed
 
-- `e2e/utils/auth-setup.ts` (new)
-- `e2e/utils/test-data-seeder.ts` (new)
-- `e2e/fixtures/base.ts` (updated)
-- `e2e/tests/03-quiz-flow.spec.ts` (updated - enabled 2 tests, documented 9 TODOs)
+- `e2e/fixtures/base.ts` (updated - clarified fixture documentation)
+- `e2e/tests/03-quiz-flow.spec.ts` (updated - enabled 2 tests with consistent logic, documented 9 TODOs)
 - `e2e/README.md` (updated with comprehensive documentation)
+- `e2e/IMPLEMENTATION_SUMMARY.md` (updated - this file)
+
+**Note:** Removed unused utility files that were flagged as dead code:
+- `e2e/utils/auth-setup.ts` (removed - entirely unused)
+- `e2e/utils/test-data-seeder.ts` (removed - entirely unused)
 
 ## Security Review
 
 ✅ CodeQL scan passed - no security vulnerabilities found
-✅ Code review feedback addressed
-✅ Type safety improved (removed 'as any')
-✅ Unused parameters properly marked
+✅ Code review feedback addressed:
+  - Removed unused dead code (auth-setup.ts, test-data-seeder.ts)
+  - Fixed fixture documentation to be accurate
+  - Made test logic consistent (use assertions after flow begins, not graceful skips)
+  - Made category checking consistent across both tests
+  - Removed misleading comments about mock authentication
 
 ## Conclusion
 
-Successfully enabled quiz creation e2e tests with robust error handling and graceful skipping. Tests will run in CI where Firebase is configured and provide valuable coverage for quiz creation flows. Remaining tests documented as TODO for future implementation once programmatic quiz creation fixtures are available.
+Successfully enabled quiz creation e2e tests with robust error handling and graceful skipping. Tests will run in CI where Firebase is configured and provide valuable coverage for quiz creation flows. Tests now follow consistent patterns for when to skip gracefully (before test flow) versus when to assert (during test flow). Remaining tests documented as TODO for future implementation once programmatic quiz creation fixtures are available.
