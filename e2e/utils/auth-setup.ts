@@ -107,7 +107,7 @@ export async function getCurrentUser(page: Page): Promise<TestUser | null> {
 
     if (authState === 'authenticated' && userJson) {
       try {
-        return JSON.parse(userJson) as any;
+        return JSON.parse(userJson) as TestUser;
       } catch {
         return null;
       }
