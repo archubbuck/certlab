@@ -173,6 +173,8 @@ e2e/
 
 To enable these tests, see [Enabling Authentication Tests](#enabling-authentication-tests) below.
 
+📋 **See [E2E Skipped Tests Catalog](../e2e-skipped-tests-catalog.md) for a comprehensive breakdown of all 36 skipped tests, including reasons, impact analysis, and recommendations for enabling them.**
+
 ---
 
 ## Writing Tests
@@ -513,6 +515,7 @@ if (!featureExists) {
 
 - [Playwright Documentation](https://playwright.dev/)
 - [Playwright Best Practices](https://playwright.dev/docs/best-practices)
+- [E2E Skipped Tests Catalog](../e2e-skipped-tests-catalog.md) - Comprehensive list of all 36 skipped tests
 - [CertLab QA Checklist](../QA_CHECKLIST.md)
 - [Project Structure](../PROJECT_STRUCTURE.md)
 
