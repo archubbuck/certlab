@@ -9,8 +9,6 @@
 
 import { test as base, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { setupTestEnvironment } from '../utils/test-data-seeder';
-import { setupMockAuth, clearAuth } from '../utils/auth-setup';
 
 // Define custom fixture types
 type CustomFixtures = {
@@ -22,18 +20,19 @@ type CustomFixtures = {
  */
 export const test = base.extend<CustomFixtures>({
   /**
-   * Provides a page that is pre-authenticated with test data seeded
-   * This fixture handles mock authentication and test data setup for testing
+   * Provides a page that can be used for authenticated tests
+   *
+   * Note: This fixture does not automatically authenticate.
+   * Tests using this fixture should check if authentication is available
+   * and skip gracefully if not (e.g., when Firebase is not configured).
+   *
+   * In CI, Firebase credentials should be configured, allowing tests to work.
+   * Locally, use Firebase Auth Emulator or skip auth-required tests.
    */
   authenticatedPage: async ({ page }, use) => {
-    // Set up mock authentication and seed test data
-    await setupTestEnvironment(page);
-
-    // Provide the authenticated page to the test
+    // Just provide the page - authentication must be handled by the test itself
+    // or by external setup (e.g., Firebase emulator, test user credentials)
     await use(page);
-
-    // Cleanup: Clear authentication after test
-    await clearAuth(page);
   },
 });
 

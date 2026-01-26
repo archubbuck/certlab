@@ -24,7 +24,7 @@ e2e/
 └── tests/             # Test files
     ├── 01-landing.spec.ts        # Landing page tests
     ├── 02-authentication.spec.ts  # Auth flow tests
-    ├── 03-quiz-flow.spec.ts       # Quiz tests
+    ├── 03-quiz-flow.spec.ts       # Quiz tests (partially enabled)
     ├── 04-achievements.spec.ts    # Gamification tests
     └── 05-accessibility.spec.ts   # Accessibility tests
 ```
@@ -40,15 +40,6 @@ npm run test:e2e:report    # View test report
 npm run test:e2e:codegen   # Generate tests interactively
 ```
 
-## Documentation
-
-See [docs/E2E_TESTING.md](../docs/E2E_TESTING.md) for comprehensive documentation including:
-- Test writing guide
-- Troubleshooting
-- CI/CD integration
-- Best practices
-- Enabling authentication tests
-
 ## Test Coverage
 
 Current test coverage includes:
@@ -56,10 +47,69 @@ Current test coverage includes:
 - ✅ Theme switching
 - ✅ Accessibility and keyboard navigation
 - ⏸️ Authentication (requires Firebase setup)
-- ⏸️ Quiz flows (requires authentication)
+- ✅ Quiz creation flows (enabled, require Firebase auth + data)
+- ⏸️ Quiz taking flows (TODO: require programmatic quiz creation)
+- ⏸️ Quiz results/review flows (TODO: require programmatic quiz completion)
 - ⏸️ Achievements (requires authentication)
 
-Many tests are skipped by default because they require Firebase authentication. See the documentation for details on enabling these tests.
+### Quiz Flow Tests Status
+
+The quiz flow tests (03-quiz-flow.spec.ts) have been partially enabled:
+
+**✅ Enabled (with graceful skipping):**
+- `should create a basic quiz` - Tests quiz creation with single category
+- `should create a multi-category quiz` - Tests quiz creation with multiple categories
+
+**⏸️ Skipped (TODO - require implementation):**
+- `should answer questions in a quiz` - Needs programmatic quiz creation
+- `should display progress indicator` - Needs programmatic quiz creation  
+- `should allow flagging questions for review` - Needs programmatic quiz creation
+- `should navigate between questions` - Needs programmatic quiz creation
+- `should display results after quiz completion` - Needs programmatic quiz completion
+- `should allow reviewing answers` - Needs programmatic quiz completion
+- `should show correct and incorrect answers in review` - Needs programmatic quiz completion
+- `should display explanations in review` - Needs programmatic quiz completion
+- `should show immediate feedback in study mode` - Needs programmatic quiz setup
+
+## Running Quiz Tests
+
+Quiz tests require Firebase authentication and seeded data.
+
+### In CI
+Tests run automatically with Firebase credentials from GitHub secrets. CI environment should have test data seeded in Firestore.
+
+### Locally
+
+#### Option 1: Firebase Emulator (Recommended)
+```bash
+# Start Firebase emulators
+npm run emulators:start
+
+# In another terminal, build and preview
+npm run build && npm run preview
+
+# Run tests
+npm run test:e2e
+```
+
+#### Option 2: Real Firebase Project
+1. Configure Firebase credentials in `.env`
+2. Ensure your Firebase project has test data:
+   - Categories (CISSP, CISM, etc.)
+   - Questions (at least 10 per category)
+3. Build and test:
+   ```bash
+   npm run build && npm run preview
+   npm run test:e2e
+   ```
+
+#### Graceful Skipping
+Tests will skip gracefully when:
+- User is not authenticated (redirected to landing page)
+- Quiz creation buttons not found (missing UI or data)
+- Categories not available (Firebase data not seeded)
+
+Check console output for skip reasons.
 
 ## Writing Tests
 
@@ -82,9 +132,9 @@ test.describe('My Feature', () => {
 ## Troubleshooting
 
 ### Tests timeout
-Ensure the dev server is running:
+Ensure the preview server is running:
 ```bash
-npm run dev
+npm run build && npm run preview
 ```
 
 ### Browser download fails
@@ -99,5 +149,11 @@ Increase timeout or check if feature is available:
 const visible = await element.isVisible({ timeout: 5000 }).catch(() => false);
 if (!visible) test.skip(true, 'Feature not available');
 ```
+
+### Quiz tests skip
+Quiz tests skip when:
+1. Not authenticated - check Firebase auth configuration
+2. No quiz data - ensure Firebase has seeded categories/questions
+3. Missing UI elements - verify app built correctly
 
 For more help, see [docs/E2E_TESTING.md](../docs/E2E_TESTING.md)
