@@ -289,9 +289,11 @@ match /users/{userId} {
   
   // Users can update their own profile
   // But cannot change their role (prevents privilege escalation)
-  allow update: if isOwner(userId) && 
-                   (!request.resource.data.keys().hasAny(['role'])) ||
-                   (request.resource.data.role == resource.data.role);
+  allow update: if isOwner(userId) &&
+                   (
+                     !request.resource.data.keys().hasAny(['role']) ||
+                     request.resource.data.role == resource.data.role
+                   );
   
   // Only admins can delete user profiles
   allow delete: if isAdmin();
