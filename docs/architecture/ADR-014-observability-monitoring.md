@@ -33,7 +33,7 @@ CertLab implements **Dynatrace Real User Monitoring (RUM)** for comprehensive ob
 | **Session Tracking** | Automatic | User journey tracking |
 | **Performance Metrics** | Web Vitals | LCP, FID, CLS, TTFB |
 | **Error Tracking** | Automatic + manual | JavaScript errors, API failures |
-| **User Tagging** | dtrum.identify Useruser(id) | Per-user analytics |
+| **User Tagging** | dtrum.identifyUser(id) | Per-user analytics |
 | **Opt-Out** | Cookie-based | Privacy compliance |
 
 **Key Metrics Tracked:**

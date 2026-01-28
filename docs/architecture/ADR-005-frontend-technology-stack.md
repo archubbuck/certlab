@@ -20,7 +20,7 @@
 
 ## Executive Summary
 
-CertLab uses a **modern React-based technology stack** with **TypeScript 5.6**, **Vite 7.3** as the build tool, **TailwindCSS 4.1** for styling, and **Radix UI** for accessible component primitives. This stack provides type safety, fast development experience, production performance, and accessibility out of the box.
+CertLab uses a **modern React-based technology stack** with **TypeScript 5.9.3**, **Vite 7.3** as the build tool, **TailwindCSS 4.1** for styling, and **Radix UI** for accessible component primitives. This stack provides type safety, fast development experience, production performance, and accessibility out of the box.
 
 ### Quick Reference
 
